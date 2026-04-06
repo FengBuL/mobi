@@ -1,0 +1,170 @@
+/**
+ * MD 暖色主题 (Warm)
+ * 暖色温馨风 — 圆角、柔和色彩、适合生活类文章
+ */
+
+/* ==================== 标题样式 ==================== */
+h1 {
+  display: block;
+  padding: 0.6em 1.2em;
+  margin: 2em auto 1em;
+  color: hsl(var(--foreground));
+  font-size: calc(var(--md-font-size) * 1.4);
+  font-weight: 700;
+  text-align: center;
+  background: color-mix(in srgb, var(--md-primary-color) 10%, #fdf8f4);
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--md-primary-color) 20%, transparent);
+}
+
+h2 {
+  display: inline-block;
+  padding: 0.3em 1em;
+  margin: 3em 0 1.5em;
+  color: #fff;
+  font-size: calc(var(--md-font-size) * 1.25);
+  font-weight: 700;
+  background: var(--md-primary-color);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--md-primary-color) 25%, transparent);
+}
+
+h3 {
+  padding: 0.3em 0 0.3em 14px;
+  border-left: 4px solid var(--md-primary-color);
+  margin: 2em 0 0.8em;
+  color: hsl(var(--foreground));
+  font-size: calc(var(--md-font-size) * 1.15);
+  font-weight: 600;
+  border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--md-primary-color) 6%, transparent);
+}
+
+h4 {
+  margin: 1.5em 0 0.5em;
+  color: var(--md-primary-color);
+  font-size: calc(var(--md-font-size) * 1.05);
+  font-weight: 600;
+}
+
+h5 {
+  margin: 1.2em 0 0.5em;
+  color: var(--md-primary-color);
+  font-size: var(--md-font-size);
+  font-weight: 600;
+}
+
+h6 {
+  margin: 1em 0 0.5em;
+  color: color-mix(in srgb, var(--md-primary-color) 70%, #888);
+  font-size: var(--md-font-size);
+}
+
+/* ==================== 段落 ==================== */
+p {
+  margin: 1.4em 8px;
+  line-height: 2;
+  letter-spacing: 0.06em;
+}
+
+/* ==================== 引用块 ==================== */
+blockquote {
+  padding: 1em 1.2em;
+  border-left: none;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--md-primary-color) 8%, #fef9f3);
+  margin: 1.2em 0;
+  border: 1px solid color-mix(in srgb, var(--md-primary-color) 15%, transparent);
+  position: relative;
+}
+
+blockquote::before {
+  content: '💡';
+  position: absolute;
+  top: -12px;
+  left: 16px;
+  font-size: 20px;
+  background: #fff;
+  padding: 0 4px;
+}
+
+/* ==================== 代码块 ==================== */
+pre.code__pre,
+.hljs.code__pre {
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* ==================== 行内代码 ==================== */
+code {
+  background: color-mix(in srgb, var(--md-primary-color) 10%, #fef5ee);
+  border: 1px solid color-mix(in srgb, var(--md-primary-color) 15%, transparent);
+  border-radius: 6px;
+  padding: 2px 6px;
+  color: var(--md-primary-color);
+}
+
+/* ==================== 图片 ==================== */
+img {
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* ==================== 列表 ==================== */
+ul {
+  list-style: none;
+  padding-left: 1.2em;
+}
+
+ol {
+  padding-left: 1.5em;
+}
+
+li {
+  margin: 0.5em 0;
+  line-height: 1.8;
+}
+
+/* ==================== 分隔线 ==================== */
+hr {
+  height: 2px;
+  border: none;
+  margin: 2em 2em;
+  background: linear-gradient(to right, transparent, color-mix(in srgb, var(--md-primary-color) 30%, transparent), transparent);
+  border-radius: 1px;
+}
+
+/* ==================== 表格 ==================== */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin: 1.5em 0;
+}
+
+th {
+  background: color-mix(in srgb, var(--md-primary-color) 15%, #fef5ee);
+  border: 1px solid color-mix(in srgb, var(--md-primary-color) 10%, #eee);
+  padding: 0.5em 1em;
+  color: var(--md-primary-color);
+}
+
+td {
+  border: 1px solid #f0e8e0;
+  padding: 0.5em 1em;
+}
+
+/* ==================== 强调 ==================== */
+strong {
+  color: var(--md-primary-color);
+  font-weight: 700;
+}
+
+/* ==================== 链接 ==================== */
+a {
+  color: var(--md-primary-color);
+  text-decoration: none;
+}

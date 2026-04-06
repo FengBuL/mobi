@@ -1,0 +1,116 @@
+/**
+ * 古风主题 (Traditional Chinese - Classic Red)
+ * 国风排版，采用朱红色点缀，楷体字形，仿古籍的段落间距和边框
+ */
+#output {
+  font-family: 'KaiTi', 'STKaiti', 'BiauKai', 'Noto Serif SC', serif;
+  letter-spacing: 0.1em;
+}
+
+h1 {
+  text-align: center;
+  color: #c0392b;
+  font-size: calc(var(--md-font-size) * 1.6);
+  font-weight: normal;
+  margin: 2em 0 1.5em;
+  padding: 0.5em;
+  border-top: 2px solid #c0392b;
+  border-bottom: 2px solid #c0392b;
+}
+
+h2 {
+  display: block;
+  text-align: center;
+  color: #c0392b;
+  font-size: calc(var(--md-font-size) * 1.3);
+  font-weight: normal;
+  margin: 3em 0 1.5em;
+}
+
+h2::before {
+  content: "『";
+  color: #c0392b;
+  margin-right: 0.2em;
+}
+
+h2::after {
+  content: "』";
+  color: #c0392b;
+  margin-left: 0.2em;
+}
+
+h3 {
+  color: #000;
+  font-size: calc(var(--md-font-size) * 1.15);
+  font-weight: bold;
+  margin: 2em 0 1em;
+  border-left: 4px solid #c0392b;
+  padding-left: 0.8em;
+}
+
+p {
+  margin: 1.5em 0;
+  line-height: 2.2;
+  color: #2c3e50;
+  text-indent: 2em;
+  text-align: justify;
+}
+
+blockquote {
+  border-left: none;
+  background-color: #fdf6f5;
+  color: #8a6a6a;
+  padding: 1.5em;
+  margin: 2em 1em;
+  font-style: italic;
+  border: 1px solid #ecc5c1;
+  position: relative;
+}
+
+blockquote::before {
+  content: "曰：";
+  font-weight: bold;
+  color: #c0392b;
+  position: absolute;
+  top: -0.8em;
+  left: 1.5em;
+  background: white;
+  padding: 0 0.5em;
+  font-style: normal;
+}
+
+blockquote p {
+  text-indent: 0;
+  margin: 0;
+}
+
+strong {
+  color: #c0392b;
+  font-weight: bold;
+}
+
+ul, ol {
+  line-height: 2;
+  margin-left: 1em;
+  color: #2c3e50;
+}
+
+pre.code__pre {
+  background-color: #f9f9f9;
+  border: 1px solid #dcdcdc;
+  padding: 1em;
+  font-family: inherit;
+}
+
+code {
+  color: #c0392b;
+  background-color: #fdf6f5;
+  padding: 2px 4px;
+}
+
+hr {
+  border: none;
+  border-top: 1px double #c0392b;
+  margin: 3em auto;
+  width: 50%;
+}

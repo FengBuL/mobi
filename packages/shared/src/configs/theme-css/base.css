@@ -1,0 +1,224 @@
+/**
+ * MD 基础主题样式
+ * 负责所有主题共享的 Markdown 基础表现，具体视觉由各主题单独定义。
+ */
+
+section,
+container {
+  font-family: var(--md-font-family);
+  font-size: var(--md-font-size);
+  line-height: 1.8;
+  text-align: left;
+  color: hsl(var(--foreground));
+}
+
+#output {
+  font-family: var(--md-font-family);
+  font-size: var(--md-font-size);
+  line-height: 1.8;
+  text-align: left;
+}
+
+#output section > :first-child {
+  margin-top: 0 !important;
+}
+
+#output p,
+#output blockquote,
+#output ul,
+#output ol,
+#output pre,
+#output table,
+#output figure,
+#output hr,
+#output .md-blockquote {
+  margin-block: 1.25em;
+}
+
+#output ul,
+#output ol {
+  padding-left: 1.5em;
+}
+
+#output li {
+  margin-bottom: 0.5em;
+}
+
+#output img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#output table {
+  width: 100%;
+}
+
+#output th,
+#output td {
+  text-align: left;
+}
+
+#output code {
+  word-break: break-word;
+}
+
+#output pre.code__pre,
+#output .hljs.code__pre {
+  overflow: auto;
+}
+
+#output figcaption,
+#output .md-figcaption,
+#output p.footnotes {
+  font-size: 0.92em;
+  line-height: 1.7;
+  text-align: center;
+  color: color-mix(in srgb, hsl(var(--foreground)) 60%, white);
+}
+
+#output .md-blockquote {
+  padding: 1em 1.2em;
+  border: 1px solid color-mix(in srgb, var(--md-primary-color) 18%, #d5d5d5);
+  border-left: 4px solid var(--md-primary-color);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--md-primary-color) 6%, white);
+}
+
+#output .md-blockquote-p {
+  margin: 0;
+}
+
+#output .markdown-alert-note,
+#output .markdown-alert-tip,
+#output .markdown-alert-info,
+#output .markdown-alert-important,
+#output .markdown-alert-warning,
+#output .markdown-alert-caution,
+#output .markdown-alert-abstract,
+#output .markdown-alert-summary,
+#output .markdown-alert-tldr,
+#output .markdown-alert-todo,
+#output .markdown-alert-success,
+#output .markdown-alert-done,
+#output .markdown-alert-question,
+#output .markdown-alert-help,
+#output .markdown-alert-faq,
+#output .markdown-alert-failure,
+#output .markdown-alert-fail,
+#output .markdown-alert-missing,
+#output .markdown-alert-danger,
+#output .markdown-alert-error,
+#output .markdown-alert-bug,
+#output .markdown-alert-example,
+#output .markdown-alert-quote,
+#output .markdown-alert-cite {
+  padding: 1em 1.1em;
+  border: 1px solid var(--alert-border);
+  border-left: 4px solid var(--alert-accent);
+  border-radius: 16px;
+  background: var(--alert-background);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+}
+
+#output .markdown-alert-note { --alert-accent: #478be6; --alert-border: #cdddfb; --alert-background: #eef5ff; }
+#output .markdown-alert-tip { --alert-accent: #57ab5a; --alert-border: #cde8cf; --alert-background: #effaf0; }
+#output .markdown-alert-info,
+#output .markdown-alert-abstract,
+#output .markdown-alert-summary,
+#output .markdown-alert-tldr { --alert-accent: #00bfff; --alert-border: #c9ecfb; --alert-background: #effaff; }
+#output .markdown-alert-important,
+#output .markdown-alert-example { --alert-accent: #986ee2; --alert-border: #dfd2fb; --alert-background: #f6f1ff; }
+#output .markdown-alert-warning,
+#output .markdown-alert-question,
+#output .markdown-alert-help,
+#output .markdown-alert-faq { --alert-accent: #c69026; --alert-border: #f1dfb5; --alert-background: #fff8e9; }
+#output .markdown-alert-caution,
+#output .markdown-alert-failure,
+#output .markdown-alert-fail,
+#output .markdown-alert-missing,
+#output .markdown-alert-danger,
+#output .markdown-alert-error,
+#output .markdown-alert-bug { --alert-accent: #e5534b; --alert-border: #f6c9c6; --alert-background: #fff1f0; }
+#output .markdown-alert-todo { --alert-accent: #478be6; --alert-border: #cdddfb; --alert-background: #eef5ff; }
+#output .markdown-alert-success,
+#output .markdown-alert-done { --alert-accent: #57ab5a; --alert-border: #cde8cf; --alert-background: #effaf0; }
+#output .markdown-alert-quote,
+#output .markdown-alert-cite { --alert-accent: #8892a0; --alert-border: #dbe1e8; --alert-background: #f7f9fb; }
+
+#output .alert-title,
+#output [class^="alert-title-"],
+#output [class*=" alert-title-"] {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  margin: 0 0 0.55em;
+  font-weight: 700;
+}
+
+#output .alert-content,
+#output [class^="alert-content-"],
+#output [class*=" alert-content-"] {
+  margin: 0;
+  color: inherit;
+}
+
+#output .alert-icon-note,
+#output .alert-title-note,
+#output .alert-icon-todo,
+#output .alert-title-todo { color: #478be6; fill: #478be6; }
+
+#output .alert-icon-tip,
+#output .alert-title-tip,
+#output .alert-icon-success,
+#output .alert-title-success,
+#output .alert-icon-done,
+#output .alert-title-done { color: #57ab5a; fill: #57ab5a; }
+
+#output .alert-icon-info,
+#output .alert-title-info,
+#output .alert-icon-abstract,
+#output .alert-title-abstract,
+#output .alert-icon-summary,
+#output .alert-title-summary,
+#output .alert-icon-tldr,
+#output .alert-title-tldr { color: #00bfff; fill: #00bfff; }
+
+#output .alert-icon-important,
+#output .alert-title-important,
+#output .alert-icon-example,
+#output .alert-title-example { color: #986ee2; fill: #986ee2; }
+
+#output .alert-icon-warning,
+#output .alert-title-warning,
+#output .alert-icon-question,
+#output .alert-title-question,
+#output .alert-icon-help,
+#output .alert-title-help,
+#output .alert-icon-faq,
+#output .alert-title-faq { color: #c69026; fill: #c69026; }
+
+#output .alert-icon-caution,
+#output .alert-title-caution,
+#output .alert-icon-failure,
+#output .alert-title-failure,
+#output .alert-icon-fail,
+#output .alert-title-fail,
+#output .alert-icon-missing,
+#output .alert-title-missing,
+#output .alert-icon-danger,
+#output .alert-title-danger,
+#output .alert-icon-error,
+#output .alert-title-error,
+#output .alert-icon-bug,
+#output .alert-title-bug { color: #e5534b; fill: #e5534b; }
+
+#output .alert-icon-quote,
+#output .alert-title-quote,
+#output .alert-icon-cite,
+#output .alert-title-cite { color: #8892a0; fill: #8892a0; }
+
+.mermaid-diagram .nodeLabel p {
+  color: unset !important;
+  letter-spacing: unset !important;
+}

@@ -1,0 +1,1733 @@
+<script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
+
+import { Compartment, EditorState } from '@codemirror/state'
+import { EditorView } from '@codemirror/view'
+import { highlightPendingBlocks, hljs } from '@md/core'
+import { markdownSetup, theme } from '@md/shared/editor'
+import imageCompression from 'browser-image-compression'
+import FolderSourcePanel from '@/components/editor/FolderSourcePanel.vue'
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable'
+import { SearchTab } from '@/components/ui/search-tab'
+import { useImageUploader } from '@/composables/useImageUploader'
+import { useCssEditorStore } from '@/stores/cssEditor'
+import { useEditorStore } from '@/stores/editor'
+import { usePostStore } from '@/stores/post'
+import { useRenderStore } from '@/stores/render'
+import { useThemeStore } from '@/stores/theme'
+import { useUIStore } from '@/stores/ui'
+import { checkImage, toBase64 } from '@/utils'
+import { fileUpload } from '@/utils/file'
+import { store } from '@/utils/storage'
+
+const editorStore = useEditorStore()
+const postStore = usePostStore()
+const renderStore = useRenderStore()
+const themeStore = useThemeStore()
+const uiStore = useUIStore()
+const cssEditorStore = useCssEditorStore()
+const { upload } = useImageUploader()
+
+const { editor } = storeToRefs(editorStore)
+const { output, readingTime } = storeToRefs(renderStore)
+const { isDark } = storeToRefs(uiStore)
+const { posts, currentPostIndex, currentPost } = storeToRefs(postStore)
+const {
+  isMobile,
+  isOpenPostSlider,
+  isOpenFolderPanel,
+  isOpenRightSlider,
+  isOpenConfirmDialog,
+  enableImageReupload,
+  viewMode,
+  previewDevice,
+} = storeToRefs(uiStore)
+
+const { toggleShowUploadImgDialog } = uiStore
+
+// Editor refresh function
+function editorRefresh() {
+  themeStore.updateCodeTheme()
+
+  const raw = editorStore.getContent()
+  renderStore.render(raw)
+}
+
+// Reset style function
+function resetStyle() {
+  themeStore.resetStyle()
+  cssEditorStore.resetCssConfig()
+  // 使用新主题系统
+  themeStore.applyCurrentTheme()
+  editorRefresh()
+  toast.success(`样式已重置`)
+}
+
+watch(output, () => {
+  nextTick(() => {
+    const outputElement = document.getElementById(`output`)
+    if (outputElement) {
+      highlightPendingBlocks(hljs, outputElement)
+    }
+  })
+})
+
+const backLight = ref(false)
+const isCoping = ref(false)
+
+function startCopy() {
+  backLight.value = true
+  isCoping.value = true
+}
+
+// 拷贝结束
+function endCopy() {
+  backLight.value = false
+  setTimeout(() => {
+    isCoping.value = false
+  }, 800)
+}
+
+// 是否有侧面板打开（样式面板 / CSS编辑器）
+const hasSidePanel = computed(() => !isMobile.value && (isOpenRightSlider.value || uiStore.isShowCssEditor))
+
+const cssPanelDefaultSize = computed(() => (!isMobile.value && uiStore.isShowCssEditor ? 25 : 0))
+const rightPanelDefaultSize = computed(() => (!isMobile.value && isOpenRightSlider.value ? 40 : 0))
+const mainAreaDefaultSize = computed(() => Math.max(0, 100 - cssPanelDefaultSize.value - rightPanelDefaultSize.value))
+const editorPreviewDefaultSizes = computed(() => {
+  const mainAreaSize = mainAreaDefaultSize.value
+
+  if (viewMode.value === `preview`) {
+    return { editor: 0, preview: mainAreaSize }
+  }
+
+  if (viewMode.value === `edit`) {
+    return { editor: mainAreaSize, preview: 0 }
+  }
+
+  const sharedSize = mainAreaSize / 2
+  return { editor: sharedSize, preview: sharedSize }
+})
+
+// 编辑器面板尺寸配置
+const editorPanelConfig = computed(() => {
+  const mode = viewMode.value
+  if (mode === `preview`) {
+    return { min: 0, max: 0 }
+  }
+  if (mode === `edit`) {
+    return hasSidePanel.value ? { min: 30, max: 85 } : { min: 100, max: 100 }
+  }
+  // split
+  if (isMobile.value)
+    return { min: 30, max: 70 }
+  return { min: 15, max: 85 }
+})
+
+// 预览面板尺寸配置
+const previewPanelConfig = computed(() => {
+  const mode = viewMode.value
+  if (mode === `edit`) {
+    return { min: 0, max: 0 }
+  }
+  if (mode === `preview`) {
+    return hasSidePanel.value ? { min: 20, max: 75 } : { min: 100, max: 100 }
+  }
+  // split
+  if (isMobile.value)
+    return { min: 30, max: 70 }
+  return { min: 15, max: 85 }
+})
+
+// 编辑器/预览面板引用（用于 collapse/expand）
+const editorPanelRef = ref<InstanceType<typeof ResizablePanel> | null>(null)
+const previewPanelRef = ref<InstanceType<typeof ResizablePanel> | null>(null)
+
+function syncEditorPreviewPanelLayout() {
+  nextTick(() => {
+    editorPanelRef.value?.resize(editorPreviewDefaultSizes.value.editor)
+    previewPanelRef.value?.resize(editorPreviewDefaultSizes.value.preview)
+  })
+}
+
+watch([viewMode, mainAreaDefaultSize], syncEditorPreviewPanelLayout)
+
+// 预览区域宽度样式（受设备切换影响）
+const effectivePreviewWidth = computed(() => {
+  if (isMobile.value)
+    return `w-full`
+  return previewDevice.value === `mobile` ? `w-[375px]` : `w-full`
+})
+
+function formatRelativeTime(date?: Date | string | null) {
+  if (!date)
+    return `刚刚`
+
+  const now = Date.now()
+  const target = new Date(date).getTime()
+  const diff = Math.max(0, now - target)
+  const minutes = Math.floor(diff / (1000 * 60))
+
+  if (minutes < 1)
+    return `刚刚`
+  if (minutes < 60)
+    return `${minutes} 分钟前`
+
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24)
+    return `${hours} 小时前`
+
+  const days = Math.floor(hours / 24)
+  if (days < 30)
+    return `${days} 天前`
+
+  return new Date(date).toLocaleDateString(`zh-CN`)
+}
+
+const currentPostTitle = computed(() => currentPost.value?.title?.trim() || `未命名内容`)
+const currentPostUpdateLabel = computed(() => formatRelativeTime(currentPost.value?.updateDatetime))
+const editorLineCount = computed(() => {
+  return Math.max(1, currentPost.value?.content?.split(/\r?\n/).length || 1)
+})
+const editorCharCount = computed(() => currentPost.value?.content?.length || 0)
+const viewModeLabel = computed(() => {
+  if (viewMode.value === `split`)
+    return `双栏对照`
+  if (viewMode.value === `edit`)
+    return `专注编辑`
+  return `专注预览`
+})
+const previewDeviceLabel = computed(() => {
+  if (isMobile.value)
+    return `自适应预览`
+  return previewDevice.value === `mobile` ? `移动端画板` : `桌面端画板`
+})
+const readingTimeLabel = computed(() => {
+  return readingTime.value.minutes > 0 ? `${readingTime.value.minutes} 分钟阅读` : `少于 1 分钟`
+})
+
+const previewRef = useTemplateRef<HTMLDivElement>(`previewRef`)
+
+const codeMirrorView = ref<EditorView | null>(null)
+const themeCompartment = new Compartment()
+const cursorSyncTimer = ref<NodeJS.Timeout>()
+const skipCursorDrivenPreviewSync = ref(false)
+
+function getCurrentEditorContent() {
+  return currentPost.value?.content ?? posts.value[currentPostIndex.value]?.content ?? ``
+}
+
+function syncEditorDocument(force = false) {
+  const view = codeMirrorView.value
+  if (!view)
+    return
+
+  const nextContent = getCurrentEditorContent()
+  const currentContent = view.state.doc.toString()
+
+  if (!force && currentContent === nextContent) {
+    return
+  }
+
+  view.dispatch({
+    changes: {
+      from: 0,
+      to: currentContent.length,
+      insert: nextContent,
+    },
+  })
+}
+
+function ensureEditorPaint() {
+  const view = codeMirrorView.value
+  if (!view)
+    return
+
+  const selection = view.state.selection.main
+  const repaint = () => {
+    const activeView = codeMirrorView.value
+    if (!activeView)
+      return
+
+    activeView.requestMeasure()
+    activeView.dispatch({
+      selection: {
+        anchor: selection.anchor,
+        head: selection.head,
+      },
+      effects: EditorView.scrollIntoView(selection.head, { y: `nearest` }),
+    })
+  }
+
+  requestAnimationFrame(repaint)
+  requestAnimationFrame(() => requestAnimationFrame(repaint))
+  setTimeout(repaint, 120)
+  setTimeout(repaint, 320)
+}
+
+function normalizeText(text: string) {
+  return text
+    .replace(/\s+/g, ` `)
+    .trim()
+}
+
+function parseMarkdownHeadingLine(line: string): { level: number, title: string } | null {
+  if (!line.startsWith(`#`)) {
+    return null
+  }
+
+  let level = 0
+  while (level < line.length && line[level] === `#` && level < 6) {
+    level++
+  }
+
+  if (level === 0 || line[level] !== ` `) {
+    return null
+  }
+
+  const title = normalizeText(line.slice(level + 1).replace(/#+\s*$/, ``))
+  if (!title) {
+    return null
+  }
+
+  return { level, title }
+}
+
+function scrollPreviewToElement(el: HTMLElement, behavior: ScrollBehavior = `auto`) {
+  const container = previewRef.value
+  if (!container)
+    return
+
+  const cRect = container.getBoundingClientRect()
+  const eRect = el.getBoundingClientRect()
+  const inView = eRect.top >= cRect.top + 32 && eRect.bottom <= cRect.bottom - 32
+
+  if (!inView) {
+    el.scrollIntoView({ behavior, block: `center` })
+  }
+}
+
+function findHeadingElementInPreview(title: string, level?: number) {
+  const headings = document.querySelectorAll<HTMLElement>(`#output [data-heading]`)
+  const normalizedTitle = normalizeText(title)
+
+  for (const heading of headings) {
+    if (level && Number(heading.tagName.slice(1)) !== level)
+      continue
+    if (normalizeText(heading.textContent || ``) === normalizedTitle) {
+      return heading
+    }
+  }
+
+  for (const heading of headings) {
+    if (level && Number(heading.tagName.slice(1)) !== level)
+      continue
+    if (normalizeText(heading.textContent || ``).includes(normalizedTitle)) {
+      return heading
+    }
+  }
+}
+
+function findHeadingPosInEditor(title: string, level?: number) {
+  const view = codeMirrorView.value
+  if (!view)
+    return null
+
+  const doc = view.state.doc
+  const normalizedTitle = normalizeText(title)
+
+  for (let lineNo = 1; lineNo <= doc.lines; lineNo++) {
+    const line = doc.line(lineNo)
+    const parsed = parseMarkdownHeadingLine(line.text)
+    if (!parsed)
+      continue
+
+    if (level && parsed.level !== level)
+      continue
+
+    const headingTitle = parsed.title
+    if (headingTitle === normalizedTitle || headingTitle.includes(normalizedTitle) || normalizedTitle.includes(headingTitle)) {
+      return line.from
+    }
+  }
+
+  return null
+}
+
+function findTextPosInEditor(text: string) {
+  const view = codeMirrorView.value
+  if (!view)
+    return null
+
+  const docText = view.state.doc.toString()
+  const normalized = normalizeText(text)
+  if (!normalized)
+    return null
+
+  const candidates = [
+    normalized,
+    normalized.slice(0, 80),
+    normalized.slice(0, 40),
+    normalized.slice(0, 20),
+  ].filter(item => item.length >= 6)
+
+  for (const candidate of candidates) {
+    const pos = docText.indexOf(candidate)
+    if (pos !== -1) {
+      return pos
+    }
+  }
+
+  return null
+}
+
+function focusEditorAtPos(pos: number) {
+  const view = codeMirrorView.value
+  if (!view)
+    return
+
+  skipCursorDrivenPreviewSync.value = true
+  view.dispatch({
+    selection: { anchor: pos },
+    effects: EditorView.scrollIntoView(pos, { y: `center` }),
+  })
+  view.focus()
+
+  setTimeout(() => {
+    skipCursorDrivenPreviewSync.value = false
+  }, 180)
+}
+
+function syncPreviewToEditorCursor() {
+  if (skipCursorDrivenPreviewSync.value)
+    return
+
+  const view = codeMirrorView.value
+  if (!view)
+    return
+
+  const cursorPos = view.state.selection.main.head
+  const doc = view.state.doc
+  const cursorLineNo = doc.lineAt(cursorPos).number
+
+  // 优先按“最近标题”进行语义定位，避免图片/代码块造成的高度失真。
+  for (let lineNo = cursorLineNo; lineNo >= 1; lineNo--) {
+    const text = doc.line(lineNo).text
+    const parsed = parseMarkdownHeadingLine(text)
+    if (!parsed)
+      continue
+
+    const headingEl = findHeadingElementInPreview(parsed.title, parsed.level)
+    if (headingEl) {
+      scrollPreviewToElement(headingEl)
+      return
+    }
+  }
+
+  // 无可用语义锚点时，退化为轻量比例定位。
+  const container = previewRef.value
+  if (!container)
+    return
+  const maxScrollTop = container.scrollHeight - container.offsetHeight
+  const ratio = doc.length > 0 ? cursorPos / doc.length : 0
+  container.scrollTo({ top: Math.max(0, maxScrollTop * ratio), behavior: `auto` })
+}
+
+function scheduleSyncPreviewToEditorCursor() {
+  clearTimeout(cursorSyncTimer.value)
+  cursorSyncTimer.value = setTimeout(() => {
+    syncPreviewToEditorCursor()
+  }, 100)
+}
+
+function syncEditorToPreviewElement(el: HTMLElement) {
+  const tag = el.tagName.toLowerCase()
+  let pos: number | null = null
+
+  if (/^h[1-6]$/.test(tag)) {
+    const level = Number(tag.slice(1))
+    const title = normalizeText(el.textContent || ``)
+    pos = findHeadingPosInEditor(title, level)
+  }
+  else if (tag === `img`) {
+    const img = el as HTMLImageElement
+    const alt = normalizeText(img.alt || ``)
+    pos = alt ? findTextPosInEditor(alt) : null
+    if (pos == null && img.src) {
+      pos = findTextPosInEditor(img.src)
+    }
+  }
+  else {
+    const text = normalizeText(el.textContent || ``)
+    pos = findTextPosInEditor(text)
+  }
+
+  if (pos != null) {
+    focusEditorAtPos(pos)
+  }
+}
+
+function handlePreviewContentClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null
+  if (!target)
+    return
+
+  const block = target.closest(`h1,h2,h3,h4,h5,h6,p,li,blockquote,pre,td,th,img`) as HTMLElement | null
+  if (!block)
+    return
+
+  syncEditorToPreviewElement(block)
+}
+
+const searchTabRef
+  = useTemplateRef<InstanceType<typeof SearchTab>>(`searchTabRef`)
+
+// 用于存储待处理的搜索请求
+const pendingSearchRequest = ref<{ selected: string } | null>(null)
+
+function openSearchWithSelection(view: EditorView) {
+  const selection = view.state.selection.main
+  const selected = view.state.doc.sliceString(selection.from, selection.to).trim()
+
+  if (searchTabRef.value) {
+    // SearchTab 已准备好，直接使用
+    if (selected) {
+      searchTabRef.value.setSearchWord(selected)
+    }
+    else {
+      searchTabRef.value.showSearchTab = true
+    }
+  }
+  else {
+    // SearchTab 还没准备好，保存请求
+    pendingSearchRequest.value = { selected }
+  }
+}
+
+function openReplaceWithSelection(view: EditorView) {
+  const selection = view.state.selection.main
+  const selected = view.state.doc.sliceString(selection.from, selection.to).trim()
+
+  if (searchTabRef.value) {
+    // SearchTab 已准备好，直接使用
+    searchTabRef.value.setSearchWithReplace(selected)
+  }
+  else {
+    // SearchTab 还没准备好，通过 UI Store 触发
+    uiStore.openSearchTab(selected, true)
+  }
+}
+
+// 监听 searchTabRef 的变化，处理待处理的请求
+watch(searchTabRef, (newRef) => {
+  if (newRef && pendingSearchRequest.value) {
+    const { selected } = pendingSearchRequest.value
+    if (selected) {
+      newRef.setSearchWord(selected)
+    }
+    else {
+      newRef.showSearchTab = true
+    }
+    pendingSearchRequest.value = null
+  }
+})
+
+// 监听 UI Store 中的搜索请求
+const { searchTabRequest } = storeToRefs(uiStore)
+watch(searchTabRequest, (request) => {
+  if (request && searchTabRef.value) {
+    const { word, showReplace } = request
+
+    // 根据是否需要替换功能，调用不同的方法
+    if (showReplace) {
+      searchTabRef.value.setSearchWithReplace(word)
+    }
+    else {
+      if (word) {
+        searchTabRef.value.setSearchWord(word)
+      }
+      else {
+        searchTabRef.value.showSearchTab = true
+      }
+    }
+
+    // 清除请求
+    uiStore.clearSearchTabRequest()
+  }
+})
+
+function handleGlobalKeydown(e: KeyboardEvent) {
+  // 处理 ESC 键关闭搜索
+  const editorView = codeMirrorView.value
+
+  if (e.key === `Escape` && searchTabRef.value?.showSearchTab) {
+    searchTabRef.value.showSearchTab = false
+    e.preventDefault()
+    editorView?.focus()
+  }
+}
+
+onMounted(() => {
+  // 使用较低优先级确保 CodeMirror 键盘事件先处理
+  document.addEventListener(`keydown`, handleGlobalKeydown, { passive: false, capture: false })
+})
+
+async function beforeImageUpload(file: File) {
+  const checkResult = checkImage(file)
+  if (!checkResult.ok) {
+    toast.error(checkResult.msg)
+    return false
+  }
+
+  // check image host
+  const imgHost = (await store.get(`imgHost`)) || `default`
+  await store.set(`imgHost`, imgHost)
+
+  const config = await store.get(`${imgHost}Config`)
+  const isValidHost = imgHost === `default` || config
+  if (!isValidHost) {
+    toast.error(`请先配置 ${imgHost} 图床参数`)
+    return false
+  }
+
+  return true
+}
+
+// 图片上传结束
+function uploaded(imageUrl: string) {
+  if (!imageUrl) {
+    toast.error(`上传图片未知异常`)
+    return
+  }
+  setTimeout(() => {
+    toggleShowUploadImgDialog(false)
+  }, 1000)
+  // 上传成功，插入图片
+  const markdownImage = `![](${imageUrl})`
+  // 将 Markdown 形式的 URL 插入编辑框光标所在位置
+  if (codeMirrorView.value) {
+    codeMirrorView.value.dispatch(codeMirrorView.value.state.replaceSelection(`\n${markdownImage}\n`))
+  }
+  toast.success(`图片上传成功`)
+}
+
+const isImgLoading = ref(false)
+async function compressImage(file: File) {
+  const options = {
+    maxSizeMB: 1,
+    maxWidthOrHeight: 1920,
+    useWebWorker: true,
+  }
+  const compressedFile = await imageCompression(file, options)
+  return compressedFile
+}
+async function uploadImage(
+  file: File,
+  cb?: { (url: any, data: string): void, (arg0: unknown): void } | undefined,
+  applyUrl?: boolean,
+) {
+  try {
+    isImgLoading.value = true
+    // compress image if useCompression is true
+    const useCompression = (await store.get(`useCompression`)) === `true`
+    if (useCompression) {
+      file = await compressImage(file)
+    }
+    const base64Content = await toBase64(file)
+    const url = await fileUpload(base64Content, file)
+    if (cb) {
+      cb(url, base64Content)
+    }
+    else {
+      uploaded(url)
+    }
+    if (applyUrl) {
+      return uploaded(url)
+    }
+  }
+  catch (err) {
+    toast.error((err as any).message)
+  }
+  finally {
+    isImgLoading.value = false
+  }
+}
+
+// 从文件列表中查找一个 md 文件并解析
+async function getMd({ list }: { list: { path: string, file: File }[] }) {
+  return new Promise<{ str: string, file: File, path: string }>((resolve) => {
+    const { path, file } = list.find(item => item.path.match(/\.md$/))!
+    const reader = new FileReader()
+    reader.readAsText(file!, `UTF-8`)
+    reader.onload = (evt) => {
+      resolve({
+        str: evt.target!.result as string,
+        file,
+        path,
+      })
+    }
+  })
+}
+
+// 转换文件系统句柄中的文件为文件列表
+async function showFileStructure(root: any) {
+  const result = []
+  let cwd = ``
+  try {
+    const dirs = [root]
+    for (const dir of dirs) {
+      cwd += `${dir.name}/`
+      for await (const [, handle] of dir) {
+        if (handle.kind === `file`) {
+          result.push({
+            path: cwd + handle.name,
+            file: await handle.getFile(),
+          })
+        }
+        else {
+          result.push({
+            path: `${cwd + handle.name}/`,
+          })
+          dirs.push(handle)
+        }
+      }
+    }
+  }
+  catch (err) {
+    console.error(err)
+  }
+  return result
+}
+
+// 上传 md 中的图片
+async function uploadMdImg({
+  md,
+  list,
+}: {
+  md: { str: string, path: string, file: File }
+  list: { path: string, file: File }[]
+}) {
+  // 获取所有相对地址的图片
+  const mdImgList = [...(md.str.matchAll(/!\[(.*?)\]\((.*?)\)/g) || [])].filter(item => item)
+  const root = md.path.match(/.+?\//)![0]
+  const resList = await Promise.all<{ matchStr: string, url: string }>(
+    mdImgList.map((item) => {
+      return new Promise((resolve) => {
+        let [, , matchStr] = item
+        matchStr = matchStr.replace(/^.\//, ``) // 处理 ./img/ 为 img/ 统一相对路径风格
+        const { file }
+          = list.find(f => f.path === `${root}${matchStr}`) || {}
+        uploadImage(file!, url => resolve({ matchStr, url }))
+      })
+    }),
+  )
+  resList.forEach((item) => {
+    md.str = md.str
+      .replace(`](./${item.matchStr})`, `](${item.url})`)
+      .replace(`](${item.matchStr})`, `](${item.url})`)
+  })
+  if (codeMirrorView.value) {
+    codeMirrorView.value.dispatch({
+      changes: { from: 0, to: codeMirrorView.value.state.doc.length, insert: md.str },
+    })
+  }
+}
+
+const codeMirrorWrapper = useTemplateRef<ComponentPublicInstance<HTMLDivElement>>(`codeMirrorWrapper`)
+
+// 转换 markdown 中的本地图片为线上图片
+// todo 处理事件覆盖
+function mdLocalToRemote() {
+  const dom = codeMirrorWrapper.value!
+
+  dom.ondragover = evt => evt.preventDefault()
+  dom.ondrop = async (evt) => {
+    evt.preventDefault()
+    if (evt.dataTransfer == null || !Array.isArray(evt.dataTransfer.items)) {
+      return
+    }
+
+    for (const item of evt.dataTransfer.items.filter(item => item.kind === `file`)) {
+      item
+        .getAsFileSystemHandle()
+        .then(async (handle: { kind: string, getFile: () => any }) => {
+          if (handle.kind === `directory`) {
+            const list = (await showFileStructure(handle)) as {
+              path: string
+              file: File
+            }[]
+            const md = await getMd({ list })
+            uploadMdImg({ md, list })
+          }
+          else {
+            const file = await handle.getFile()
+            console.log(`file`, file)
+            if (await beforeImageUpload(file)) {
+              uploadImage(file)
+            }
+          }
+        })
+    }
+  }
+}
+
+const changeTimer = ref<NodeJS.Timeout>()
+
+const editorRef = useTemplateRef<HTMLDivElement>(`editorRef`)
+const progressValue = ref(0)
+
+function createFormTextArea(dom: HTMLDivElement) {
+  // 创建编辑器状态
+  const state = EditorState.create({
+    doc: getCurrentEditorContent(),
+    extensions: [
+      markdownSetup({
+        onSearch: openSearchWithSelection,
+        onReplace: openReplaceWithSelection,
+      }),
+      themeCompartment.of(theme(isDark.value)),
+      EditorView.updateListener.of((update) => {
+        if (update.docChanged) {
+          const value = update.state.doc.toString()
+          clearTimeout(changeTimer.value)
+          changeTimer.value = setTimeout(() => {
+            editorRefresh()
+
+            const currentPost = posts.value[currentPostIndex.value]
+            if (value === currentPost.content) {
+              return
+            }
+
+            currentPost.updateDatetime = new Date()
+            currentPost.content = value
+          }, 300)
+        }
+
+        if (update.selectionSet || update.docChanged) {
+          scheduleSyncPreviewToEditorCursor()
+        }
+      }),
+      EditorView.domEventHandlers({
+        paste: (event, view) => {
+          // 1. 处理剪贴板中的文件 (截图/复制文件)
+          if (event.clipboardData?.items && [...event.clipboardData.items].some(item => item.kind === 'file')) {
+            if (isImgLoading.value) {
+              return true
+            }
+            Promise.all(
+              Array.from(event.clipboardData.items, item => item.getAsFile())
+                .filter(item => item != null)
+                .map(async item => (await beforeImageUpload(item!)) ? item : null),
+            ).then((items) => {
+              const validItems = items.filter(item => item != null) as File[]
+              if (validItems.length === 0) {
+                return
+              }
+              // start progress
+              const intervalId = setInterval(() => {
+                const newProgress = progressValue.value + 1
+                if (newProgress >= 100) {
+                  return
+                }
+                progressValue.value = newProgress
+              }, 100)
+
+              const processFiles = async () => {
+                for (const item of validItems) {
+                  await uploadImage(item)
+                }
+                clearInterval(intervalId)
+                progressValue.value = 100
+                setTimeout(() => {
+                  progressValue.value = 0
+                }, 1000)
+              }
+              processFiles()
+            })
+            return true
+          }
+
+          // 2. 处理剪贴板中的文本 (检测 Markdown 图片链接)
+          const text = event.clipboardData?.getData('text/plain')
+          if (text) {
+            // 匹配 ![alt](url) 格式
+            const mdImgRegex = /!\[(.*?)\]\((https?:\/\/[^)]+)\)/g
+            const matches = [...text.matchAll(mdImgRegex)]
+
+            if (matches.length > 0) {
+              isImgLoading.value = true
+
+              // 2.1 插入带有唯一 ID 的占位文本
+              let previewText = text
+              const placeholderMap = new Map<string, { originalUrl: string, originalAlt: string }>()
+
+              // 使用 replace 来生成唯一的占位符
+              let matchIndex = 0
+              previewText = previewText.replace(mdImgRegex, (_, alt, url) => {
+                const id = `LOADING_${Date.now()}_${matchIndex++}`
+                placeholderMap.set(id, { originalUrl: url, originalAlt: alt })
+                return `![⏳ 转存中...](${id})`
+              })
+
+              // 插入占位文本到编辑器
+              view.dispatch(view.state.replaceSelection(previewText))
+
+              // 2.2 提取唯一 URL 进行并发转存
+              const uniqueUrls = [...new Set(matches.map(m => m[2]))]
+
+              // 并发处理
+              Promise.all(uniqueUrls.map(async (url) => {
+                try {
+                  // 根据开关决定是否转存
+                  const newUrl = enableImageReupload.value ? await upload(url) : url
+
+                  // 2.3 转存成功后（或直接使用原URL），精确替换编辑器中的对应内容
+                  // 遍历 map，找到所有 originalUrl 为当前 url 的占位符 ID
+                  for (const [id, info] of placeholderMap.entries()) {
+                    if (info.originalUrl === url) {
+                      // 查找该 ID 在文档中的位置
+                      const searchStr = `![⏳ 转存中...](${id})`
+                      const currentDoc = view.state.doc.toString()
+                      const pos = currentDoc.indexOf(searchStr)
+
+                      if (pos !== -1) {
+                        const newText = `![${info.originalAlt}](${newUrl})`
+                        view.dispatch({
+                          changes: { from: pos, to: pos + searchStr.length, insert: newText },
+                        })
+                      }
+                    }
+                  }
+                }
+                catch (e) {
+                  console.error(`转存失败: ${url}`, e)
+                  // 失败时，将占位符恢复为原样
+                  for (const [id, info] of placeholderMap.entries()) {
+                    if (info.originalUrl === url) {
+                      const searchStr = `![⏳ 转存中...](${id})`
+                      const currentDoc = view.state.doc.toString()
+                      const pos = currentDoc.indexOf(searchStr)
+
+                      if (pos !== -1) {
+                        const newText = `![${info.originalAlt}](${info.originalUrl})`
+                        view.dispatch({
+                          changes: { from: pos, to: pos + searchStr.length, insert: newText },
+                        })
+                      }
+                    }
+                  }
+                  toast.error(`图片转存失败，已保留原链接`)
+                }
+              })).finally(() => {
+                isImgLoading.value = false
+              })
+
+              return true
+            }
+          }
+          return false
+        },
+      }),
+    ],
+  })
+
+  // 创建编辑器视图
+  const view = new EditorView({
+    state,
+    parent: dom,
+  })
+
+  codeMirrorView.value = view
+
+  // 返回编辑器 view
+  return view
+}
+
+// 初始化编辑器
+onMounted(() => {
+  const editorDom = editorRef.value
+
+  if (editorDom == null) {
+    return
+  }
+
+  // 初始化渲染器（新主题系统）
+  renderStore.initRendererInstance({
+    isMacCodeBlock: themeStore.isMacCodeBlock,
+    isShowLineNumber: themeStore.isShowLineNumber,
+  })
+
+  // 应用主题样式（新主题系统）
+  themeStore.applyCurrentTheme()
+
+  nextTick(() => {
+    const editorView = createFormTextArea(editorDom)
+    editor.value = editorView
+    syncEditorPreviewPanelLayout()
+    syncEditorDocument(true)
+    ensureEditorPaint()
+
+    // AI 工具箱已移到侧边栏，不再需要初始化编辑器事件
+    editorRefresh()
+    mdLocalToRemote()
+  })
+})
+
+// 监听暗色模式变化并更新编辑器主题
+watch(isDark, () => {
+  if (codeMirrorView.value) {
+    codeMirrorView.value.dispatch({
+      effects: themeCompartment.reconfigure(theme(isDark.value)),
+    })
+  }
+  // 重新渲染 markdown 以更新 infographic 等扩展的主题
+  editorRefresh()
+})
+
+// 监听当前文章切换，更新编辑器内容
+watch(currentPost, (post) => {
+  if (!post || !codeMirrorView.value)
+    return
+
+  const currentContent = codeMirrorView.value.state.doc.toString()
+  if (currentContent !== post.content) {
+    syncEditorDocument()
+    editorRefresh()
+  }
+}, { immediate: true })
+
+watch([viewMode, isMobile], ([mode, mobile]) => {
+  if (!mobile || mode !== `edit`) {
+    return
+  }
+
+  nextTick(() => {
+    ensureEditorPaint()
+  })
+})
+
+// 历史记录的定时器
+const historyTimer = ref<NodeJS.Timeout>()
+onMounted(() => {
+  // 定时，30 秒记录一次文章的历史记录
+  historyTimer.value = setInterval(() => {
+    const currentPost = posts.value[currentPostIndex.value]
+
+    // 与最后一篇记录对比
+    const pre = (currentPost.history || [])[0]?.content
+    if (pre === currentPost.content) {
+      return
+    }
+
+    currentPost.history ??= []
+    currentPost.history.unshift({
+      content: currentPost.content,
+      datetime: new Date().toLocaleString(`zh-CN`),
+    })
+
+    currentPost.history.length = Math.min(currentPost.history.length, 10)
+  }, 30 * 1000)
+})
+
+// 销毁时清理定时器和全局事件监听器
+onUnmounted(() => {
+  // 清理定时器 - 防止回调访问已销毁的DOM
+  clearTimeout(historyTimer.value)
+  clearTimeout(changeTimer.value)
+  clearTimeout(cursorSyncTimer.value)
+
+  // 清理全局事件监听器 - 防止全局事件触发已销毁的组件
+  document.removeEventListener(`keydown`, handleGlobalKeydown)
+})
+</script>
+
+<template>
+  <div class="container flex flex-col">
+    <Progress v-model="progressValue" class="absolute left-0 right-0 rounded-none" style="height: 2px;" />
+    <EditorHeader
+      @start-copy="startCopy"
+      @end-copy="endCopy"
+    />
+
+    <main class="container-main flex flex-1 flex-col">
+      <div class="container-main-section border-radius-10 relative flex flex-1 overflow-hidden border-x border-b">
+        <ResizablePanelGroup direction="horizontal">
+          <ResizablePanel
+            :default-size="15"
+            :max-size="isOpenPostSlider ? 20 : 0"
+            :min-size="isOpenPostSlider ? 10 : 0"
+          >
+            <PostSlider />
+          </ResizablePanel>
+          <ResizableHandle class="hidden md:block" />
+          <ResizablePanel
+            :default-size="isOpenFolderPanel ? 15 : 0"
+            :max-size="isOpenFolderPanel ? 25 : 0"
+            :min-size="isOpenFolderPanel ? 10 : 0"
+          >
+            <FolderSourcePanel />
+          </ResizablePanel>
+          <ResizableHandle v-if="isOpenFolderPanel" class="hidden md:block" />
+
+          <ResizablePanel :min-size="30">
+            <ResizablePanelGroup direction="horizontal">
+              <ResizablePanel
+                ref="editorPanelRef"
+                :order="1"
+                :default-size="editorPreviewDefaultSizes.editor"
+                :min-size="editorPanelConfig.min"
+                :max-size="editorPanelConfig.max"
+                collapsible
+                :collapsed-size="0"
+              >
+                <div
+                  v-show="viewMode !== 'preview'"
+                  ref="codeMirrorWrapper"
+                  class="codeMirror-wrapper relative h-full p-3 md:p-4"
+                >
+                  <div class="workspace-panel editor-panel">
+                    <div class="workspace-panel__header">
+                      <div class="workspace-panel__eyebrow">
+                        Markdown Workspace
+                      </div>
+                      <div class="workspace-panel__headline">
+                        <div class="workspace-panel__copy">
+                          <h2>{{ currentPostTitle }}</h2>
+                          <p>直接输入 Markdown，支持搜索替换、图片粘贴与样式调节。</p>
+                        </div>
+                        <div class="workspace-panel__chips">
+                          <span class="workspace-chip workspace-chip--accent">{{ viewModeLabel }}</span>
+                          <span class="workspace-chip">{{ editorLineCount }} 行</span>
+                          <span class="workspace-chip">{{ editorCharCount }} 字</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="workspace-panel__body editor-panel__body">
+                      <SearchTab v-if="codeMirrorView" ref="searchTabRef" :editor-view="codeMirrorView as any" />
+
+                      <div class="editor-panel__canvas">
+                        <EditorContextMenu>
+                          <div
+                            id="editor"
+                            ref="editorRef"
+                            class="codemirror-container"
+                          />
+                        </EditorContextMenu>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ResizablePanel>
+              <ResizableHandle v-show="viewMode === 'split'" />
+
+              <ResizablePanel
+                ref="previewPanelRef"
+                :order="2"
+                :default-size="editorPreviewDefaultSizes.preview"
+                :min-size="previewPanelConfig.min"
+                :max-size="previewPanelConfig.max"
+                collapsible
+                :collapsed-size="0"
+              >
+                <div v-show="viewMode !== 'edit'" class="preview-stage relative h-full overflow-x-hidden p-3 md:p-4">
+                  <div class="workspace-panel preview-panel">
+                    <div class="workspace-panel__header">
+                      <div class="workspace-panel__eyebrow">
+                        Article Preview
+                      </div>
+                      <div class="workspace-panel__headline">
+                        <div class="workspace-panel__copy">
+                          <h2>{{ currentPostTitle }}</h2>
+                          <p>点击标题、段落、图片或代码块，会自动回到左侧原文定位。</p>
+                        </div>
+                        <div class="workspace-panel__chips">
+                          <span class="workspace-chip workspace-chip--accent">{{ previewDeviceLabel }}</span>
+                          <span class="workspace-chip">{{ readingTimeLabel }}</span>
+                          <span class="workspace-chip">{{ currentPostUpdateLabel }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="workspace-panel__body preview-panel__body">
+                      <div
+                        id="preview"
+                        ref="previewRef"
+                        class="preview-wrapper w-full flex justify-center"
+                      >
+                        <div
+                          id="output-wrapper"
+                          class="w-full max-w-full preview-paper-stack"
+                          :class="{ output_night: !backLight }"
+                        >
+                          <div class="preview-paper-label">
+                            <span>{{ previewDeviceLabel }}</span>
+                            <span>发布视图</span>
+                          </div>
+                          <div
+                            class="preview mx-auto"
+                            :class="[
+                              effectivePreviewWidth,
+                              effectivePreviewWidth === 'w-[375px]' ? 'max-w-full' : '',
+                            ]"
+                          >
+                            <section id="output" class="w-full" @click="handlePreviewContentClick" v-html="output" />
+                            <div v-if="isCoping" class="loading-mask">
+                              <div class="loading-mask-box">
+                                <div class="loading__img" />
+                                <span>正在生成</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <BackTop
+                          target="preview"
+                          :right="20"
+                          :bottom="isMobile ? 90 : 20"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ResizablePanel>
+
+              <ResizableHandle v-if="uiStore.isShowCssEditor" class="hidden md:block" />
+              <ResizablePanel
+                v-if="uiStore.isShowCssEditor"
+                :order="3"
+                :default-size="cssPanelDefaultSize"
+                :min-size="10"
+                :max-size="60"
+              >
+                <CssEditor />
+              </ResizablePanel>
+
+              <ResizableHandle v-if="isOpenRightSlider" class="hidden md:block" />
+              <ResizablePanel
+                v-if="isOpenRightSlider"
+                :order="4"
+                :default-size="rightPanelDefaultSize"
+                :min-size="25"
+                :max-size="60"
+              >
+                <RightSlider />
+              </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+      </div>
+
+      <UploadImgDialog @upload-image="uploadImage" />
+
+      <InsertFormDialog />
+
+      <InsertMpCardDialog />
+
+      <ImportMarkdownDialog />
+
+      <TemplateDialog />
+
+      <AlertDialog v-model:open="isOpenConfirmDialog">
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>提示</AlertDialogTitle>
+            <AlertDialogDescription>
+              此操作将丢失本地自定义样式，是否继续？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction @click="resetStyle">
+              确定
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </main>
+
+    <Footer />
+  </div>
+</template>
+
+<style lang="less" scoped>
+@import url('../assets/less/app.less');
+</style>
+
+<style lang="less" scoped>
+.container {
+  height: 100%;
+  min-width: 100%;
+  padding: 0;
+}
+
+.mobile-app-container {
+  min-height: 100dvh;
+  height: 100dvh;
+  background:
+    radial-gradient(circle at top center, hsl(var(--accent) / 0.16), transparent 30%),
+    linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted) / 0.46));
+}
+
+.container-main {
+  overflow: hidden;
+}
+
+.mobile-app-main {
+  gap: 0.25rem;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 6rem);
+}
+
+.mobile-app-main--editing {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 10.6rem);
+}
+
+.mobile-app-main--keyboard-open {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
+}
+
+.container-main-section {
+  border-color: hsl(var(--border));
+  background:
+    radial-gradient(circle at left top, hsl(var(--accent) / 0.4), transparent 30%),
+    radial-gradient(circle at right top, hsl(var(--primary) / 0.08), transparent 26%),
+    linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted) / 0.75));
+}
+
+.mobile-app-section {
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 0;
+}
+
+#output-wrapper {
+  position: relative;
+  user-select: text;
+  width: 100%;
+  height: auto;
+  min-height: 100%;
+}
+
+.workspace-panel {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border) / 0.8);
+  border-radius: 30px;
+  background: linear-gradient(180deg, hsl(var(--card) / 0.98), hsl(var(--card) / 0.94));
+  box-shadow:
+    0 28px 80px hsl(var(--foreground) / 0.08),
+    inset 0 1px 0 hsl(var(--background));
+  backdrop-filter: blur(18px);
+}
+
+.workspace-panel--mobile-app {
+  border-radius: 24px;
+  box-shadow:
+    0 16px 42px hsl(var(--foreground) / 0.06),
+    inset 0 1px 0 hsl(var(--background));
+}
+
+.editor-panel,
+.preview-panel {
+  min-height: 0;
+}
+
+.workspace-panel__header {
+  position: relative;
+  padding: 1.3rem 1.4rem 1rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.75);
+  background:
+    linear-gradient(180deg, hsl(var(--background) / 0.92), hsl(var(--background) / 0.72)),
+    radial-gradient(circle at top left, hsl(var(--accent) / 0.22), transparent 48%);
+}
+
+.workspace-panel__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.95rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid hsl(var(--border) / 0.8);
+  border-radius: 999px;
+  background: hsl(var(--background) / 0.85);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+  box-shadow: inset 0 1px 0 hsl(var(--background));
+}
+
+.workspace-panel__headline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.workspace-panel__copy {
+  min-width: 0;
+}
+
+.workspace-panel__copy h2 {
+  margin: 0;
+  font-size: clamp(1.1rem, 1rem + 0.45vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: hsl(var(--foreground));
+}
+
+.workspace-panel__copy p {
+  margin: 0.5rem 0 0;
+  max-width: 42rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+}
+
+.workspace-panel__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.workspace-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.46rem 0.78rem;
+  border: 1px solid hsl(var(--border) / 0.8);
+  border-radius: 999px;
+  background: hsl(var(--secondary) / 0.95);
+  font-size: 0.76rem;
+  line-height: 1;
+  white-space: nowrap;
+  color: hsl(var(--muted-foreground));
+  box-shadow: inset 0 1px 0 hsl(var(--background));
+}
+
+.workspace-chip--accent {
+  border-color: hsl(var(--primary) / 0.25);
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow: 0 12px 30px hsl(var(--primary) / 0.16);
+}
+
+.workspace-panel__body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding: 1rem;
+}
+
+.codeMirror-wrapper,
+.preview-stage {
+  position: relative;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.codeMirror-wrapper--mobile,
+.preview-stage--mobile {
+  width: 100%;
+}
+
+.editor-panel__body {
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, hsl(var(--accent) / 0.18), transparent 32%),
+    linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted) / 0.52));
+}
+
+.editor-panel__body--mobile-app {
+  padding-bottom: 0.5rem;
+}
+
+.editor-panel__body::before {
+  content: '';
+  position: absolute;
+  inset: 1rem 1rem auto;
+  height: 140px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, hsl(var(--accent) / 0.18), transparent 74%);
+  pointer-events: none;
+}
+
+.editor-panel__canvas {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.codemirror-container {
+  position: relative;
+  display: flex;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border) / 0.78);
+  border-radius: 24px;
+  background: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted) / 0.36));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--background)),
+    0 20px 50px hsl(var(--foreground) / 0.06);
+}
+
+.preview-panel__body {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top center, hsl(var(--background)), transparent 72%),
+    linear-gradient(180deg, hsl(var(--muted) / 0.76), hsl(var(--background)));
+}
+
+.preview-wrapper {
+  position: relative;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0 0 2rem;
+}
+
+.preview-paper-stack {
+  position: relative;
+  width: min(100%, 860px);
+  padding: 2.75rem 0.4rem 1.2rem;
+}
+
+.preview-paper-label {
+  position: absolute;
+  left: 50%;
+  top: 0.6rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  transform: translateX(-50%);
+  padding: 0.56rem 0.95rem;
+  border: 1px solid hsl(var(--border) / 0.82);
+  border-radius: 999px;
+  background: hsl(var(--background) / 0.88);
+  font-size: 0.76rem;
+  line-height: 1;
+  color: hsl(var(--muted-foreground));
+  box-shadow:
+    0 14px 30px hsl(var(--foreground) / 0.08),
+    inset 0 1px 0 hsl(var(--background));
+  backdrop-filter: blur(14px);
+}
+
+.preview-paper-label span:last-child {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.preview-panel :deep(#output-wrapper > .preview) {
+  position: relative;
+  z-index: 2;
+  min-height: calc(100% - 0.5rem);
+  padding: clamp(1.35rem, 2vw, 1.9rem);
+  border: 1px solid hsl(var(--border) / 0.82);
+  border-radius: 28px;
+  background: hsl(var(--background));
+  box-shadow:
+    0 32px 80px hsl(var(--foreground) / 0.08),
+    0 8px 20px hsl(var(--foreground) / 0.05);
+}
+
+.editor-panel__body :deep(.cm-editor) {
+  height: 100% !important;
+  background: transparent;
+  color: hsl(var(--foreground));
+}
+
+.editor-panel__body :deep(.cm-scroller) {
+  height: 100%;
+  padding: 1.15rem 0 1.6rem !important;
+}
+
+.editor-panel--mobile-app :deep(.cm-scroller) {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 11rem) !important;
+}
+
+.editor-panel--mobile-app.editor-panel--keyboard-open :deep(.cm-scroller) {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 5.5rem) !important;
+}
+
+.editor-panel__body :deep(.cm-gutters) {
+  padding-right: 0.75rem;
+  border-right: 1px solid hsl(var(--border) / 0.72);
+  background: transparent;
+}
+
+.editor-panel__body :deep(.cm-lineNumbers .cm-gutterElement) {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.75;
+}
+
+.editor-panel__body :deep(.cm-content) {
+  padding: 0 !important;
+  caret-color: hsl(var(--foreground));
+}
+
+.editor-panel__body :deep(.cm-line) {
+  padding: 0 1.25rem 0 0.85rem;
+}
+
+.editor-panel__body :deep(.cm-activeLine) {
+  border-radius: 0.8rem;
+  background: hsl(var(--accent) / 0.34);
+}
+
+.editor-panel__body :deep(.cm-activeLineGutter) {
+  background: transparent;
+}
+
+.editor-panel__body :deep(.cm-selectionBackground),
+.editor-panel__body :deep(.cm-editor ::selection) {
+  background: hsl(var(--primary) / 0.16) !important;
+}
+
+.editor-panel__body :deep(.cm-cursor) {
+  border-left-color: hsl(var(--foreground));
+}
+
+.editor-panel__body :deep(.cm-foldGutter .cm-gutterElement) {
+  color: hsl(var(--muted-foreground));
+}
+
+.editor-panel__body :deep(.cm-panels) {
+  border-bottom: 1px solid hsl(var(--border) / 0.7);
+  background: hsl(var(--background) / 0.88);
+}
+
+.loading-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+
+  .loading-mask-box {
+    position: sticky;
+    top: 50%;
+    transform: translateY(-50%);
+
+    .loading__img {
+      width: 75px;
+      height: 75px;
+      background: url('../assets/images/favicon.png') no-repeat;
+      margin: 1em auto;
+      background-size: cover;
+    }
+  }
+}
+
+:deep(.preview-table) {
+  border-spacing: 0;
+}
+
+.codeMirror-wrapper,
+.preview-wrapper {
+  height: 100%;
+}
+
+.preview-wrapper {
+  overflow-y: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.codeMirror-wrapper {
+  overflow-x: hidden;
+  height: 100%;
+  position: relative;
+}
+
+@media (max-width: 1024px) {
+  .workspace-panel {
+    border-radius: 26px;
+  }
+
+  .workspace-panel__headline {
+    flex-direction: column;
+  }
+
+  .workspace-panel__chips {
+    justify-content: flex-start;
+  }
+
+  .preview-paper-stack {
+    width: 100%;
+    padding-inline: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-app-main {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 10.6rem);
+  }
+
+  .workspace-panel__header {
+    padding: 1rem 1rem 0.9rem;
+  }
+
+  .workspace-panel__body {
+    padding: 0.8rem;
+  }
+
+  .workspace-panel__eyebrow,
+  .workspace-chip,
+  .preview-paper-label {
+    font-size: 0.7rem;
+  }
+
+  .preview-paper-label {
+    gap: 0.5rem;
+    padding: 0.5rem 0.78rem;
+  }
+
+  .preview-paper-stack {
+    padding-top: 2.4rem;
+  }
+
+  .preview-panel :deep(#output-wrapper > .preview) {
+    border-radius: 24px;
+  }
+
+  .workspace-panel--mobile-app {
+    border-radius: 22px;
+  }
+
+  .workspace-panel--mobile-app .workspace-panel__body {
+    padding: 0.75rem;
+  }
+
+  .workspace-panel--mobile-app .editor-panel__body,
+  .workspace-panel--mobile-app .preview-panel__body {
+    background: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted) / 0.42));
+  }
+}
+</style>

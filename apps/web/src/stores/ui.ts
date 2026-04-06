@@ -1,0 +1,234 @@
+import { addPrefix } from '@/utils'
+import { store } from '@/utils/storage'
+
+/**
+ * UI 状态 Store
+ * 负责管理全局 UI 状态，包括深色模式、侧边栏、对话框等
+ */
+export const useUIStore = defineStore(`ui`, () => {
+  // ==================== 全局 UI 状态 ====================
+  const mobileKeyboardInset = ref(0)
+  const isMobileKeyboardOpen = computed(() => mobileKeyboardInset.value > 0)
+  const hasFocusedEditable = ref(false)
+  const mobileViewportBaselineHeight = ref(0)
+
+  // 是否开启深色模式
+  const isDark = useDark()
+  const toggleDark = useToggle(isDark)
+
+  // 是否在左侧编辑
+  const isEditOnLeft = store.reactive(`isEditOnLeft`, true)
+  const toggleEditOnLeft = useToggle(isEditOnLeft)
+
+  // 是否打开右侧滑块
+  const isOpenRightSlider = store.reactive(addPrefix(`is_open_right_slider`), false)
+
+  // 是否打开文章列表滑块
+  const isOpenPostSlider = store.reactive(addPrefix(`is_open_post_slider`), false)
+
+  // 是否打开本地文件夹面板
+  const isOpenFolderPanel = store.reactive(addPrefix(`is_open_folder_panel`), false)
+
+  // 是否为移动端
+  const isMobile = store.reactive(`isMobile`, false)
+
+  // 视图模式：edit（纯编辑）| split（双屏）| preview（纯预览）
+  const viewMode = store.reactive<'edit' | 'split' | 'preview'>(`viewMode`, `split`)
+
+  function setViewMode(mode: 'edit' | 'split' | 'preview') {
+    viewMode.value = mode
+  }
+
+  // 预览设备：desktop（电脑端）| mobile（移动端模拟）
+  const previewDevice = store.reactive<'desktop' | 'mobile'>(`previewDevice`, `mobile`)
+
+  function setPreviewDevice(device: 'desktop' | 'mobile') {
+    previewDevice.value = device
+  }
+
+  function togglePreviewDevice() {
+    previewDevice.value = previewDevice.value === `desktop` ? `mobile` : `desktop`
+  }
+
+  // 是否固定显示浮动目录
+  const isPinFloatingToc = store.reactive(addPrefix(`isPinFloatingToc`), false)
+  const togglePinFloatingToc = useToggle(isPinFloatingToc)
+
+  // 是否显示浮动目录
+  const isShowFloatingToc = store.reactive(addPrefix(`isShowFloatingToc`), true)
+  const toggleShowFloatingToc = useToggle(isShowFloatingToc)
+
+  // 是否启用图片转存（默认关闭）
+  const enableImageReupload = store.reactive(addPrefix(`enableImageReupload`), false)
+  const toggleImageReupload = useToggle(enableImageReupload)
+
+  // ==================== 对话框状态 ====================
+  // 是否展示 CSS 编辑器
+  const isShowCssEditor = store.reactive(`isShowCssEditor`, false)
+  const toggleShowCssEditor = useToggle(isShowCssEditor)
+
+  // 是否展示插入表格对话框
+  const isShowInsertFormDialog = ref(false)
+  const toggleShowInsertFormDialog = useToggle(isShowInsertFormDialog)
+
+  // 是否展示插入公众号名片对话框
+  const isShowInsertMpCardDialog = ref(false)
+  const toggleShowInsertMpCardDialog = useToggle(isShowInsertMpCardDialog)
+
+  // 是否展示上传图片对话框
+  const isShowUploadImgDialog = ref(false)
+  const toggleShowUploadImgDialog = useToggle(isShowUploadImgDialog)
+
+  // 是否展示导入 Markdown 对话框
+  const isShowImportMdDialog = ref(false)
+  const toggleShowImportMdDialog = useToggle(isShowImportMdDialog)
+  /** 通过 URL 参数 open 打开时传入的待导入链接，对话框打开后会据此自动执行导入 */
+  const importMdOpenUrl = ref<string | null>(null)
+
+  // 是否展示模板管理对话框
+  const isShowTemplateDialog = ref(false)
+  const toggleShowTemplateDialog = useToggle(isShowTemplateDialog)
+
+  // 是否打开重置样式确认对话框
+  const isOpenConfirmDialog = ref(false)
+
+  // 搜索面板状态
+  const searchTabRequest = ref<{ word: string, showReplace: boolean } | null>(null)
+
+  function openSearchTab(searchWord: string = '', showReplace: boolean = false) {
+    searchTabRequest.value = { word: searchWord, showReplace }
+  }
+
+  function clearSearchTabRequest() {
+    searchTabRequest.value = null
+  }
+
+  // ==================== 工具函数 ====================
+  // 处理窗口大小变化
+  function handleResize() {
+    isMobile.value = window.innerWidth <= 768
+    if (isMobile.value && viewMode.value === `split`) {
+      viewMode.value = `edit`
+    }
+    if (!isMobile.value) {
+      mobileViewportBaselineHeight.value = 0
+    }
+    updateMobileKeyboardInset()
+  }
+
+  function isEditableTarget(target: EventTarget | null) {
+    if (!(target instanceof HTMLElement))
+      return false
+
+    if (target.isContentEditable)
+      return true
+
+    if (target.closest(`.cm-editor`))
+      return true
+
+    if (target instanceof HTMLTextAreaElement)
+      return true
+
+    if (target instanceof HTMLInputElement) {
+      return ![`button`, `checkbox`, `color`, `file`, `hidden`, `radio`, `range`, `reset`, `submit`].includes(target.type)
+    }
+
+    return false
+  }
+
+  function updateFocusedEditableState() {
+    hasFocusedEditable.value = isEditableTarget(document.activeElement)
+  }
+
+  function updateMobileKeyboardInset() {
+    const viewport = window.visualViewport
+    if (!viewport || !isMobile.value) {
+      mobileKeyboardInset.value = 0
+      return
+    }
+
+    const viewportHeight = Math.round(viewport.height)
+    if (mobileViewportBaselineHeight.value === 0) {
+      mobileViewportBaselineHeight.value = viewportHeight
+    }
+
+    if (!hasFocusedEditable.value) {
+      mobileViewportBaselineHeight.value = Math.max(mobileViewportBaselineHeight.value, viewportHeight)
+    }
+
+    const baselineHeight = Math.max(mobileViewportBaselineHeight.value, viewportHeight)
+    const heightLoss = Math.max(0, baselineHeight - viewportHeight)
+    const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+
+    // iPhone Safari 的地址栏/工具栏变化不应被视为软键盘。
+    // 只有当可编辑元素聚焦且可视高度明显少于“无输入时基准高度”时，才认定键盘打开。
+    const isLikelyKeyboard = hasFocusedEditable.value && heightLoss > 220
+    mobileKeyboardInset.value = isLikelyKeyboard ? Math.round(Math.max(inset, heightLoss)) : 0
+  }
+
+  onMounted(() => {
+    handleResize()
+    updateFocusedEditableState()
+    window.addEventListener(`resize`, handleResize)
+    window.visualViewport?.addEventListener(`resize`, updateMobileKeyboardInset)
+    window.visualViewport?.addEventListener(`scroll`, updateMobileKeyboardInset)
+    document.addEventListener(`focusin`, updateFocusedEditableState, true)
+    document.addEventListener(`focusout`, updateFocusedEditableState, true)
+  })
+
+  onBeforeUnmount(() => {
+    window.removeEventListener(`resize`, handleResize)
+    window.visualViewport?.removeEventListener(`resize`, updateMobileKeyboardInset)
+    window.visualViewport?.removeEventListener(`scroll`, updateMobileKeyboardInset)
+    document.removeEventListener(`focusin`, updateFocusedEditableState, true)
+    document.removeEventListener(`focusout`, updateFocusedEditableState, true)
+  })
+
+  return {
+    // ==================== 全局 UI 状态 ====================
+    mobileKeyboardInset,
+    isMobileKeyboardOpen,
+    isDark,
+    isEditOnLeft,
+    isOpenRightSlider,
+    isOpenPostSlider,
+    isMobile,
+    viewMode,
+    previewDevice,
+    isPinFloatingToc,
+    isShowFloatingToc,
+    isOpenFolderPanel,
+    enableImageReupload,
+
+    // ==================== 对话框状态 ====================
+    isShowCssEditor,
+    toggleShowCssEditor,
+    isShowInsertFormDialog,
+    toggleShowInsertFormDialog,
+    isShowInsertMpCardDialog,
+    toggleShowInsertMpCardDialog,
+    isShowUploadImgDialog,
+    toggleShowUploadImgDialog,
+    isShowImportMdDialog,
+    toggleShowImportMdDialog,
+    importMdOpenUrl,
+    isShowTemplateDialog,
+    toggleShowTemplateDialog,
+    isOpenConfirmDialog,
+
+    // ==================== 搜索面板 ====================
+    searchTabRequest,
+    openSearchTab,
+    clearSearchTabRequest,
+
+    // ==================== Actions ====================
+    toggleDark,
+    toggleEditOnLeft,
+    togglePinFloatingToc,
+    toggleShowFloatingToc,
+    toggleImageReupload,
+    setViewMode,
+    setPreviewDevice,
+    togglePreviewDevice,
+  }
+})

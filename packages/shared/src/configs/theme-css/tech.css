@@ -1,0 +1,124 @@
+/**
+ * 深夜终端主题 (Midnight Launch)
+ * 参考暗色产品发布页与 AI 工具 landing page 的层次关系。
+ */
+
+section,
+container {
+  --theme-ink: #e6edf8;
+  --theme-muted: #c1cee3;
+  --theme-border: rgba(148, 163, 184, 0.22);
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.18), transparent 36%),
+    radial-gradient(circle at bottom left, rgba(14, 165, 233, 0.14), transparent 30%),
+    #0b1120;
+  color: var(--theme-ink);
+  padding: 1.15em 1.15em 1.4em;
+  border-radius: 28px;
+  box-shadow: 0 30px 60px rgba(2, 6, 23, 0.35);
+}
+
+h1 {
+  margin: 1.2em 0 1.05em;
+  padding: 0.95em 1.05em;
+  color: #fff;
+  font-size: calc(var(--md-font-size) * 1.74);
+  font-weight: 800;
+  line-height: 1.22;
+  border: 1px solid var(--theme-border);
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--md-primary-color), #08111f 86%);
+}
+
+h2 {
+  margin: 2.3em 0 0.95em;
+  padding-left: 0.9em;
+  color: #fff;
+  font-size: calc(var(--md-font-size) * 1.24);
+  font-weight: 700;
+  border-left: 4px solid var(--md-primary-color);
+}
+
+h3,
+h4,
+h5,
+h6 {
+  color: color-mix(in srgb, var(--md-primary-color) 65%, white);
+  font-weight: 700;
+}
+
+p,
+li {
+  color: var(--theme-muted);
+}
+
+blockquote {
+  padding: 1.15em 1.3em;
+  border: 1px solid var(--theme-border);
+  border-left: 4px solid var(--md-primary-color);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+blockquote p {
+  color: #d8e3f3;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border-radius: 18px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  background: #08111f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+code {
+  padding: 0.2em 0.44em;
+  border-radius: 8px;
+  color: #a5f3fc;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.14);
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid var(--theme-border);
+  border-radius: 20px;
+}
+
+th {
+  padding: 0.85em 0.95em;
+  background: rgba(8, 17, 31, 0.98);
+  color: #fff;
+  font-weight: 700;
+}
+
+td {
+  padding: 0.82em 0.95em;
+  border-top: 1px solid var(--theme-border);
+  background: rgba(15, 23, 42, 0.76);
+  color: var(--theme-muted);
+}
+
+a {
+  color: #8be9fd;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(139, 233, 253, 0.35);
+}
+
+strong {
+  color: #fff;
+}
+
+img {
+  border-radius: 20px;
+  border: 1px solid var(--theme-border);
+  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.35);
+}
+
+hr {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.9), transparent);
+}

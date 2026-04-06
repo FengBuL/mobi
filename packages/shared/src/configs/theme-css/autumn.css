@@ -1,0 +1,65 @@
+/**
+ * MD 秋意主题
+ * 温暖橙棕色调，适合生活和情感类内容
+ */
+
+h1 {
+  font-size: calc(var(--md-font-size) * 1.5);
+  color: #bf5b04;
+  text-align: center;
+  border-top: 1px solid #e6a86c;
+  border-bottom: 1px solid #e6a86c;
+  padding: 0.5em 0;
+  letter-spacing: 2px;
+}
+
+h2 {
+  font-size: calc(var(--md-font-size) * 1.3);
+  color: #a64b00;
+  border-left: 5px solid #d96f14;
+  padding-left: 0.8em;
+}
+
+h3 {
+  font-size: calc(var(--md-font-size) * 1.15);
+  color: #d96f14;
+  border-bottom: 2px dotted #f2c79b;
+  padding-bottom: 0.3em;
+}
+
+h4 { font-size: calc(var(--md-font-size) * 1.05); color: #8c4600; }
+h5 { font-size: var(--md-font-size); color: #8c4600; }
+h6 { font-size: var(--md-font-size); color: #733c00; }
+
+section { background: #fdfaf6; color: #593e26; }
+p, li { color: #593e26; line-height: 1.8; }
+
+blockquote {
+  border-left: 4px solid #d96f14;
+  background: #fcf4eb;
+  padding: 1em 1.2em;
+  color: #8c5b36;
+  margin: 1em 8px;
+  border-radius: 4px;
+}
+
+pre.code__pre, .hljs.code__pre {
+  border: 1px solid #f2c79b;
+  border-radius: 6px;
+  background: #fcf8f2;
+}
+
+img { border-radius: 8px; border: 2px solid #fcf4eb; }
+
+table { border-collapse: collapse; margin: 1em 8px; width: 100%; }
+thead { background: #d96f14; color: #fff; }
+td, th { padding: 0.6em; border: 1px solid #f2c79b; }
+tbody tr:nth-child(even) { background: #fdf5ec; }
+
+hr {
+  border: none; height: 1px;
+  background: linear-gradient(90deg, transparent, #d96f14, transparent);
+  margin: 2em 0;
+}
+
+a { color: #bf5b04; text-decoration: underline; text-decoration-color: #f2c79b; text-underline-offset: 4px; }

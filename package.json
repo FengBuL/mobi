@@ -1,0 +1,23 @@
+{
+  "name": "md",
+  "type": "module",
+  "version": "2.1.0",
+  "private": true,
+  "description": "Local Markdown editor web app",
+  "engines": {
+    "node": ">=22.16.0"
+  },
+  "scripts": {
+    "start": "pnpm web dev",
+    "web": "pnpm --filter @md/web",
+    "type-check": "pnpm --filter @md/web type-check"
+  },
+  "dependencies": {
+    "@codemirror/state": "6.6.0",
+    "@codemirror/view": "6.40.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "~5.9.3"
+  }
+}

@@ -1,0 +1,67 @@
+/**
+ * MD 复古主题
+ * 怀旧纸质感，适合文学和故事类内容
+ */
+
+h1 {
+  font-size: calc(var(--md-font-size) * 1.5);
+  color: #5c4033;
+  text-align: center;
+  font-family: 'STKaiti', 'KaiTi', serif;
+  border-bottom: 2px solid #8b6914;
+  padding-bottom: 0.4em;
+}
+
+h2 {
+  font-size: calc(var(--md-font-size) * 1.3);
+  color: #6b4423;
+  border-bottom: 1px dashed #c4a35a;
+  padding-bottom: 0.3em;
+}
+
+h3 {
+  font-size: calc(var(--md-font-size) * 1.15);
+  color: #7a5533;
+  padding-left: 0.5em;
+  border-left: 3px solid #c4a35a;
+}
+
+h4 { font-size: calc(var(--md-font-size) * 1.05); color: #8a6543; }
+h5 { font-size: var(--md-font-size); color: #8a6543; }
+h6 { font-size: var(--md-font-size); color: #9a7553; }
+
+section {
+  background: #faf5eb;
+  color: #4a3a2a;
+}
+
+p, li { color: #4a3a2a; line-height: 1.9; }
+
+blockquote {
+  border-left: 4px solid #c4a35a;
+  background: #f5efe0;
+  padding: 1em 1.2em;
+  color: #5c4033;
+  margin: 1em 8px;
+  font-style: italic;
+}
+
+pre.code__pre, .hljs.code__pre {
+  border: 1px solid #d8c8a0;
+  border-radius: 4px;
+  background: #faf5eb;
+}
+
+img { border-radius: 4px; box-shadow: 0 2px 8px rgba(90, 60, 30, 0.15); }
+
+table { border-collapse: collapse; margin: 1em 8px; }
+thead { background: #6b4423; color: #f5efe0; }
+td, th { padding: 0.5em 1em; border: 1px solid #d8c8a0; }
+
+hr {
+  border: none; height: 1px;
+  background: linear-gradient(to right, transparent, #c4a35a, transparent);
+  margin: 2em 0;
+}
+
+a { color: #8b6914; text-decoration: none; }
