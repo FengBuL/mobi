@@ -93,6 +93,8 @@ export const fontCategoryOptions: IFontCategory[] = [
 ]
 
 export const fontSizeOptions: IConfigOption[] = [
+  { label: `10px`, value: `10px`, desc: `极限小` },
+  { label: `11px`, value: `11px`, desc: `超小` },
   { label: `12px`, value: `12px`, desc: `极小` },
   { label: `13px`, value: `13px`, desc: `很小` },
   { label: `14px`, value: `14px`, desc: `较小` },
@@ -342,7 +344,7 @@ export const defaultStyleConfig = {
   isCountStatus: false,
   theme: themeOptions[0].value,
   fontFamily: fontFamilyOptions[0].value,
-  fontSize: fontSizeOptions[2].value,
+  fontSize: `14px`,
   primaryColor: colorOptions[0].value,
   codeBlockTheme: codeBlockThemeOptions[23].value,
   legend: legendOptions[3].value,

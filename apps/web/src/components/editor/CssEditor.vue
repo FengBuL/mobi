@@ -192,7 +192,7 @@ onMounted(() => {
     // 2. 触发编辑器刷新，重新渲染内容
     themeStore.updateCodeTheme()
     const raw = editorStore.getContent()
-    renderStore.render(raw)
+    renderStore.render(renderStore.resolvePreviewContent(raw))
   }
 
   // 设置切换方案时的回调（与编辑时使用相同的逻辑）

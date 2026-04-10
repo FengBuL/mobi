@@ -10,6 +10,7 @@ import { useUIStore } from './ui'
 export const useRenderStore = defineStore(`render`, () => {
   // 输出的 HTML
   const output = ref(``)
+  const previewContentOverride = ref<string | null>(null)
 
   // 阅读时间统计
   const readingTime = reactive({
@@ -103,9 +104,22 @@ export const useRenderStore = defineStore(`render`, () => {
     return output.value
   }
 
+  const resolvePreviewContent = (content: string) => {
+    return previewContentOverride.value ?? content
+  }
+
+  const setPreviewContentOverride = (content?: string | null) => {
+    previewContentOverride.value = content?.trim() ? content : null
+  }
+
+  const clearPreviewContentOverride = () => {
+    previewContentOverride.value = null
+  }
+
   return {
     // State
     output,
+    previewContentOverride,
     readingTime,
     titleList,
 
@@ -113,6 +127,9 @@ export const useRenderStore = defineStore(`render`, () => {
     initRendererInstance,
     getRenderer,
     render,
+    resolvePreviewContent,
+    setPreviewContentOverride,
+    clearPreviewContentOverride,
     extractTitles,
   }
 })

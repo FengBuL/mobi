@@ -1,7 +1,7 @@
 {
   "name": "md",
   "type": "module",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "private": true,
   "description": "Local Markdown editor web app",
   "engines": {
@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "pnpm web dev",
+    "proxy": "pnpm --filter @md/mp-proxy start",
     "web": "pnpm --filter @md/web",
     "type-check": "pnpm --filter @md/web type-check"
   },

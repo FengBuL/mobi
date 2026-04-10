@@ -124,6 +124,18 @@ const cursorCol = ref(1)
 const selectionLength = ref(0)
 const totalLines = ref(1)
 
+// 大纲 & 面包屑
+interface BreadcrumbItem {
+  title: string
+  level: number
+  line: number
+}
+
+const breadcrumbs = ref<BreadcrumbItem[]>([])
+const allHeadings = ref<BreadcrumbItem[]>([])
+const isOutlineOpen = ref(false)
+const outlineScrollRef = ref<HTMLElement | null>(null)
+
 // Go-to-Line
 const isGoToLineActive = ref(false)
 const goToLineInput = ref(``)
@@ -198,18 +210,6 @@ function updateCursorInfo(view: any) {
   selectionLength.value = Math.abs(main.to - main.from)
   updateHeadingsAndBreadcrumb(state.doc, line.number)
 }
-
-// 大纲 & 面包屑
-interface BreadcrumbItem {
-  title: string
-  level: number
-  line: number
-}
-
-const breadcrumbs = ref<BreadcrumbItem[]>([])
-const allHeadings = ref<BreadcrumbItem[]>([])
-const isOutlineOpen = ref(false)
-const outlineScrollRef = ref<HTMLElement | null>(null)
 
 function updateHeadingsAndBreadcrumb(doc: any, currentLine: number) {
   const items: BreadcrumbItem[] = []

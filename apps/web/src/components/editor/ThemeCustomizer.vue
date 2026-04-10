@@ -26,7 +26,7 @@ function editorRefresh() {
   themeStore.updateCodeTheme()
 
   const raw = editorStore.getContent()
-  renderStore.render(raw)
+  renderStore.render(renderStore.resolvePreviewContent(raw))
 }
 
 function customStyle() {

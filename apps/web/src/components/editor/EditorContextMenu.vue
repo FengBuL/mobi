@@ -40,10 +40,12 @@ const editorStore = useEditorStore()
 const postStore = usePostStore()
 const exportStore = useExportStore()
 const uiStore = useUIStore()
+const { isMobile } = storeToRefs(uiStore)
 
 const {
   toggleShowInsertFormDialog,
   toggleShowInsertMpCardDialog,
+  toggleShowImageLayoutDialog,
   toggleShowUploadImgDialog,
   toggleShowImportMdDialog,
 } = uiStore
@@ -57,6 +59,15 @@ const headingLevels = baseHeadingLevels.map((item, index) => ({
   ...item,
   icon: headingIcons[index],
 }))
+
+function openMediaLayout() {
+  if (isMobile.value) {
+    toggleShowImageLayoutDialog(true)
+    return
+  }
+
+  toast.success(`图文排版工作台已经固定在第二栏`)
+}
 
 // 格式化文档
 async function formatContent() {
@@ -133,6 +144,10 @@ function downloadAsCardImage() {
           <ContextMenuItem @click="toggleShowUploadImgDialog()">
             <Image class="mr-2 h-4 w-4" />
             图片
+          </ContextMenuItem>
+          <ContextMenuItem @click="openMediaLayout">
+            <FileImage class="mr-2 h-4 w-4" />
+            图片排版模块
           </ContextMenuItem>
           <ContextMenuItem @click="toggleShowInsertFormDialog()">
             <Table class="mr-2 h-4 w-4" />

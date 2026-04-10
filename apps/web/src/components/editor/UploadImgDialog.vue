@@ -1049,6 +1049,9 @@ function onTabScroll(e: WheelEvent) {
                     v-model="field.value"
                     :placeholder="mpPlaceholder"
                   />
+                  <p class="mt-2 text-xs leading-5 text-muted-foreground">
+                    本地代理可直接填 `http://127.0.0.1:8788`；线上建议填你自己的 HTTPS 域名。
+                  </p>
                 </FormItem>
               </Field>
 

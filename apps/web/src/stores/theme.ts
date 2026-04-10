@@ -80,6 +80,67 @@ export const useThemeStore = defineStore(`theme`, () => {
   // 计算属性
   const fontSizeNumber = computed(() => Number(fontSize.value.replace(`px`, ``)))
 
+  function readHljsSurfaceStyle() {
+    if (typeof document === `undefined`) {
+      return null
+    }
+
+    const container = document.body || document.documentElement
+    if (!container) {
+      return null
+    }
+
+    const probe = document.createElement(`pre`)
+    probe.className = `hljs`
+    probe.textContent = `const themeProbe = true`
+    probe.style.position = `fixed`
+    probe.style.visibility = `hidden`
+    probe.style.pointerEvents = `none`
+    probe.style.left = `-9999px`
+    probe.style.top = `-9999px`
+    probe.style.padding = `1rem`
+    container.appendChild(probe)
+
+    const computedStyle = window.getComputedStyle(probe)
+    const surface = {
+      backgroundColor: computedStyle.backgroundColor,
+      color: computedStyle.color,
+    }
+
+    container.removeChild(probe)
+    return surface
+  }
+
+  function applyCodeThemeSurfaceOverride() {
+    if (typeof document === `undefined`) {
+      return
+    }
+
+    const surface = readHljsSurfaceStyle()
+    if (!surface) {
+      return
+    }
+
+    let styleEl = document.querySelector<HTMLStyleElement>(`#hljs-surface-override`)
+    if (!styleEl) {
+      styleEl = document.createElement(`style`)
+      styleEl.setAttribute(`id`, `hljs-surface-override`)
+      document.head.appendChild(styleEl)
+    }
+
+    styleEl.textContent = `
+      #output .hljs.code__pre {
+        background: ${surface.backgroundColor} !important;
+        color: ${surface.color} !important;
+      }
+
+      #output .hljs.code__pre > code {
+        background: transparent !important;
+        color: inherit !important;
+      }
+    `
+  }
+
   // Toggle 方法
   const toggleMacCodeBlock = useToggle(isMacCodeBlock)
   const toggleShowLineNumber = useToggle(isShowLineNumber)
@@ -126,11 +187,29 @@ export const useThemeStore = defineStore(`theme`, () => {
 
   // 切换 highlight.js 代码主题
   const updateCodeTheme = () => {
+    if (typeof document === `undefined`) {
+      return
+    }
+
     const cssUrl = codeBlockTheme.value
-    const el = document.querySelector(`#hljs`)
+    const el = document.querySelector<HTMLLinkElement>(`#hljs`)
+
+    const syncSurface = () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          applyCodeThemeSurfaceOverride()
+        })
+      })
+    }
 
     if (el) {
       el.setAttribute(`href`, cssUrl)
+      if (el.sheet) {
+        syncSurface()
+      }
+      else {
+        el.onload = () => syncSurface()
+      }
     }
     else {
       const link = document.createElement(`link`)
@@ -138,9 +217,14 @@ export const useThemeStore = defineStore(`theme`, () => {
       link.setAttribute(`rel`, `stylesheet`)
       link.setAttribute(`href`, cssUrl)
       link.setAttribute(`id`, `hljs`)
+      link.onload = () => syncSurface()
       document.head.appendChild(link)
     }
   }
+
+  watch(codeBlockTheme, () => {
+    updateCodeTheme()
+  }, { immediate: true })
 
   /**
    * 应用当前主题配置（新主题系统）

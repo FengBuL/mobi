@@ -1,0 +1,10 @@
+{
+  "name": "@md/mp-proxy",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "description": "Stable WeChat Official Account image proxy for the Markdown editor",
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}

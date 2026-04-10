@@ -10,8 +10,23 @@ const props = withDefaults(defineProps<{
 
 const { asSub } = toRefs(props)
 const uiStore = useUIStore()
+const { isMobile } = storeToRefs(uiStore)
 
-const { toggleShowInsertFormDialog, toggleShowUploadImgDialog, toggleShowInsertMpCardDialog } = uiStore
+const {
+  toggleShowInsertFormDialog,
+  toggleShowUploadImgDialog,
+  toggleShowInsertMpCardDialog,
+  toggleShowImageLayoutDialog,
+} = uiStore
+
+function openMediaLayout() {
+  if (isMobile.value) {
+    toggleShowImageLayoutDialog(true)
+    return
+  }
+
+  toast.success(`图文排版工作台已经固定在第二栏`)
+}
 </script>
 
 <template>
@@ -24,6 +39,10 @@ const { toggleShowInsertFormDialog, toggleShowUploadImgDialog, toggleShowInsertM
       <MenubarItem @click="toggleShowUploadImgDialog()">
         <Image class="mr-2 h-4 w-4" />
         插入图片
+      </MenubarItem>
+      <MenubarItem @click="openMediaLayout">
+        <Image class="mr-2 h-4 w-4" />
+        图片排版模块
       </MenubarItem>
       <MenubarItem @click="toggleShowInsertFormDialog()">
         <Table class="mr-2 h-4 w-4" />
@@ -45,6 +64,10 @@ const { toggleShowInsertFormDialog, toggleShowUploadImgDialog, toggleShowInsertM
       <MenubarItem @click="toggleShowUploadImgDialog()">
         <Image class="mr-2 h-4 w-4" />
         插入图片
+      </MenubarItem>
+      <MenubarItem @click="openMediaLayout">
+        <Image class="mr-2 h-4 w-4" />
+        图片排版模块
       </MenubarItem>
       <MenubarItem @click="toggleShowInsertFormDialog()">
         <Table class="mr-2 h-4 w-4" />

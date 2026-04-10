@@ -3,6 +3,7 @@ import { useExportStore } from '@/stores/export'
 import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { addPrefix, generatePureHTML, processClipboardContent } from '@/utils'
+import { hasMpUploadConfig } from '@/utils/file'
 import { store } from '@/utils/storage'
 
 type CopyMode = `txt` | `html` | `html-without-style` | `html-and-style` | `md`
@@ -32,10 +33,19 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
   const finish = () => options.onEnd?.()
   const start = () => options.onStart?.()
   const normalizeErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error))
+  const isWechatHostedImage = (src: string) => /mmbiz\.q(pic|logo)\.cn|res\.wx\.qq\.com/i.test(src)
+  const getUnsafeClipboardImages = (root: HTMLElement) => {
+    return Array.from(root.querySelectorAll<HTMLImageElement>(`img`))
+      .map(image => ({
+        src: image.getAttribute(`src`)?.trim() || ``,
+        error: image.getAttribute(`data-mp-upload-error`) || ``,
+      }))
+      .filter(item => item.src && !isWechatHostedImage(item.src))
+  }
 
   function editorRefresh() {
     themeStore.updateCodeTheme()
-    renderStore.render(editorStore.getContent())
+    renderStore.render(renderStore.resolvePreviewContent(editorStore.getContent()))
   }
 
   async function writeClipboardItems(items: ClipboardItem[]) {
@@ -128,6 +138,24 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
           editorRefresh()
           finish()
           return
+        }
+
+        if (copyMode.value === `txt`) {
+          const unsafeImages = getUnsafeClipboardImages(clipboardDiv)
+          if (unsafeImages.length > 0) {
+            const hasConfig = await hasMpUploadConfig()
+            const firstError = unsafeImages.find(item => item.error)?.error || ``
+            clipboardDiv.innerHTML = output.value
+            window.getSelection()?.removeAllRanges()
+            editorRefresh()
+            toast.error(
+              hasConfig
+                ? `仍有 ${unsafeImages.length} 张图片没有转成公众号安全地址。${firstError ? `首个失败原因：${firstError}` : `请检查图片格式、代理域名或图床配置后重试。`}`
+                : `检测到 ${unsafeImages.length} 张图片仍是外链或本地地址。先配置公众号图床，再复制到公众号。`,
+            )
+            finish()
+            return
+          }
         }
 
         clipboardDiv.focus()

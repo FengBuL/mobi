@@ -444,7 +444,30 @@ interface MpResponse {
   errcode: number
   errmsg: string
 }
+
+function normalizeMpProxyOrigin(proxyOrigin: string) {
+  return proxyOrigin?.trim().replace(/\/+$/, ``) || ``
+}
+
+function isLoopbackHost(hostname: string) {
+  return [`127.0.0.1`, `localhost`, `::1`].includes(hostname.toLowerCase())
+}
+
+function assertReachableMpProxyOrigin(proxyOrigin: string) {
+  if (!proxyOrigin || !window.location.href.startsWith(`http`)) {
+    return
+  }
+
+  const pageHostname = window.location.hostname.toLowerCase()
+  const proxyHostname = new URL(proxyOrigin).hostname.toLowerCase()
+  if (!isLoopbackHost(pageHostname) && isLoopbackHost(proxyHostname)) {
+    throw new Error(`当前不是在本机浏览器访问，代理域名不能填 localhost / 127.0.0.1，请改成电脑局域网 IP`)
+  }
+}
+
 async function getMpToken(appID: string, appsecret: string, proxyOrigin: string) {
+  const normalizedProxyOrigin = normalizeMpProxyOrigin(proxyOrigin)
+  assertReachableMpProxyOrigin(normalizedProxyOrigin)
   const data = await store.get(`mpToken:${appID}`)
   if (data) {
     const token = JSON.parse(data)
@@ -461,8 +484,8 @@ async function getMpToken(appID: string, appsecret: string, proxyOrigin: string)
     },
   }
   let url = `https://api.weixin.qq.com/cgi-bin/stable_token`
-  if (proxyOrigin) {
-    url = `${proxyOrigin}/cgi-bin/stable_token`
+  if (normalizedProxyOrigin) {
+    url = `${normalizedProxyOrigin}/cgi-bin/stable_token`
   }
   const res = await fetch<any, MpResponse>(url, requestOptions)
   if (res.access_token) {
@@ -473,7 +496,8 @@ async function getMpToken(appID: string, appsecret: string, proxyOrigin: string)
     await store.setJSON(`mpToken:${appID}`, tokenInfo)
     return res.access_token
   }
-  return ``
+
+  throw new Error(res.errmsg || `获取 access_token 失败`)
 }
 // Cloudflare Workers 环境
 const isCfWorkers = import.meta.env.CF_WORKERS === `1`
@@ -481,6 +505,7 @@ const isCfWorkers = import.meta.env.CF_WORKERS === `1`
 async function mpFileUpload(file: File) {
   const configStr = await store.get(`mpConfig`)
   let { appID, appsecret, proxyOrigin } = JSON.parse(configStr!)
+  proxyOrigin = normalizeMpProxyOrigin(proxyOrigin)
   // 未填写代理域名且是 Cloudflare Workers 环境时，使用当前域名作为代理域名
   if (!proxyOrigin && isCfWorkers) {
     proxyOrigin = window.location.origin
@@ -508,10 +533,10 @@ async function mpFileUpload(file: File) {
     url = url.replace(`https://api.weixin.qq.com`, proxyOrigin)
   }
 
-  const res = await fetch<any, { url: string }>(url, requestOptions)
+  const res = await fetch<any, { url?: string, errmsg?: string }>(url, requestOptions)
 
   if (!res.url) {
-    throw new Error(`上传失败，未获取到URL`)
+    throw new Error(res.errmsg || `上传失败，未获取到URL`)
   }
 
   let imageUrl = res.url
@@ -520,6 +545,44 @@ async function mpFileUpload(file: File) {
   }
 
   return imageUrl
+}
+
+export async function hasMpUploadConfig() {
+  const configStr = await store.get(`mpConfig`)
+  if (!configStr) {
+    return false
+  }
+
+  try {
+    const { appID, appsecret } = JSON.parse(configStr)
+    return Boolean(appID && appsecret)
+  }
+  catch {
+    return false
+  }
+}
+
+export async function uploadFileToMp(file: File) {
+  return mpFileUpload(file)
+}
+
+export async function getMpUploadConfig() {
+  const configStr = await store.get(`mpConfig`)
+  if (!configStr) {
+    return null
+  }
+
+  try {
+    const { appID, appsecret, proxyOrigin } = JSON.parse(configStr)
+    return {
+      appID: appID || ``,
+      appsecret: appsecret || ``,
+      proxyOrigin: normalizeMpProxyOrigin(proxyOrigin || ``),
+    }
+  }
+  catch {
+    return null
+  }
 }
 
 // -----------------------------------------------------------------------

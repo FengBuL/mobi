@@ -23,6 +23,7 @@ import { useUIStore } from '@/stores/ui'
 import { checkImage, toBase64 } from '@/utils'
 import { fileUpload } from '@/utils/file'
 import { store } from '@/utils/storage'
+import { repairIndentedMediaLayoutBlocks } from '@/utils/image-layouts'
 
 const editorStore = useEditorStore()
 const postStore = usePostStore()
@@ -48,13 +49,14 @@ const {
 } = storeToRefs(uiStore)
 
 const { toggleShowUploadImgDialog } = uiStore
+const isDesktopWorkbench = computed(() => !isMobile.value)
 
 // Editor refresh function
 function editorRefresh() {
   themeStore.updateCodeTheme()
 
   const raw = editorStore.getContent()
-  renderStore.render(raw)
+  renderStore.render(renderStore.resolvePreviewContent(raw))
 }
 
 // Reset style function
@@ -221,12 +223,26 @@ function getCurrentEditorContent() {
   return currentPost.value?.content ?? posts.value[currentPostIndex.value]?.content ?? ``
 }
 
+function normalizeCurrentPostMediaLayouts(post = currentPost.value) {
+  if (!post) {
+    return null
+  }
+
+  const repairedContent = repairIndentedMediaLayoutBlocks(post.content)
+  if (repairedContent === post.content) {
+    return repairedContent
+  }
+
+  postStore.updatePostContent(post.id, repairedContent)
+  return repairedContent
+}
+
 function syncEditorDocument(force = false) {
   const view = codeMirrorView.value
   if (!view)
     return
 
-  const nextContent = getCurrentEditorContent()
+  const nextContent = normalizeCurrentPostMediaLayouts() ?? getCurrentEditorContent()
   const currentContent = view.state.doc.toString()
 
   if (!force && currentContent === nextContent) {
@@ -742,7 +758,10 @@ const codeMirrorWrapper = useTemplateRef<ComponentPublicInstance<HTMLDivElement>
 // 转换 markdown 中的本地图片为线上图片
 // todo 处理事件覆盖
 function mdLocalToRemote() {
-  const dom = codeMirrorWrapper.value!
+  const dom = codeMirrorWrapper.value
+  if (!dom) {
+    return
+  }
 
   dom.ondragover = evt => evt.preventDefault()
   dom.ondrop = async (evt) => {
@@ -967,6 +986,7 @@ onMounted(() => {
   nextTick(() => {
     const editorView = createFormTextArea(editorDom)
     editor.value = editorView
+    normalizeCurrentPostMediaLayouts()
     syncEditorPreviewPanelLayout()
     syncEditorDocument(true)
     ensureEditorPaint()
@@ -975,6 +995,10 @@ onMounted(() => {
     editorRefresh()
     mdLocalToRemote()
   })
+
+  if (!isMobile.value) {
+    isOpenRightSlider.value = true
+  }
 })
 
 // 监听暗色模式变化并更新编辑器主题
@@ -993,8 +1017,9 @@ watch(currentPost, (post) => {
   if (!post || !codeMirrorView.value)
     return
 
+  const nextContent = normalizeCurrentPostMediaLayouts(post) ?? post.content
   const currentContent = codeMirrorView.value.state.doc.toString()
-  if (currentContent !== post.content) {
+  if (currentContent !== nextContent) {
     syncEditorDocument()
     editorRefresh()
   }
@@ -1008,6 +1033,12 @@ watch([viewMode, isMobile], ([mode, mobile]) => {
   nextTick(() => {
     ensureEditorPaint()
   })
+})
+
+watch(isMobile, (mobile) => {
+  if (!mobile) {
+    isOpenRightSlider.value = true
+  }
 })
 
 // 历史记录的定时器
@@ -1074,152 +1105,276 @@ onUnmounted(() => {
           <ResizableHandle v-if="isOpenFolderPanel" class="hidden md:block" />
 
           <ResizablePanel :min-size="30">
-            <ResizablePanelGroup direction="horizontal">
-              <ResizablePanel
-                ref="editorPanelRef"
-                :order="1"
-                :default-size="editorPreviewDefaultSizes.editor"
-                :min-size="editorPanelConfig.min"
-                :max-size="editorPanelConfig.max"
-                collapsible
-                :collapsed-size="0"
-              >
-                <div
-                  v-show="viewMode !== 'preview'"
-                  ref="codeMirrorWrapper"
-                  class="codeMirror-wrapper relative h-full p-3 md:p-4"
-                >
-                  <div class="workspace-panel editor-panel">
-                    <div class="workspace-panel__header">
-                      <div class="workspace-panel__eyebrow">
-                        Markdown Workspace
-                      </div>
-                      <div class="workspace-panel__headline">
-                        <div class="workspace-panel__copy">
-                          <h2>{{ currentPostTitle }}</h2>
-                          <p>直接输入 Markdown，支持搜索替换、图片粘贴与样式调节。</p>
+            <template v-if="isDesktopWorkbench">
+              <ResizablePanelGroup direction="horizontal">
+                <ResizablePanel :default-size="28" :min-size="18" :max-size="42">
+                  <div
+                    ref="codeMirrorWrapper"
+                    class="codeMirror-wrapper relative h-full p-3 md:p-4"
+                  >
+                    <div class="workspace-panel editor-panel">
+                      <div class="workspace-panel__header">
+                        <div class="workspace-panel__eyebrow">
+                          Markdown Workspace
                         </div>
-                        <div class="workspace-panel__chips">
-                          <span class="workspace-chip workspace-chip--accent">{{ viewModeLabel }}</span>
-                          <span class="workspace-chip">{{ editorLineCount }} 行</span>
-                          <span class="workspace-chip">{{ editorCharCount }} 字</span>
+                        <div class="workspace-panel__headline">
+                          <div class="workspace-panel__copy">
+                            <h2>{{ currentPostTitle }}</h2>
+                            <p>直接输入 Markdown，上传图片后可在第二栏把它们排成图文模块。</p>
+                          </div>
+                          <div class="workspace-panel__chips">
+                            <span class="workspace-chip workspace-chip--accent">Markdown</span>
+                            <span class="workspace-chip">{{ editorLineCount }} 行</span>
+                            <span class="workspace-chip">{{ editorCharCount }} 字</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div class="workspace-panel__body editor-panel__body">
-                      <SearchTab v-if="codeMirrorView" ref="searchTabRef" :editor-view="codeMirrorView as any" />
+                      <div class="workspace-panel__body editor-panel__body">
+                        <SearchTab v-if="codeMirrorView" ref="searchTabRef" :editor-view="codeMirrorView as any" />
 
-                      <div class="editor-panel__canvas">
-                        <EditorContextMenu>
-                          <div
-                            id="editor"
-                            ref="editorRef"
-                            class="codemirror-container"
-                          />
-                        </EditorContextMenu>
+                        <div class="editor-panel__canvas">
+                          <EditorContextMenu>
+                            <div
+                              id="editor"
+                              ref="editorRef"
+                              class="codemirror-container"
+                            />
+                          </EditorContextMenu>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </ResizablePanel>
-              <ResizableHandle v-show="viewMode === 'split'" />
+                </ResizablePanel>
 
-              <ResizablePanel
-                ref="previewPanelRef"
-                :order="2"
-                :default-size="editorPreviewDefaultSizes.preview"
-                :min-size="previewPanelConfig.min"
-                :max-size="previewPanelConfig.max"
-                collapsible
-                :collapsed-size="0"
-              >
-                <div v-show="viewMode !== 'edit'" class="preview-stage relative h-full overflow-x-hidden p-3 md:p-4">
-                  <div class="workspace-panel preview-panel">
-                    <div class="workspace-panel__header">
-                      <div class="workspace-panel__eyebrow">
-                        Article Preview
-                      </div>
-                      <div class="workspace-panel__headline">
-                        <div class="workspace-panel__copy">
-                          <h2>{{ currentPostTitle }}</h2>
-                          <p>点击标题、段落、图片或代码块，会自动回到左侧原文定位。</p>
+                <ResizableHandle class="hidden md:block" />
+
+                <ResizablePanel :default-size="22" :min-size="18" :max-size="34">
+                  <div class="h-full p-3 md:p-4">
+                    <ImageLayoutWorkspace />
+                  </div>
+                </ResizablePanel>
+
+                <ResizableHandle class="hidden md:block" />
+
+                <ResizablePanel :default-size="28" :min-size="18" :max-size="42">
+                  <div class="preview-stage relative h-full overflow-x-hidden p-3 md:p-4">
+                    <div class="workspace-panel preview-panel">
+                      <div class="workspace-panel__header">
+                        <div class="workspace-panel__eyebrow">
+                          Article Preview
                         </div>
-                        <div class="workspace-panel__chips">
-                          <span class="workspace-chip workspace-chip--accent">{{ previewDeviceLabel }}</span>
-                          <span class="workspace-chip">{{ readingTimeLabel }}</span>
-                          <span class="workspace-chip">{{ currentPostUpdateLabel }}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="workspace-panel__body preview-panel__body">
-                      <div
-                        id="preview"
-                        ref="previewRef"
-                        class="preview-wrapper w-full flex justify-center"
-                      >
-                        <div
-                          id="output-wrapper"
-                          class="w-full max-w-full preview-paper-stack"
-                          :class="{ output_night: !backLight }"
-                        >
-                          <div class="preview-paper-label">
-                            <span>{{ previewDeviceLabel }}</span>
-                            <span>发布视图</span>
+                        <div class="workspace-panel__headline">
+                          <div class="workspace-panel__copy">
+                            <h2>{{ currentPostTitle }}</h2>
+                            <p>第二栏应用排版后，这里会立刻展示最终文章效果。</p>
                           </div>
+                          <div class="workspace-panel__chips">
+                            <span class="workspace-chip workspace-chip--accent">文章预览</span>
+                            <span class="workspace-chip">{{ readingTimeLabel }}</span>
+                            <span class="workspace-chip">{{ currentPostUpdateLabel }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="workspace-panel__body preview-panel__body">
+                        <div
+                          id="preview"
+                          ref="previewRef"
+                          class="preview-wrapper w-full flex justify-center"
+                        >
                           <div
-                            class="preview mx-auto"
-                            :class="[
-                              effectivePreviewWidth,
-                              effectivePreviewWidth === 'w-[375px]' ? 'max-w-full' : '',
-                            ]"
+                            id="output-wrapper"
+                            class="w-full max-w-full preview-paper-stack"
+                            :class="{ output_night: !backLight }"
                           >
-                            <section id="output" class="w-full" @click="handlePreviewContentClick" v-html="output" />
-                            <div v-if="isCoping" class="loading-mask">
-                              <div class="loading-mask-box">
-                                <div class="loading__img" />
-                                <span>正在生成</span>
+                            <div class="preview-paper-label">
+                              <span>{{ previewDeviceLabel }}</span>
+                              <span>发布视图</span>
+                            </div>
+                            <div
+                              class="preview mx-auto"
+                              :class="[
+                                effectivePreviewWidth,
+                                effectivePreviewWidth === 'w-[375px]' ? 'max-w-full' : '',
+                              ]"
+                            >
+                              <section id="output" class="w-full" @click="handlePreviewContentClick" v-html="output" />
+                              <div v-if="isCoping" class="loading-mask">
+                                <div class="loading-mask-box">
+                                  <div class="loading__img" />
+                                  <span>正在生成</span>
+                                </div>
                               </div>
                             </div>
                           </div>
+                          <BackTop
+                            target="preview"
+                            :right="20"
+                            :bottom="20"
+                          />
                         </div>
-                        <BackTop
-                          target="preview"
-                          :right="20"
-                          :bottom="isMobile ? 90 : 20"
-                        />
                       </div>
                     </div>
                   </div>
-                </div>
-              </ResizablePanel>
+                </ResizablePanel>
 
-              <ResizableHandle v-if="uiStore.isShowCssEditor" class="hidden md:block" />
-              <ResizablePanel
-                v-if="uiStore.isShowCssEditor"
-                :order="3"
-                :default-size="cssPanelDefaultSize"
-                :min-size="10"
-                :max-size="60"
-              >
-                <CssEditor />
-              </ResizablePanel>
+                <ResizableHandle class="hidden md:block" />
 
-              <ResizableHandle v-if="isOpenRightSlider" class="hidden md:block" />
-              <ResizablePanel
-                v-if="isOpenRightSlider"
-                :order="4"
-                :default-size="rightPanelDefaultSize"
-                :min-size="25"
-                :max-size="60"
-              >
-                <RightSlider />
-              </ResizablePanel>
-          </ResizablePanelGroup>
-        </ResizablePanel>
+                <ResizablePanel :default-size="22" :min-size="18" :max-size="34">
+                  <RightSlider />
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </template>
+
+            <template v-else>
+              <ResizablePanelGroup direction="horizontal">
+                <ResizablePanel
+                  ref="editorPanelRef"
+                  :order="1"
+                  :default-size="editorPreviewDefaultSizes.editor"
+                  :min-size="editorPanelConfig.min"
+                  :max-size="editorPanelConfig.max"
+                  collapsible
+                  :collapsed-size="0"
+                >
+                  <div
+                    v-show="viewMode !== 'preview'"
+                    ref="codeMirrorWrapper"
+                    class="codeMirror-wrapper relative h-full p-3 md:p-4"
+                  >
+                    <div class="workspace-panel editor-panel">
+                      <div class="workspace-panel__header">
+                        <div class="workspace-panel__eyebrow">
+                          Markdown Workspace
+                        </div>
+                        <div class="workspace-panel__headline">
+                          <div class="workspace-panel__copy">
+                            <h2>{{ currentPostTitle }}</h2>
+                            <p>直接输入 Markdown，支持搜索替换、图片粘贴与样式调节。</p>
+                          </div>
+                          <div class="workspace-panel__chips">
+                            <span class="workspace-chip workspace-chip--accent">{{ viewModeLabel }}</span>
+                            <span class="workspace-chip">{{ editorLineCount }} 行</span>
+                            <span class="workspace-chip">{{ editorCharCount }} 字</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="workspace-panel__body editor-panel__body">
+                        <SearchTab v-if="codeMirrorView" ref="searchTabRef" :editor-view="codeMirrorView as any" />
+
+                        <div class="editor-panel__canvas">
+                          <EditorContextMenu>
+                            <div
+                              id="editor"
+                              ref="editorRef"
+                              class="codemirror-container"
+                            />
+                          </EditorContextMenu>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </ResizablePanel>
+                <ResizableHandle v-show="viewMode === 'split'" />
+
+                <ResizablePanel
+                  ref="previewPanelRef"
+                  :order="2"
+                  :default-size="editorPreviewDefaultSizes.preview"
+                  :min-size="previewPanelConfig.min"
+                  :max-size="previewPanelConfig.max"
+                  collapsible
+                  :collapsed-size="0"
+                >
+                  <div v-show="viewMode !== 'edit'" class="preview-stage relative h-full overflow-x-hidden p-3 md:p-4">
+                    <div class="workspace-panel preview-panel">
+                      <div class="workspace-panel__header">
+                        <div class="workspace-panel__eyebrow">
+                          Article Preview
+                        </div>
+                        <div class="workspace-panel__headline">
+                          <div class="workspace-panel__copy">
+                            <h2>{{ currentPostTitle }}</h2>
+                            <p>点击标题、段落、图片或代码块，会自动回到左侧原文定位。</p>
+                          </div>
+                          <div class="workspace-panel__chips">
+                            <span class="workspace-chip workspace-chip--accent">{{ previewDeviceLabel }}</span>
+                            <span class="workspace-chip">{{ readingTimeLabel }}</span>
+                            <span class="workspace-chip">{{ currentPostUpdateLabel }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="workspace-panel__body preview-panel__body">
+                        <div
+                          id="preview"
+                          ref="previewRef"
+                          class="preview-wrapper w-full flex justify-center"
+                        >
+                          <div
+                            id="output-wrapper"
+                            class="w-full max-w-full preview-paper-stack"
+                            :class="{ output_night: !backLight }"
+                          >
+                            <div class="preview-paper-label">
+                              <span>{{ previewDeviceLabel }}</span>
+                              <span>发布视图</span>
+                            </div>
+                            <div
+                              class="preview mx-auto"
+                              :class="[
+                                effectivePreviewWidth,
+                                effectivePreviewWidth === 'w-[375px]' ? 'max-w-full' : '',
+                              ]"
+                            >
+                              <section id="output" class="w-full" @click="handlePreviewContentClick" v-html="output" />
+                              <div v-if="isCoping" class="loading-mask">
+                                <div class="loading-mask-box">
+                                  <div class="loading__img" />
+                                  <span>正在生成</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <BackTop
+                            target="preview"
+                            :right="20"
+                            :bottom="isMobile ? 90 : 20"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </ResizablePanel>
+
+                <ResizableHandle v-if="uiStore.isShowCssEditor" class="hidden md:block" />
+                <ResizablePanel
+                  v-if="uiStore.isShowCssEditor"
+                  :order="3"
+                  :default-size="cssPanelDefaultSize"
+                  :min-size="10"
+                  :max-size="60"
+                >
+                  <CssEditor />
+                </ResizablePanel>
+
+                <ResizableHandle v-if="isOpenRightSlider" class="hidden md:block" />
+                <ResizablePanel
+                  v-if="isOpenRightSlider"
+                  :order="4"
+                  :default-size="rightPanelDefaultSize"
+                  :min-size="25"
+                  :max-size="60"
+                >
+                  <RightSlider />
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </template>
+          </ResizablePanel>
       </ResizablePanelGroup>
       </div>
 
       <UploadImgDialog @upload-image="uploadImage" />
+
+      <ImageLayoutDialog v-if="isMobile" />
 
       <InsertFormDialog />
 

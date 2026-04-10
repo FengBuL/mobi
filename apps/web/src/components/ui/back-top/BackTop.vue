@@ -18,6 +18,7 @@ const visibilityHeight = ref(props.visibilityHeight ?? 400)
 const visible = ref(false)
 
 const target = ref<Target>(null)
+let removeScrollListener: (() => void) | null = null
 
 function scrollToTop(e: MouseEvent) {
   target.value?.scrollTo({ top: 0, left: 0, behavior: `smooth` })
@@ -41,15 +42,18 @@ onMounted(() => {
     target.value = window
   }
 
-  target.value!.addEventListener(`scroll`, () => {
-    throttledScroll(target.value)
-  })
+  if (!target.value) {
+    return
+  }
+
+  const handleScroll = () => throttledScroll(target.value)
+  target.value.addEventListener(`scroll`, handleScroll)
+  removeScrollListener = () => target.value?.removeEventListener(`scroll`, handleScroll)
 })
 
 onUnmounted(() => {
-  target.value!.removeEventListener(`scroll`, () => {
-    throttledScroll(target.value)
-  })
+  removeScrollListener?.()
+  removeScrollListener = null
 })
 </script>
 

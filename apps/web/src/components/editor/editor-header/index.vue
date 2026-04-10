@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Copy, Menu, Palette } from 'lucide-vue-next'
+import { Copy, Images, Menu, Palette } from 'lucide-vue-next'
 import { useEditorCopyActions } from '@/composables/useEditorCopyActions'
 import { useUIStore } from '@/stores/ui'
 import EditDropdown from './EditDropdown.vue'
@@ -12,7 +12,8 @@ import StyleDropdown from './StyleDropdown.vue'
 const emit = defineEmits([`startCopy`, `endCopy`])
 
 const uiStore = useUIStore()
-const { isOpenRightSlider } = storeToRefs(uiStore)
+const { isMobile, isOpenRightSlider } = storeToRefs(uiStore)
+const { toggleShowImageLayoutDialog } = uiStore
 
 // 对话框状态
 const aboutDialogVisible = ref(false)
@@ -30,6 +31,24 @@ function handleOpenFund() {
 
 function handleOpenEditorState() {
   editorStateDialogVisible.value = true
+}
+
+function handleOpenMediaLayout() {
+  if (isMobile.value) {
+    toggleShowImageLayoutDialog(true)
+    return
+  }
+
+  toast.success(`图文排版工作台已经固定在第二栏`)
+}
+
+function handleOpenStyleWorkspace() {
+  if (isMobile.value) {
+    isOpenRightSlider.value = !isOpenRightSlider.value
+    return
+  }
+
+  toast.success(`样式工作台已经固定在第四栏`)
 }
 
 const { handleCopy, copyToWeChat } = useEditorCopyActions({
@@ -87,6 +106,16 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
         <span>复制</span>
       </Button>
 
+      <!-- 图片/图文排版 -->
+      <Button
+        variant="outline"
+        class="h-9"
+        @click="handleOpenMediaLayout"
+      >
+        <Images class="mr-2 h-4 w-4" />
+        <span>图文排版</span>
+      </Button>
+
       <!-- 文章信息（移动端隐藏） -->
       <PostInfo class="hidden md:inline-flex" />
 
@@ -94,8 +123,8 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
       <Button
         variant="outline"
         class="h-9"
-        :class="{ 'bg-accent text-accent-foreground': isOpenRightSlider }"
-        @click="isOpenRightSlider = !isOpenRightSlider"
+        :class="{ 'bg-accent text-accent-foreground': isMobile ? isOpenRightSlider : true }"
+        @click="handleOpenStyleWorkspace"
       >
         <Palette class="mr-2 h-4 w-4" />
         <span>样式</span>
