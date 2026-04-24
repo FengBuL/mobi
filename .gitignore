@@ -44,6 +44,8 @@ yarn.lock
 # pnpm-lock.yaml
 auto-imports.d.ts
 components.d.ts
+!apps/web/auto-imports.d.ts
+!apps/web/components.d.ts
 
 .wxt
 .output
