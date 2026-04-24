@@ -1,6 +1,6 @@
 # Markdown Editor Web v2.1.1
 
-一个面向微信公众号写作的本地 Markdown 编辑器，保留网页编辑器主线能力，重点解决写作、预览、样式调整、图片排版和公众号复制发布。
+一个面向微信公众号写作的 Markdown 编辑器，既可以本地运行，也可以通过 GitHub Pages 在线打开，重点解决写作、预览、样式调整、图片排版和公众号复制发布。
 
 ## 访问地址
 
@@ -8,6 +8,12 @@
 
 ```text
 http://localhost:5173/md/
+```
+
+在线地址部署到 GitHub Pages 后，默认访问：
+
+```text
+https://fengbul.github.io/md-editor-web-private/
 ```
 
 ## 主要能力
@@ -44,6 +50,30 @@ pnpm start
 http://localhost:5173/md/
 ```
 
+## 在线部署
+
+仓库已经内置 GitHub Pages 工作流：
+
+- 推送到 `main` 后会自动构建并发布 `apps/web/dist`
+- GitHub Pages 项目地址默认是 `https://<owner>.github.io/<repository>/`
+- 当前仓库对应地址是 `https://fengbul.github.io/md-editor-web-private/`
+
+如果 GitHub 还没有启用 Pages，需要做一次仓库设置：
+
+1. 打开仓库 `Settings`
+2. 进入 `Pages`
+3. 把发布来源切到 `GitHub Actions`
+
+如果你的账号计划不支持“私有仓库 GitHub Pages”，这个仓库需要改成公开仓库，或者使用支持私有仓库 Pages 的 GitHub 方案。
+
+## 在线版限制
+
+GitHub Pages 只能部署静态前端，因此：
+
+- 在线版可以正常进行 Markdown 编辑、预览、主题样式调整和本地浏览器存储
+- 依赖服务端的公众号图片安全转存、代理上传等能力，仍然需要单独部署 `apps/mp-proxy`
+- 如果你希望在线版也支持公众号安全图片复制，需要再提供一个可公网访问的代理服务地址
+
 ## 微信公众号图片安全复制
 
 如果要把带图片的内容稳定复制到公众号，建议同时启动本地代理：
@@ -70,9 +100,9 @@ http://127.0.0.1:8788
 
 ```bash
 pnpm start
+pnpm build:web
 pnpm proxy
 pnpm type-check
-pnpm --filter @md/web build
 ```
 
 ## 目录结构
