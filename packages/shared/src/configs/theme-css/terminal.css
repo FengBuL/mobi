@@ -1,0 +1,214 @@
+/* 绿屏极客：终端会话、命令提示符与日志边界贯穿硬核教程。 */
+
+section,
+container {
+  --theme-accent: var(--md-primary-color);
+  --theme-ink: #dcfce4;
+  --theme-body: #acd8b7;
+  --theme-dim: #82ae8d;
+  --theme-line: #285036;
+  --theme-surface: #102619;
+  --theme-paper: #07110a;
+  --theme-panel: #0d1d12;
+  --theme-hair: #3d7650;
+  --theme-green: #65ef86;
+
+  --sk-space: 1;
+  --sk-h1-scale: 1.62;
+  --sk-h2-scale: 1.38;
+  --sk-h3-scale: 1.25;
+  --sk-h4-scale: 1.12;
+  --sk-h1-weight: 700;
+  --sk-h1-leading: 1.28;
+  --sk-h1-color: #79f297;
+  --sk-h2-color: #8df3a5;
+  --sk-h2-weight: 700;
+  --sk-h3-color: #c1f4cc;
+  --sk-radius: 3px;
+  --sk-body-leading: 1.62;
+  --sk-body-tracking: 0.018em;
+  --sk-para-gap: 1;
+  --sk-list-indent: 1.6em;
+  --sk-marker-color: #65ef86;
+  --sk-code-radius: 2px;
+  --sk-code-color: #75f394;
+  --sk-code-surface: #14341f;
+  --sk-cell-pad: 0.72em 0.9em;
+  --sk-table-head-surface: #09160d;
+  --sk-table-head-ink: #79f297;
+  --sk-table-head-line: var(--theme-hair);
+  --sk-table-zebra: #102619;
+  --sk-img-radius: 2px;
+  --sk-link-color: #8ce8ff;
+  --sk-em-color: #e1d47e;
+  --sk-strong-color: #eafff0;
+  --sk-hr-color: #4c9260;
+  --md-alert-paper: #0d1d12;
+  --md-alert-ink: #dcfce4;
+  --md-alert-radius: 2px;
+
+  background-color: var(--theme-paper);
+  padding: 1.45em 1.3em 1.7em;
+  border: 1px solid #1b3a26;
+  border-radius: 4px;
+  font-family: var(--md-font-family);
+}
+
+h1 {
+  margin-top: calc(var(--md-font-size) * 1.88 * var(--sk-space));
+  margin-bottom: calc(var(--md-font-size) * 0.94 * var(--sk-space));
+  padding: 1.05em 0.86em 0.78em;
+  letter-spacing: 0.045em;
+  border: 1px solid var(--theme-hair);
+  border-top: 0.42em solid #1c3b26;
+  border-radius: 3px;
+  background-color: #0d1d12;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='96'%20viewBox='0%200%20320%2096'%3E%3Cg%20fill='%2365ef86'%20fill-opacity='.7'%3E%3Ccircle%20cx='16'%20cy='11'%20r='4'/%3E%3Ccircle%20cx='30'%20cy='11'%20r='4'/%3E%3Ccircle%20cx='44'%20cy='11'%20r='4'/%3E%3C/g%3E%3Cpath%20d='M12%2084H308'%20stroke='%233d7650'%20stroke-dasharray='6%206'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: 0.28em 0.28em 0 #041007;
+}
+
+h1::before {
+  content: "SESSION 01 / ACTIVE";
+  display: block;
+  margin-bottom: 1.25em;
+  color: #82ae8d;
+  font-size: calc(var(--md-font-size) * 0.58);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.18em;
+}
+
+h2 {
+  display: inline;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 0.12em 0.38em;
+  line-height: 1.62;
+  letter-spacing: 0.05em;
+  border-left: 0.26em solid var(--theme-green);
+  background-color: #0d1d12;
+}
+
+h2::before {
+  content: "$";
+  display: inline-block;
+  margin-right: 0.55em;
+  color: var(--theme-green);
+  text-shadow: 0 0 0.32em #287b3b;
+}
+
+h2 + p {
+  display: inline;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+h2 + p::after {
+  content: "";
+  display: block;
+  height: calc(var(--md-font-size) * 1.05 * var(--sk-space));
+}
+
+p,
+li {
+  text-align: left;
+}
+
+h3 {
+  margin-top: calc(var(--md-font-size) * 1.88 * var(--sk-space));
+  margin-bottom: calc(var(--md-font-size) * 0.94 * var(--sk-space));
+  letter-spacing: 0.04em;
+}
+
+h3::before {
+  content: ">";
+  margin-right: 0.5em;
+  color: #65ef86;
+}
+
+h4,
+h5,
+h6 {
+  color: #acd8b7;
+  letter-spacing: 0.04em;
+}
+
+blockquote {
+  padding: 1.05em 1.25em;
+  border: 1px solid var(--theme-line);
+  border-left: 0.32em solid var(--theme-green);
+  border-radius: 2px;
+  background: #0d1d12;
+  color: #c4e8cd;
+}
+
+blockquote::before {
+  content: "STDOUT";
+  display: block;
+  margin-bottom: 0.65em;
+  color: #71a27d;
+  font-size: calc(var(--md-font-size) * 0.58);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+}
+
+blockquote p {
+  color: #c4e8cd;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border: 1px solid var(--theme-hair);
+  background: #030905;
+  box-shadow: 0.28em 0.28em 0 #102619;
+}
+
+code {
+  font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+  border: 1px solid #326342;
+}
+
+table {
+  border: 1px solid var(--theme-hair);
+}
+
+th {
+  border: 1px solid var(--theme-hair);
+  letter-spacing: 0.05em;
+}
+
+td {
+  border: 1px solid var(--theme-line);
+  background: #102619;
+}
+
+a {
+  border-bottom: 1px dashed #5ea7b7;
+}
+
+img {
+  border: 1px solid var(--theme-hair);
+  box-shadow: 0.3em 0.3em 0 #102619;
+}
+
+figcaption,
+.md-figcaption {
+  color: #8cb698;
+  letter-spacing: 0.06em;
+  text-align: left;
+}
+
+hr {
+  height: 0;
+  border: 0;
+  border-top: 1px dashed #4c9260;
+  border-top-style: dashed;
+}
+
+.markdown-alert {
+  background: #0d1d12;
+  border-radius: 2px;
+}

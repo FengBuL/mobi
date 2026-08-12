@@ -1,0 +1,226 @@
+/* 糖果手账：奶油纸、胶带贴纸与虚线裁切边，轻快但不把正文做成练习簿。 */
+
+section,
+container {
+  --theme-accent: var(--md-primary-color);
+  --theme-ink: #443e4b;
+  --theme-body: #5e5666;
+  --theme-dim: #766d7d;
+  --theme-mint: #3f887f;
+  --theme-lemon: #f3d978;
+  --theme-line: #e8dce4;
+  --theme-surface: #fff4ed;
+  --theme-paper: #fffefd;
+  --theme-panel: #fff9f5;
+
+  --sk-space: 1;
+  --sk-h1-scale: 1.62;
+  --sk-h2-scale: 1.38;
+  --sk-h3-scale: 1.25;
+  --sk-h4-scale: 1.12;
+  --sk-h1-weight: 750;
+  --sk-h1-leading: 1.36;
+  --sk-h1-color: #4d3d45;
+  --sk-h2-weight: 750;
+  --sk-h3-weight: 700;
+  --sk-h3-color: #67515c;
+  --sk-radius: 12px;
+  --sk-body-leading: 1.76;
+  --sk-para-gap: 1.1;
+  --sk-body-tracking: 0.03em;
+  --sk-list-indent: 1.58em;
+  --sk-marker-color: var(--theme-mint);
+  --sk-code-radius: 5px;
+  --sk-code-color: #6a493e;
+  --sk-code-surface: #f9e7dc;
+  --sk-cell-pad: 0.76em 0.86em;
+  --sk-table-head-surface: #f3d8c8;
+  --sk-table-head-ink: #563d34;
+  --sk-table-head-line: #e7cbbd;
+  --sk-table-zebra: #fff8f3;
+  --sk-img-radius: 8px;
+  --sk-link-color: var(--theme-mint);
+  --sk-strong-color: #724634;
+  --sk-em-color: #6c6374;
+  --sk-hr-color: #d8b8c7;
+
+  padding: 1.15em 1em 1.45em;
+  background-color: var(--theme-paper);
+}
+
+h1 {
+  padding: 0.88em 0.55em 0.72em;
+  text-align: left;
+  letter-spacing: 0.05em;
+  border: 1px solid #e6c9d6;
+  border-bottom: 3px dashed #d7a7bb;
+  border-radius: 10px;
+  background-color: var(--theme-panel);
+  box-shadow: 0.28em 0.28em 0 #f3e4b8;
+}
+
+h1::before {
+  content: "JOURNAL / TODAY";
+  display: block;
+  width: 8.8em;
+  margin-top: -1.42em;
+  margin-bottom: 0.72em;
+  margin-left: 0.8em;
+  margin-right: 0;
+  padding: 0.26em 1.25em;
+  color: #5a4b43;
+  background-color: #f3d978;
+  font-size: calc(var(--md-font-size) * 0.62);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.18em;
+  box-shadow: 0 2px 0 #dfc161;
+  transform: rotate(-2deg);
+}
+
+h2 {
+  display: inline-block;
+  padding: 0.4em 0.78em;
+  color: #573e35;
+  text-align: left;
+  letter-spacing: 0.04em;
+  border: 1px solid #d9aa96;
+  border-radius: 6px;
+  background-color: #f9e0d2;
+  box-shadow: 0.25em 0.25em 0 var(--theme-mint);
+}
+
+h2::before {
+  content: "";
+  display: inline-block;
+  width: 0.48em;
+  height: 0.48em;
+  margin-right: 0.55em;
+  border: 2px solid #a56246;
+  border-radius: 50%;
+  background-color: #fffaf6;
+  vertical-align: 0.03em;
+}
+
+h3 {
+  padding-bottom: 0.28em;
+  text-align: left;
+  border-bottom: 1px dashed #cfb8c5;
+}
+
+h3::before {
+  content: "✓";
+  display: inline-block;
+  width: 1.45em;
+  height: 1.45em;
+  margin-right: 0.55em;
+  color: #fff;
+  border-radius: 4px;
+  background-color: var(--theme-mint);
+  font-size: calc(var(--md-font-size) * 0.72);
+  font-weight: 800;
+  line-height: 1.45em;
+  text-align: center;
+  vertical-align: 0.16em;
+}
+
+h4,
+h5,
+h6 {
+  color: #6c6374;
+  letter-spacing: 0.04em;
+}
+
+p {
+  text-align: left;
+  text-indent: 0;
+}
+
+blockquote {
+  padding: 1.2em 1.25em 1em;
+  border: 1px solid #e5cdb8;
+  border-bottom: 2px dashed #d9b9c7;
+  border-radius: 8px;
+  background-color: #fff8ee;
+  color: #635969;
+  box-shadow: 0.22em 0.22em 0 #d9ece8;
+}
+
+blockquote::before {
+  content: "MEMO";
+  display: inline-block;
+  margin-top: -1.85em;
+  margin-bottom: 0.75em;
+  padding: 0.22em 0.8em;
+  color: #574b42;
+  background-color: #f3d978;
+  font-size: calc(var(--md-font-size) * 0.64);
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+  transform: rotate(1.5deg);
+}
+
+blockquote p {
+  color: #635969;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border: 1px dashed #d7c4ce;
+  background: var(--theme-panel);
+  box-shadow: 0 8px 22px rgba(120, 100, 110, 0.08);
+}
+
+table {
+  border-collapse: separate;
+  overflow: hidden;
+  border: 1px solid #e7cbbd;
+  border-radius: 10px;
+}
+
+th {
+  border-bottom: 0;
+  font-weight: 750;
+}
+
+td {
+  border-bottom: 0;
+  border-top: 1px dashed #dfc7d2;
+  background: #fffefd;
+}
+
+a {
+  border-bottom: 2px dotted #8fcfc2;
+}
+
+strong {
+  padding: 0 0.25em;
+  border-radius: 4px;
+  color: #724634;
+  background-color: #f8e4d9;
+}
+
+img {
+  border: 5px solid #fff;
+  box-shadow: 0.3em 0.3em 0 #d8ebe7;
+}
+
+hr {
+  width: 72%;
+  margin-left: auto;
+  margin-right: auto;
+  border-top-style: dashed;
+  border-top-width: 2px;
+}
+
+figcaption,
+.md-figcaption {
+  letter-spacing: 0.06em;
+}
+
+figcaption::before,
+.md-figcaption::before {
+  content: "贴纸存档 · ";
+  color: var(--theme-mint);
+}

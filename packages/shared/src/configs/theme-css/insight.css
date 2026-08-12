@@ -1,0 +1,191 @@
+/* 行业洞察：把文章组织成研究简报，报告封签、章节页码与数据基线贯穿趋势分析。 */
+
+section,
+container {
+  --theme-accent: var(--md-primary-color);
+  --theme-ink: #14284a;
+  --theme-body: #3f5067;
+  --theme-dim: #607086;
+  --theme-line: #ccd7e5;
+  --theme-surface: #edf2f8;
+  --theme-paper: #ffffff;
+  --theme-panel: #f7f9fc;
+  --theme-signal: #d6a83f;
+
+  --sk-space: 1;
+  --sk-h1-lead: 1.88;
+  --sk-h1-trail: 0.94;
+  --sk-h2-lead: 1.88;
+  --sk-h2-trail: 0.94;
+  --sk-h3-lead: 1.88;
+  --sk-h3-trail: 0.94;
+  --sk-h1-scale: 1.62;
+  --sk-h2-scale: 1.38;
+  --sk-h3-scale: 1.25;
+  --sk-h4-scale: 1.12;
+  --sk-h1-weight: 850;
+  --sk-h2-weight: 800;
+  --sk-h3-weight: 750;
+  --sk-radius: 2px;
+  --sk-body-leading: 1.62;
+  --sk-body-tracking: 0.012em;
+  --sk-list-indent: 1.6em;
+  --sk-marker-color: var(--theme-signal);
+  --sk-code-radius: 2px;
+  --sk-code-color: var(--theme-ink);
+  --sk-code-surface: #e6edf5;
+  --sk-cell-pad: 0.72em 0.76em;
+  --sk-table-head-surface: var(--theme-ink);
+  --sk-table-head-ink: #ffffff;
+  --sk-table-head-line: var(--theme-ink);
+  --sk-table-zebra: #f3f6fa;
+  --sk-img-radius: 2px;
+  --sk-link-color: #244f7d;
+  --sk-em-color: #465a73;
+
+  counter-reset: md-insight;
+  padding-left: 0.25em;
+  padding-right: 0.25em;
+}
+
+h1 {
+  padding: 0.95em 0.9em 0.82em;
+  color: #ffffff;
+  letter-spacing: 0.025em;
+  border-left: 0.45em solid var(--theme-signal);
+  background-color: var(--theme-ink);
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='98'%20viewBox='0%200%20320%2098'%3E%3Cg%20fill='none'%20stroke='%23ffffff'%20stroke-opacity='.14'%3E%3Cpath%20d='M214%2080L236%2058L252%2068L278%2030L304%2042'/%3E%3Cpath%20d='M214%2084H306M214%2064H306M214%2044H306'/%3E%3C/g%3E%3Ccircle%20cx='278'%20cy='30'%20r='4'%20fill='%23d6a83f'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: 0 0.32em 0 #dfe6ef;
+}
+
+h1::before {
+  content: "INSIGHT BRIEF / RESEARCH NOTE";
+  display: block;
+  margin-bottom: 1.2em;
+  color: #b9c6d7;
+  font-size: calc(var(--md-font-size) * 0.58);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.25em;
+}
+
+h2 {
+  margin-left: calc(var(--md-font-size) * 0.8);
+  padding: 0.52em 0 0.46em;
+  color: var(--theme-ink);
+  border-top: 1px solid var(--theme-ink);
+  border-bottom: 3px solid var(--theme-ink);
+  background: transparent;
+}
+
+h2::before {
+  counter-increment: md-insight;
+  content: counter(md-insight);
+  display: inline-block;
+  min-width: 1.65em;
+  height: 1.65em;
+  margin-left: -2.3em;
+  margin-right: 0.65em;
+  color: #ffffff;
+  background: var(--theme-ink);
+  font-size: calc(var(--md-font-size) * 0.72);
+  font-weight: 850;
+  line-height: 1.65em;
+  text-align: center;
+  vertical-align: 0.14em;
+}
+
+h3 {
+  padding-left: 0.72em;
+  color: #244565;
+  letter-spacing: 0.035em;
+  border-left: 4px solid var(--theme-signal);
+}
+
+h4,
+h5,
+h6 {
+  color: #3d5470;
+  letter-spacing: 0.05em;
+}
+
+p {
+  text-align: left;
+}
+
+blockquote {
+  padding: 1em 1.25em;
+  border: 1px solid var(--theme-line);
+  border-left: 5px solid var(--theme-signal);
+  border-radius: 0;
+  background: #f5f8fb;
+  color: #35475e;
+}
+
+blockquote::before {
+  content: "KEY FINDING";
+  display: block;
+  margin-bottom: 0.65em;
+  color: #6d5620;
+  font-size: calc(var(--md-font-size) * 0.58);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.2em;
+}
+
+blockquote p {
+  color: #35475e;
+}
+
+.markdown-alert p {
+  color: #35475e;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  background: #f9fbfd;
+}
+
+table {
+  border-top: 4px solid var(--theme-ink);
+  border-bottom: 2px solid var(--theme-ink);
+}
+
+th {
+  font-size: calc(var(--md-font-size) * 0.82);
+  letter-spacing: 0.05em;
+}
+
+a {
+  border-bottom: 2px solid var(--theme-signal);
+}
+
+img {
+  border: 1px solid var(--theme-line);
+  border-bottom: 4px solid var(--theme-ink);
+  box-shadow: 0.25em 0.25em 0 #e3e9f0;
+}
+
+figcaption,
+.md-figcaption {
+  padding-top: 0.42em;
+  color: #5c6b80;
+  letter-spacing: 0.045em;
+  border-top: 1px solid var(--theme-line);
+}
+
+hr {
+  height: 0.26em;
+  border: 0;
+  background-color: var(--theme-ink);
+  background-image: linear-gradient(
+    90deg,
+    var(--theme-signal) 0,
+    var(--theme-signal) 12%,
+    var(--theme-ink) 12%,
+    var(--theme-ink) 68%,
+    #dbe3ed 68%
+  );
+}

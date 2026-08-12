@@ -1,7 +1,8 @@
 import type { HeadingLevel, HeadingStyles, HeadingStyleType, ThemeName } from '@md/shared/configs'
 import { applyTheme } from '@md/core'
-import { defaultStyleConfig, resolveThemeName, widthOptions } from '@md/shared/configs'
+import { defaultStyleConfig, getThemeDefaultPrimaryColor, resolveThemeName, widthOptions } from '@md/shared/configs'
 import { useCssEditorStore } from '@/stores/cssEditor'
+import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'
 
@@ -9,7 +10,18 @@ import { store } from '@/utils/storage'
  * 主题和样式配置 Store
  * 负责管理所有与主题、字体、颜色相关的配置
  */
+/** 主色跟随主题还是用户自己定的 */
+type PrimaryColorSource = 'theme' | 'manual'
+
+/** 收敛之前所有主题共用的出厂主色，只用于一次性迁移判断 */
+const LEGACY_FACTORY_PRIMARY = `#2851E3`
+
+const PRIMARY_COLOR_KEY = `color`
+const PRIMARY_COLOR_SOURCE_KEY = addPrefix(`primary_color_source`)
+
 export const useThemeStore = defineStore(`theme`, () => {
+  const themeDesignerStore = useThemeDesignerStore()
+
   // 文本主题
   const theme = store.reactive<ThemeName>(addPrefix(`theme`), defaultStyleConfig.theme)
   theme.value = resolveThemeName(theme.value)
@@ -27,7 +39,69 @@ export const useThemeStore = defineStore(`theme`, () => {
   const fontSize = store.reactive(`size`, defaultStyleConfig.fontSize)
 
   // 主色
-  const primaryColor = store.reactive(`color`, defaultStyleConfig.primaryColor)
+  const primaryColor = store.reactive(PRIMARY_COLOR_KEY, defaultStyleConfig.primaryColor)
+
+  // 主色来源。切主题时会把主题的出厂强调色带过去，但用户自己调过的颜色不能被覆盖，
+  // 所以要把这两种状态分开存。
+  const primaryColorSource = store.reactive<PrimaryColorSource | 'unset'>(
+    PRIMARY_COLOR_SOURCE_KEY,
+    `unset`,
+  )
+
+  // store.reactive 的持久化 watch 要等下一个微任务才挂上，setup 阶段的赋值写不进本地存储。
+  // 主色来源一旦丢失，下次进来会被迁移逻辑误判成「手动设定」，切主题就再也带不动颜色了。
+  function writePrimaryColorSource(next: PrimaryColorSource) {
+    primaryColorSource.value = next
+    void store.set(PRIMARY_COLOR_SOURCE_KEY, next)
+  }
+
+  let suppressPrimaryColorSourceUpdate = false
+
+  function assignPrimaryColorFromTheme(themeName: string) {
+    const next = getThemeDefaultPrimaryColor(themeName)
+    if (primaryColor.value === next) {
+      return
+    }
+    suppressPrimaryColorSourceUpdate = true
+    primaryColor.value = next
+    void store.set(PRIMARY_COLOR_KEY, next)
+  }
+
+  // 一次性迁移：老用户没有这个字段。收敛之前 23 套主题共用同一个出厂主色，
+  // 存的还是那个值就说明他没动过，可以放心跟随主题；改过就当成手动设定保留下来。
+  if (primaryColorSource.value === `unset`) {
+    writePrimaryColorSource(primaryColor.value === LEGACY_FACTORY_PRIMARY ? `theme` : `manual`)
+  }
+
+  if (primaryColorSource.value === `theme`) {
+    assignPrimaryColorFromTheme(theme.value)
+  }
+  // 上面这次赋值发生在 watch 注册之前，标记不会被消费掉，必须手动归位
+  suppressPrimaryColorSourceUpdate = false
+
+  // 任何不是「跟随主题」写进来的颜色，都算用户显式设定
+  watch(primaryColor, () => {
+    if (suppressPrimaryColorSourceUpdate) {
+      suppressPrimaryColorSourceUpdate = false
+      return
+    }
+    writePrimaryColorSource(`manual`)
+  })
+
+  watch(theme, (value) => {
+    if (primaryColorSource.value !== `theme`) {
+      return
+    }
+    assignPrimaryColorFromTheme(value)
+  })
+
+  const isPrimaryColorFollowingTheme = computed(() => primaryColorSource.value === `theme`)
+
+  /** 把主色交还给主题，之后再换主题就会继续跟随 */
+  const followThemePrimaryColor = () => {
+    writePrimaryColorSource(`theme`)
+    assignPrimaryColorFromTheme(theme.value)
+  }
 
   // 代码块主题
   const codeBlockTheme = store.reactive(`codeBlockTheme`, defaultStyleConfig.codeBlockTheme)
@@ -128,11 +202,18 @@ export const useThemeStore = defineStore(`theme`, () => {
       document.head.appendChild(styleEl)
     }
 
+    // 可视化编辑器接管的属性不再由代码主题强制覆盖，否则用户设的底色会被 !important 吃掉
+    const surfaceRules = [
+      themeDesignerStore.hasCodeBackgroundOverride ? `` : `background: ${surface.backgroundColor} !important;`,
+      themeDesignerStore.hasCodeTextOverride ? `` : `color: ${surface.color} !important;`,
+    ].filter(Boolean).join(`\n        `)
+
     styleEl.textContent = `
-      #output .hljs.code__pre {
-        background: ${surface.backgroundColor} !important;
-        color: ${surface.color} !important;
-      }
+      ${surfaceRules
+        ? `#output .hljs.code__pre {
+        ${surfaceRules}
+      }`
+        : ``}
 
       #output .hljs.code__pre > code {
         background: transparent !important;
@@ -160,7 +241,8 @@ export const useThemeStore = defineStore(`theme`, () => {
     theme.value = defaultStyleConfig.theme
     fontFamily.value = defaultStyleConfig.fontFamily
     fontSize.value = defaultStyleConfig.fontSize
-    primaryColor.value = defaultStyleConfig.primaryColor
+    writePrimaryColorSource(`theme`)
+    assignPrimaryColorFromTheme(defaultStyleConfig.theme)
     codeBlockTheme.value = defaultStyleConfig.codeBlockTheme
     legend.value = defaultStyleConfig.legend
     headingStyles.value = { ...defaultStyleConfig.headingStyles }
@@ -238,6 +320,7 @@ export const useThemeStore = defineStore(`theme`, () => {
       await applyTheme({
         themeName: theme.value,
         customCSS,
+        overridesCSS: themeDesignerStore.overrideCSS,
         variables: {
           primaryColor: primaryColor.value,
           fontFamily: fontFamily.value,
@@ -253,6 +336,23 @@ export const useThemeStore = defineStore(`theme`, () => {
     }
   }
 
+  // 可视化编辑器改一个值就立刻重绘预览区，不需要点保存
+  watch(() => themeDesignerStore.overrideCSS, () => {
+    applyCodeThemeSurfaceOverride()
+    applyCurrentTheme()
+  })
+
+  // 不管从哪个入口换内置主题，可视化草稿的基础主题都要跟着走；
+  // 换成了别的底，就不再算作某个已保存的自定义主题
+  watch(theme, (value) => {
+    if (themeDesignerStore.draft.baseTheme === value) {
+      return
+    }
+
+    themeDesignerStore.setBaseTheme(value)
+    themeDesignerStore.detachSource()
+  })
+
   return {
     // State
     theme,
@@ -260,6 +360,8 @@ export const useThemeStore = defineStore(`theme`, () => {
     fontSize,
     fontSizeNumber,
     primaryColor,
+    primaryColorSource,
+    isPrimaryColorFollowingTheme,
     codeBlockTheme,
     legend,
     isMacCodeBlock,
@@ -289,6 +391,7 @@ export const useThemeStore = defineStore(`theme`, () => {
     toggleUseIndent,
     toggleUseJustify,
     toggleHeadingDecorationStatus,
+    followThemePrimaryColor,
     resetStyle,
     updateCodeTheme,
     applyCurrentTheme,

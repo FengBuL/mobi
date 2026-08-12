@@ -1,110 +1,190 @@
-/**
- * 琥珀手册主题 (Amber Ledger)
- * 参考暖色品牌手册、木质纸感和高端提案页的视觉气质。
- */
+/* 琥珀手册：以精装账簿的书脊双线、索引签和烫金页码承载品牌与商业故事。 */
 
 section,
 container {
-  --theme-ink: #2f2418;
-  --theme-muted: #5f4d3d;
-  --theme-border: #d9c7b2;
-  --theme-surface: #fbf5ee;
-  color: var(--theme-ink);
+  --theme-accent: var(--md-primary-color);
+  --theme-ink: #302316;
+  --theme-body: #584839;
+  --theme-dim: #75634d;
+  --theme-line: #d8c3a5;
+  --theme-surface: #f8f0e4;
+  --theme-paper: #fffdf8;
+  --theme-panel: #fbf6ed;
+  --theme-gold: #a66f27;
+
+  --sk-space: 1;
+  --sk-h1-lead: 1.88;
+  --sk-h1-trail: 0.94;
+  --sk-h2-lead: 1.88;
+  --sk-h2-trail: 0.94;
+  --sk-h3-lead: 1.88;
+  --sk-h3-trail: 0.94;
+  --sk-h1-scale: 1.64;
+  --sk-h2-scale: 1.38;
+  --sk-h3-scale: 1.25;
+  --sk-h4-scale: 1.12;
+  --sk-h1-leading: 1.34;
+  --sk-h1-weight: 750;
+  --sk-h2-weight: 750;
+  --sk-h3-weight: 700;
+  --sk-h3-color: #5c4022;
+  --sk-radius: 4px;
+  --sk-body-leading: 1.78;
+  --sk-body-tracking: 0.025em;
+  --sk-para-gap: 0.72;
+  --sk-list-indent: 1.6em;
+  --sk-marker-color: var(--theme-gold);
+  --sk-code-radius: 3px;
+  --sk-code-color: #6b4e32;
+  --sk-code-surface: #f2e6d6;
+  --sk-cell-pad: 0.78em 0.9em;
+  --sk-table-head-surface: #6b4726;
+  --sk-table-head-ink: #ffffff;
+  --sk-table-head-line: #6b4726;
+  --sk-table-zebra: #fcf8f3;
+  --sk-img-radius: 4px;
+  --sk-link-color: #69461f;
+  --sk-em-color: #7a6450;
+  --sk-hr-color: var(--theme-gold);
+
+  background: var(--theme-paper);
+  padding: 1.15em 1.05em 1.45em;
+  border-left: 3px double var(--theme-line);
+  border-right: 3px double var(--theme-line);
 }
 
 h1 {
-  margin: 2.2em 0 1.1em;
-  padding: 0.85em 1em;
-  color: var(--theme-ink);
-  font-size: calc(var(--md-font-size) * 1.72);
-  font-weight: 800;
-  line-height: 1.22;
-  border: 1px solid var(--theme-border);
-  border-radius: 20px;
-  background: linear-gradient(135deg, rgba(255, 248, 241, 0.98), rgba(244, 230, 214, 0.85));
-  box-shadow: 0 18px 34px rgba(97, 73, 47, 0.1);
+  padding: 1em 0.85em 0.86em;
+  text-align: left;
+  letter-spacing: 0.08em;
+  border-left: 5px solid var(--theme-gold);
+  border-radius: 3px;
+  background-color: #fbf3e6;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='104'%20viewBox='0%200%20320%20104'%3E%3Cg%20fill='none'%20stroke='%23a66f27'%20stroke-opacity='.45'%3E%3Cpath%20d='M8%2052H60M260%2052H312'/%3E%3Cpath%20d='M18%2034L36%2052L18%2070M302%2034L284%2052L302%2070'/%3E%3Ccircle%20cx='60'%20cy='52'%20r='4'/%3E%3Ccircle%20cx='260'%20cy='52'%20r='4'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: 0.24em 0.24em 0 #eadcc7;
+}
+
+h1::before {
+  content: "THE AMBER LEDGER";
+  display: block;
+  margin-bottom: 1.25em;
+  color: #7b5528;
+  font-size: calc(var(--md-font-size) * 0.58);
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: 0.3em;
 }
 
 h2 {
-  margin: 2.7em 0 1.05em;
-  padding: 0.65em 0 0.65em 0.9em;
+  padding: 0.5em 0.7em;
   color: var(--theme-ink);
-  font-size: calc(var(--md-font-size) * 1.24);
-  font-weight: 700;
-  border-left: 5px solid color-mix(in srgb, var(--md-primary-color) 58%, #7c5a36);
+  border-left: 5px solid var(--theme-gold);
+  border-top: 1px solid var(--theme-line);
+  border-bottom: 1px solid var(--theme-line);
+  background: #faf4ea;
 }
 
-h3,
+h2::before {
+  content: "◆";
+  display: inline-block;
+  margin-right: 0.62em;
+  color: var(--theme-gold);
+  font-size: calc(var(--md-font-size) * 0.62);
+  vertical-align: 0.18em;
+}
+
+h3 {
+  padding-left: 0.7em;
+  letter-spacing: 0.055em;
+  border-left: 3px solid var(--theme-line);
+}
+
 h4,
 h5,
-h6,
-strong {
-  color: color-mix(in srgb, var(--theme-ink) 80%, var(--md-primary-color));
+h6 {
+  color: color-mix(in srgb, var(--theme-ink) 80%, var(--theme-accent));
   font-weight: 700;
 }
 
-p,
-li {
-  color: var(--theme-muted);
+p {
+  text-align: justify;
+  text-indent: 2em;
 }
 
 blockquote {
-  padding: 1.15em 1.3em;
-  border: 1px solid var(--theme-border);
-  border-left: 4px solid color-mix(in srgb, var(--md-primary-color) 62%, #8f633b);
-  border-radius: 18px;
-  background: var(--theme-surface);
+  padding: 1em 1.25em;
+  border: 1px solid var(--theme-line);
+  border-left: 5px double var(--theme-gold);
+  border-radius: 3px;
+  background: #faf4ea;
+  color: #51402f;
+}
+
+blockquote::before {
+  content: "MARGINALIA";
+  display: block;
+  margin-bottom: 0.62em;
+  color: #795326;
+  font-size: calc(var(--md-font-size) * 0.58);
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: 0.22em;
+}
+
+blockquote p,
+.markdown-alert p {
+  color: #51402f;
+  text-indent: 0;
 }
 
 pre.code__pre,
 .hljs.code__pre {
-  border-radius: 18px;
-  border: 1px solid var(--theme-border);
+  border-color: var(--theme-line);
   background: #fffaf5;
-  box-shadow: 0 12px 24px rgba(97, 73, 47, 0.08);
-}
-
-code {
-  padding: 0.18em 0.42em;
-  border-radius: 8px;
-  color: #6b4e32;
-  background: rgba(151, 116, 80, 0.12);
+  box-shadow: 0.22em 0.22em 0 #ede0cf;
 }
 
 table {
-  border-collapse: separate;
-  border-spacing: 0;
-  overflow: hidden;
-  border: 1px solid var(--theme-border);
-  border-radius: 18px;
+  border-top: 4px double var(--theme-gold);
+  border-bottom: 4px double var(--theme-gold);
 }
 
 th {
-  padding: 0.82em 0.95em;
-  background: color-mix(in srgb, var(--md-primary-color) 28%, #6a4d30);
-  color: #fff;
-  font-weight: 700;
+  letter-spacing: 0.06em;
 }
 
 td {
-  padding: 0.82em 0.95em;
-  border-top: 1px solid var(--theme-border);
-  color: var(--theme-muted);
-  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid var(--theme-line);
 }
 
 a {
-  color: #6b4e32;
-  text-decoration: none;
   border-bottom: 1px solid rgba(107, 78, 50, 0.32);
 }
 
+strong {
+  color: color-mix(in srgb, var(--theme-ink) 80%, var(--theme-accent));
+}
+
 img {
-  border-radius: 20px;
-  box-shadow: 0 20px 36px rgba(97, 73, 47, 0.12);
+  border: 3px double var(--theme-line);
+  box-shadow: 0.28em 0.28em 0 #eee1cf;
+}
+
+figcaption,
+.md-figcaption {
+  padding-top: 0.42em;
+  letter-spacing: 0.06em;
+  border-top: 1px solid var(--theme-line);
 }
 
 hr {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #977450, transparent);
+  width: 48%;
+  height: 0.24em;
+  margin-left: auto;
+  margin-right: auto;
+  border-top: 1px solid var(--theme-gold);
+  border-bottom: 1px solid var(--theme-gold);
+  background: #ead9bd;
 }

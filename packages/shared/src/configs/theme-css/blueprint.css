@@ -1,0 +1,204 @@
+/* 蓝图工程：深蓝晒图纸、制图框线与尺寸标注组织技术方案。 */
+
+section,
+container {
+  --theme-accent: var(--md-primary-color);
+  --theme-ink: #f0f8ff;
+  --theme-body: #c2d8e8;
+  --theme-dim: #91b2ca;
+  --theme-line: #3b6482;
+  --theme-surface: #123653;
+  --theme-paper: #082842;
+  --theme-panel: #10324e;
+  --theme-hair: #65a2ca;
+
+  --sk-space: 0.92;
+  --sk-h1-scale: 1.62;
+  --sk-h2-scale: 1.38;
+  --sk-h3-scale: 1.25;
+  --sk-h4-scale: 1.12;
+  --sk-h1-weight: 700;
+  --sk-h1-leading: 1.28;
+  --sk-h1-color: #ffffff;
+  --sk-h2-weight: 700;
+  --sk-h3-color: #9cdcff;
+  --sk-radius: 0px;
+  --sk-body-leading: 1.64;
+  --sk-body-tracking: 0.025em;
+  --sk-para-gap: 1;
+  --sk-list-indent: 1.6em;
+  --sk-marker-color: #8fd4ff;
+  --sk-code-radius: 0px;
+  --sk-code-color: #a7e4ff;
+  --sk-code-surface: #0d3a58;
+  --sk-cell-pad: 0.74em 0.9em;
+  --sk-table-head-surface: #09243a;
+  --sk-table-head-ink: var(--theme-ink);
+  --sk-table-head-line: var(--theme-hair);
+  --sk-table-zebra: #123653;
+  --sk-img-radius: 0px;
+  --sk-link-color: #a4e3ff;
+  --sk-em-color: #b9d9ed;
+  --sk-strong-color: #ffffff;
+  --sk-hr-color: var(--theme-hair);
+  --md-alert-paper: #10324e;
+  --md-alert-ink: #f0f8ff;
+  --md-alert-radius: 0px;
+
+  counter-reset: md-fig;
+  background-color: var(--theme-paper);
+  background-image:
+    linear-gradient(90deg, rgba(124, 183, 220, 0.07) 1px, transparent 1px),
+    linear-gradient(rgba(124, 183, 220, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+  padding: 1.3em 0.8em 1.5em;
+  border: 1px solid var(--theme-line);
+}
+
+h1 {
+  margin-top: calc(var(--md-font-size) * 1.88 * var(--sk-space));
+  margin-bottom: calc(var(--md-font-size) * 0.94 * var(--sk-space));
+  padding: 1em 0.82em 0.84em;
+  text-align: center;
+  letter-spacing: 0.12em;
+  border: 1px solid var(--theme-hair);
+  border-top: 1px solid var(--theme-hair);
+  border-bottom: 1px solid var(--theme-hair);
+  background-color: #0b2d48;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='112'%20viewBox='0%200%20320%20112'%3E%3Cg%20fill='none'%20stroke='%238ecff5'%20stroke-opacity='.62'%3E%3Cpath%20d='M4%2034V4H34M286%204H316V34M4%2078V108H34M286%20108H316V78'/%3E%3Cpath%20d='M14%204H48M272%204H306M14%20108H48M272%20108H306'/%3E%3Ccircle%20cx='18'%20cy='18'%20r='4'/%3E%3Ccircle%20cx='302'%20cy='94'%20r='4'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+h1::before {
+  content: "DRAWING / GENERAL";
+  display: block;
+  margin-bottom: 1.25em;
+  color: #91cdec;
+  font-size: calc(var(--md-font-size) * 0.58);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.26em;
+}
+
+h2 {
+  margin-top: calc(var(--md-font-size) * 1.88 * var(--sk-space));
+  margin-bottom: calc(var(--md-font-size) * 0.94 * var(--sk-space));
+  margin-left: calc(var(--md-font-size) * 2);
+  padding: 0.58em 0.72em 0.5em;
+  color: var(--theme-ink);
+  letter-spacing: 0.045em;
+  border: 1px solid var(--theme-hair);
+  border-left: 0.3em solid #8ed3ff;
+  background-color: #10324e;
+}
+
+h2::before {
+  counter-increment: md-fig;
+  content: "FIG." counter(md-fig);
+  display: inline-block;
+  width: 3.2em;
+  margin-left: -4.6em;
+  margin-right: 0.3em;
+  color: #a8ddf8;
+  font-size: calc(var(--md-font-size) * 0.62);
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  vertical-align: 0.2em;
+}
+
+p,
+li {
+  text-align: left;
+}
+
+h3 {
+  margin-top: calc(var(--md-font-size) * 1.88 * var(--sk-space));
+  margin-bottom: calc(var(--md-font-size) * 0.94 * var(--sk-space));
+  letter-spacing: 0.1em;
+  border-bottom: 1px dashed var(--theme-line);
+}
+
+h3::before {
+  content: "DETAIL";
+  display: inline-block;
+  margin-right: 0.7em;
+  color: #7eb9db;
+  font-size: calc(var(--md-font-size) * 0.58);
+  letter-spacing: 0.12em;
+  vertical-align: 0.22em;
+}
+
+h4,
+h5,
+h6 {
+  color: #b9d9ed;
+  letter-spacing: 0.08em;
+}
+
+blockquote {
+  padding: 1.1em 1.3em;
+  border: 1px dashed var(--theme-hair);
+  border-left: 0.3em solid var(--theme-hair);
+  border-radius: 0;
+  background: #10324e;
+  color: #d0e4f2;
+}
+
+blockquote p {
+  color: #d0e4f2;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border: 1px solid var(--theme-hair);
+  background: #061d30;
+}
+
+code {
+  border: 1px solid var(--theme-line);
+}
+
+table {
+  border: 1px solid var(--theme-hair);
+}
+
+th {
+  border: 1px solid var(--theme-hair);
+  letter-spacing: 0.06em;
+}
+
+td {
+  border: 1px dashed var(--theme-line);
+  background: #123653;
+}
+
+a {
+  border-bottom: 1px dashed #76badd;
+}
+
+img {
+  border: 1px solid var(--theme-hair);
+  box-shadow: 0.35em 0.35em 0 #061d30;
+}
+
+figcaption,
+.md-figcaption {
+  color: #a9c9dd;
+  letter-spacing: 0.09em;
+  text-align: left;
+}
+
+hr {
+  height: 0;
+  border: 0;
+  border-top: 1px dashed var(--theme-hair);
+  border-top-style: dashed;
+}
+
+.markdown-alert {
+  background: #10324e;
+  border-style: dashed;
+  border-left-style: solid;
+  border-radius: 0;
+}

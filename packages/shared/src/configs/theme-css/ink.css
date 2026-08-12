@@ -1,0 +1,153 @@
+/* 水墨留白：宣白纸、飞白笔触与克制朱印。 */
+
+section,
+container {
+  --theme-accent: var(--md-primary-color);
+  --theme-ink: #1f1d1a;
+  --theme-body: #4a4741;
+  --theme-dim: #756e63;
+  --theme-line: #ddd8ce;
+  --theme-surface: #f3f1ec;
+  --theme-paper: #fbfaf7;
+  --theme-panel: #f6f4f0;
+  --theme-wash: #b8b1a3;
+
+  --sk-space: 1.15;
+  --sk-h1-scale: 1.62;
+  --sk-h2-scale: 1.38;
+  --sk-h3-scale: 1.25;
+  --sk-h4-scale: 1.06;
+  --sk-h1-lead: 1.635;
+  --sk-h1-trail: 0.817;
+  --sk-h2-lead: 1.635;
+  --sk-h2-trail: 0.817;
+  --sk-h1-weight: 600;
+  --sk-h1-leading: 1.42;
+  --sk-h2-weight: 600;
+  --sk-h3-weight: 600;
+  --sk-h3-color: #3b3833;
+  --sk-radius: 4px;
+  --sk-body-leading: 2.05;
+  --sk-body-tracking: 0.05em;
+  --sk-para-gap: 0.5;
+  --sk-list-indent: 1.6em;
+  --sk-marker-color: var(--theme-accent);
+  --sk-code-radius: 3px;
+  --sk-code-color: #3b3833;
+  --sk-cell-pad: 0.76em 0.9em;
+  --sk-table-head-line: var(--theme-wash);
+  --sk-table-zebra: #f7f6f2;
+  --sk-img-radius: 2px;
+  --sk-link-color: #2f2c27;
+  --sk-em-color: #6c675e;
+  --sk-hr-color: var(--theme-wash);
+
+  background: var(--theme-paper);
+  padding: 1.4em 2.2em 1.8em;
+}
+
+h1 {
+  padding: 0.4em 0;
+  text-align: center;
+  letter-spacing: 0.22em;
+}
+
+h2 {
+  padding: 0;
+  text-align: center;
+  letter-spacing: 0.14em;
+  background-color: transparent;
+}
+
+h3 {
+  text-align: center;
+  letter-spacing: 0.12em;
+}
+
+h4,
+h5,
+h6 {
+  color: #6c675e;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  text-align: center;
+}
+
+p {
+  text-align: left;
+  text-indent: 2em;
+}
+
+blockquote p,
+.markdown-alert p,
+li p,
+th p,
+td p,
+figcaption p,
+.md-figcaption p {
+  text-indent: 0;
+}
+
+blockquote {
+  padding: 0.9em 0 0.9em 1.6em;
+  border: 1px solid var(--theme-line);
+  border-left: 1px solid var(--theme-wash);
+  border-radius: 0;
+  background-color: #f8f7f3;
+  color: #635e54;
+}
+
+blockquote::before {
+  content: "「";
+  display: block;
+  margin-bottom: -0.45em;
+  margin-left: -0.32em;
+  color: var(--theme-accent);
+  font-size: calc(var(--md-font-size) * 1.6);
+  font-weight: 400;
+  line-height: 1;
+}
+
+blockquote p {
+  color: #635e54;
+  letter-spacing: 0.06em;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  background: #f8f7f3;
+}
+
+table {
+  border-top: 1px solid var(--theme-ink);
+  border-bottom: 1px solid var(--theme-ink);
+}
+
+th {
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+a {
+  border-bottom: 1px solid var(--theme-accent);
+}
+
+em {
+  font-style: normal;
+  letter-spacing: 0.12em;
+}
+
+img {
+  box-shadow: 0 14px 30px rgba(31, 29, 26, 0.08);
+}
+
+figcaption,
+.md-figcaption {
+  letter-spacing: 0.1em;
+}
+
+hr {
+  width: 36%;
+  margin-left: auto;
+  margin-right: auto;
+}

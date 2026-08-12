@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Contact, Image, Table } from 'lucide-vue-next'
+import { Contact, History, Image, ImagePlus, Link2, Table } from 'lucide-vue-next'
+import { useImageQuickInsert } from '@/composables/useImageQuickInsert'
 import { useUIStore } from '@/stores/ui'
 
 const props = withDefaults(defineProps<{
@@ -11,6 +12,7 @@ const props = withDefaults(defineProps<{
 const { asSub } = toRefs(props)
 const uiStore = useUIStore()
 const { isMobile } = storeToRefs(uiStore)
+const { open: openQuickInsert } = useImageQuickInsert()
 
 const {
   toggleShowInsertFormDialog,
@@ -40,6 +42,18 @@ function openMediaLayout() {
         <Image class="mr-2 h-4 w-4" />
         插入图片
       </MenubarItem>
+      <MenubarItem @click="openQuickInsert('upload')">
+        <ImagePlus class="mr-2 h-4 w-4" />
+        批量插入图片
+      </MenubarItem>
+      <MenubarItem @click="openQuickInsert('link')">
+        <Link2 class="mr-2 h-4 w-4" />
+        按链接插入图片
+      </MenubarItem>
+      <MenubarItem @click="openQuickInsert('recent')">
+        <History class="mr-2 h-4 w-4" />
+        最近使用的图片
+      </MenubarItem>
       <MenubarItem @click="openMediaLayout">
         <Image class="mr-2 h-4 w-4" />
         图片排版模块
@@ -64,6 +78,18 @@ function openMediaLayout() {
       <MenubarItem @click="toggleShowUploadImgDialog()">
         <Image class="mr-2 h-4 w-4" />
         插入图片
+      </MenubarItem>
+      <MenubarItem @click="openQuickInsert('upload')">
+        <ImagePlus class="mr-2 h-4 w-4" />
+        批量插入图片
+      </MenubarItem>
+      <MenubarItem @click="openQuickInsert('link')">
+        <Link2 class="mr-2 h-4 w-4" />
+        按链接插入图片
+      </MenubarItem>
+      <MenubarItem @click="openQuickInsert('recent')">
+        <History class="mr-2 h-4 w-4" />
+        最近使用的图片
       </MenubarItem>
       <MenubarItem @click="openMediaLayout">
         <Image class="mr-2 h-4 w-4" />

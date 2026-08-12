@@ -1,0 +1,188 @@
+/* 复古铅印：以活字版框、铅字编号和轻微压印错位贯穿书评与文化随笔。 */
+
+section,
+container {
+  --theme-accent: var(--md-primary-color);
+  --theme-ink: #241f17;
+  --theme-body: #4b4438;
+  --theme-dim: #756b5a;
+  --theme-line: #c9bea8;
+  --theme-surface: #f1eadb;
+  --theme-paper: #faf6eb;
+  --theme-panel: #fdfaf2;
+
+  --sk-space: 1;
+  --sk-h1-lead: 1.88;
+  --sk-h1-trail: 0.94;
+  --sk-h2-lead: 1.88;
+  --sk-h2-trail: 0.94;
+  --sk-h3-lead: 1.88;
+  --sk-h3-trail: 0.94;
+  --sk-h1-scale: 1.64;
+  --sk-h2-scale: 1.38;
+  --sk-h3-scale: 1.25;
+  --sk-h4-scale: 1.12;
+  --sk-h1-weight: 800;
+  --sk-h1-leading: 1.34;
+  --sk-h2-weight: 750;
+  --sk-h3-weight: 750;
+  --sk-radius: 0px;
+  --sk-body-leading: 1.62;
+  --sk-body-tracking: 0.025em;
+  --sk-para-gap: 0;
+  --sk-list-indent: 1.6em;
+  --sk-marker-color: #725a39;
+  --sk-code-radius: 0px;
+  --sk-code-color: #4a3f2c;
+  --sk-code-surface: #eee5d5;
+  --sk-cell-pad: 0.76em 0.9em;
+  --sk-table-head-line: var(--theme-ink);
+  --sk-table-zebra: #f4efe4;
+  --sk-link-color: #3f3a30;
+  --sk-em-color: #6a6154;
+  --sk-hr-color: var(--theme-ink);
+
+  background-color: var(--theme-paper);
+  padding: 1.15em 1.05em 1.45em;
+  border-top: 1px solid var(--theme-line);
+  border-bottom: 1px solid var(--theme-line);
+}
+
+h1 {
+  padding: 0.95em 0.72em 0.82em;
+  text-align: left;
+  letter-spacing: 0.13em;
+  border: 4px double var(--theme-ink);
+  background-color: #fdf9ef;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='100'%20viewBox='0%200%20320%20100'%3E%3Cg%20fill='%23241f17'%20fill-opacity='.16'%3E%3Crect%20x='10'%20y='10'%20width='8'%20height='8'/%3E%3Crect%20x='302'%20y='10'%20width='8'%20height='8'/%3E%3Crect%20x='10'%20y='82'%20width='8'%20height='8'/%3E%3Crect%20x='302'%20y='82'%20width='8'%20height='8'/%3E%3C/g%3E%3Cpath%20d='M28%2014H92M228%2014H292M28%2086H92M228%2086H292'%20stroke='%23725a39'%20stroke-opacity='.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: 0.24em 0.24em 0 rgba(36, 31, 23, 0.12);
+  text-shadow: 0.04em 0.05em 0 rgba(114, 90, 57, 0.18);
+}
+
+h1::before {
+  content: "LETTERPRESS EDITION";
+  display: block;
+  margin-bottom: 1.3em;
+  color: #756b5a;
+  font-size: calc(var(--md-font-size) * 0.58);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.3em;
+}
+
+h2 {
+  padding: 0.48em 0.62em;
+  letter-spacing: 0.08em;
+  border-top: 3px double var(--theme-ink);
+  border-bottom: 1px solid var(--theme-ink);
+  background: #f6f0e4;
+}
+
+h2::before {
+  content: "§";
+  display: inline-block;
+  margin-right: 0.55em;
+  color: var(--theme-accent);
+  font-weight: 700;
+  vertical-align: 0.02em;
+}
+
+h3 {
+  padding-left: 0.72em;
+  letter-spacing: 0.055em;
+  border-left: 4px double #725a39;
+}
+
+h4,
+h5,
+h6 {
+  color: #6a6154;
+  letter-spacing: 0.08em;
+}
+
+p {
+  margin-bottom: 0;
+  text-align: justify;
+  text-indent: 2em;
+}
+
+blockquote {
+  padding: 0.95em 1.3em 1.1em;
+  border: 3px double var(--theme-ink);
+  background: #f5eddd;
+  color: #50483a;
+  box-shadow: 0.2em 0.2em 0 rgba(36, 31, 23, 0.08);
+}
+
+blockquote::before {
+  content: "❦";
+  display: block;
+  margin-bottom: 0.45em;
+  color: #725a39;
+  font-size: calc(var(--md-font-size) * 1.2);
+  line-height: 1;
+  text-align: center;
+}
+
+blockquote p {
+  color: #50483a;
+  text-indent: 0;
+}
+
+.markdown-alert p {
+  color: #40392f;
+  text-indent: 0;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border-color: var(--theme-line);
+  background: #fdfbf5;
+  box-shadow: 0.26em 0.26em 0 rgba(35, 32, 26, 0.08);
+}
+
+table {
+  border-top: 4px double var(--theme-ink);
+  border-bottom: 4px double var(--theme-ink);
+}
+
+th {
+  background: #e8ddca;
+  color: var(--theme-ink);
+  letter-spacing: 0.08em;
+}
+
+a {
+  border-bottom: 1px solid var(--theme-accent);
+}
+
+strong {
+  padding: 0 0.1em;
+  background: linear-gradient(transparent 62%, color-mix(in srgb, var(--theme-accent) 26%, transparent) 62%);
+}
+
+img {
+  border: 3px double var(--theme-ink);
+  box-shadow: 0.3em 0.3em 0 rgba(36, 31, 23, 0.1);
+}
+
+figcaption,
+.md-figcaption {
+  padding-top: 0.42em;
+  letter-spacing: 0.06em;
+  border-top: 1px solid var(--theme-line);
+}
+
+hr {
+  width: 58%;
+  height: 0.24em;
+  margin-left: auto;
+  margin-right: auto;
+  border-left: 0;
+  border-right: 0;
+  border-top: 1px solid var(--theme-ink);
+  border-bottom: 1px solid var(--theme-ink);
+  background: #d8ccb7;
+}

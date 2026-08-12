@@ -202,6 +202,7 @@ declare global {
   const useId: typeof import('vue').useId
   const useIdle: typeof import('@vueuse/core').useIdle
   const useImage: typeof import('@vueuse/core').useImage
+  const useImageQuickInsert: typeof import('./src/composables/useImageQuickInsert').useImageQuickInsert
   const useImageUploader: typeof import('./src/composables/useImageUploader').useImageUploader
   const useInfiniteScroll: typeof import('@vueuse/core').useInfiniteScroll
   const useIntersectionObserver: typeof import('@vueuse/core').useIntersectionObserver
@@ -274,6 +275,7 @@ declare global {
   const useTextDirection: typeof import('@vueuse/core').useTextDirection
   const useTextSelection: typeof import('@vueuse/core').useTextSelection
   const useTextareaAutosize: typeof import('@vueuse/core').useTextareaAutosize
+  const useThemeDesignerStore: typeof import('./src/stores/themeDesigner').useThemeDesignerStore
   const useThemeStore: typeof import('./src/stores/theme').useThemeStore
   const useThrottle: typeof import('@vueuse/core').useThrottle
   const useThrottleFn: typeof import('@vueuse/core').useThrottleFn
@@ -338,4 +340,7 @@ declare global {
   // @ts-ignore
   export type { Post } from './src/stores/post'
   import('./src/stores/post')
+  // @ts-ignore
+  export type { ImageQuickInsertTab } from './src/composables/useImageQuickInsert'
+  import('./src/composables/useImageQuickInsert')
 }

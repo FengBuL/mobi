@@ -1,0 +1,162 @@
+/* 青花瓷韵：釉白、钴蓝与缠枝开光纹。 */
+
+section,
+container {
+  --theme-accent: var(--md-primary-color);
+  --theme-ink: #14335c;
+  --theme-body: #41556f;
+  --theme-dim: #566f8a;
+  --theme-line: #c6d8e9;
+  --theme-surface: #eef4fa;
+  --theme-paper: #f8fbfd;
+  --theme-panel: #ffffff;
+
+  --sk-space: 1;
+  --sk-h1-scale: 1.62;
+  --sk-h2-scale: 1.38;
+  --sk-h3-scale: 1.25;
+  --sk-h4-scale: 1.06;
+  --sk-h1-lead: 1.88;
+  --sk-h1-trail: 0.94;
+  --sk-h2-lead: 1.88;
+  --sk-h2-trail: 0.94;
+  --sk-h1-weight: 600;
+  --sk-h1-leading: 1.44;
+  --sk-h1-color: var(--theme-accent);
+  --sk-h2-weight: 600;
+  --sk-h2-pad: 0.6em 1em;
+  --sk-h2-radius: 14px 4px 14px 4px;
+  --sk-h2-surface: var(--theme-surface);
+  --sk-h3-weight: 600;
+  --sk-h3-bar: 3px;
+  --sk-h3-pad: 0 0 0 0.8em;
+  --sk-h3-color: var(--theme-accent);
+  --sk-radius: 10px;
+  --sk-body-leading: 1.75;
+  --sk-body-tracking: 0.03em;
+  --sk-list-indent: 1.6em;
+  --sk-marker-color: color-mix(in srgb, var(--theme-accent) 82%, white);
+  --sk-code-radius: 5px;
+  --sk-code-color: var(--theme-accent);
+  --sk-code-surface: #e3eef8;
+  --sk-cell-pad: 0.74em 0.9em;
+  --sk-table-head-surface: var(--theme-accent);
+  --sk-table-head-ink: #f4f9fc;
+  --sk-table-head-line: #a9c6e0;
+  --sk-table-zebra: var(--theme-surface);
+  --sk-img-radius: 10px;
+  --sk-link-color: var(--theme-accent);
+  --sk-strong-color: var(--theme-accent);
+  --sk-em-color: #3d6d9e;
+  --sk-hr-color: var(--theme-accent);
+
+  background: var(--theme-paper);
+  padding: 1.25em 1.15em 1.45em;
+  border: 1px solid var(--theme-line);
+  border-radius: 8px;
+}
+
+h1 {
+  padding: 1.1em 0.7em 0.95em;
+  text-align: center;
+  letter-spacing: 0.18em;
+  border: 1px solid var(--theme-accent);
+  border-radius: 16px 4px 16px 4px;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='104'%20viewBox='0%200%20320%20104'%3E%3Cg%20fill='none'%20stroke='%231e4f8a'%20stroke-opacity='.48'%3E%3Cpath%20d='M4%2052C22%2052%2022%2018%2048%2018C74%2018%2074%2052%2096%2052M316%2052C298%2052%20298%2018%20272%2018C246%2018%20246%2052%20224%2052'/%3E%3Cpath%20d='M4%2052C22%2052%2022%2086%2048%2086C74%2086%2074%2052%2096%2052M316%2052C298%2052%20298%2086%20272%2086C246%2086%20246%2052%20224%2052'/%3E%3Ccircle%20cx='48'%20cy='52'%20r='9'/%3E%3Ccircle%20cx='272'%20cy='52'%20r='9'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: inset 0 0 0 0.4em #fff;
+}
+
+h2 {
+  text-align: center;
+  letter-spacing: 0.12em;
+  border: 1px solid color-mix(in srgb, var(--theme-accent) 24%, white);
+  background-color: color-mix(in srgb, var(--theme-surface) 48%, white);
+}
+
+h2::before {
+  content: "◇";
+  margin-right: 0.5em;
+  color: color-mix(in srgb, var(--theme-accent) 48%, white);
+  font-size: calc(var(--md-font-size) * 0.72);
+  vertical-align: 0.1em;
+}
+
+h3 {
+  letter-spacing: 0.1em;
+}
+
+h4,
+h5,
+h6 {
+  color: #3d6d9e;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+p {
+  text-align: justify;
+}
+
+li {
+  text-align: justify;
+}
+
+blockquote {
+  padding: 1.15em 1.35em;
+  border: 1px solid var(--theme-line);
+  border-radius: 14px 4px 14px 4px;
+  background-color: color-mix(in srgb, var(--theme-surface) 48%, white);
+  color: #33506e;
+}
+
+blockquote p {
+  color: #33506e;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border-color: var(--theme-line);
+  background: #f4f9fc;
+}
+
+table {
+  border: 1px solid var(--theme-line);
+}
+
+th {
+  border: 1px solid #a9c6e0;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+td {
+  border: 1px solid var(--theme-line);
+}
+
+em {
+  font-style: normal;
+  letter-spacing: 0.1em;
+}
+
+img {
+  border: 1px solid var(--theme-line);
+  box-shadow: 0 14px 30px rgba(20, 51, 92, 0.1);
+}
+
+figcaption,
+.md-figcaption {
+  letter-spacing: 0.08em;
+}
+
+hr {
+  width: 52%;
+  height: 0.42em;
+  margin-left: auto;
+  margin-right: auto;
+  border: 0;
+  border-top: 2px dotted var(--theme-accent);
+  border-bottom: 2px dotted color-mix(in srgb, var(--theme-accent) 42%, white);
+}

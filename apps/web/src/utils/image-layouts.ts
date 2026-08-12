@@ -3,6 +3,8 @@ export type MediaLayoutFamily = `quiet` | `focus` | `contrast` | `editorial`
 export type MediaLayoutTextMode = `plain` | `brief` | `story`
 export type MediaAspectRatio = `auto` | `16:9` | `4:3` | `1:1` | `3:4` | `9:16`
 
+export const MEDIA_LAYOUT_MAX_SLOTS = 4
+
 export const mediaAspectRatioOptions: Array<{ value: MediaAspectRatio, label: string }> = [
   { value: `auto`, label: `原图比例` },
   { value: `16:9`, label: `横版 16:9` },
@@ -270,7 +272,163 @@ export const mediaLayoutPresets: MediaLayoutPreset[] = [
     slotCount: 2,
     requiredImageCount: 2,
   },
+  {
+    id: `polaroid-single`,
+    category: `image`,
+    family: `quiet`,
+    textMode: `plain`,
+    name: `拍立得相框`,
+    description: `白色厚相框加底部留白，适合生活照、现场随拍和人物照`,
+    cue: `拍立得`,
+    slotCount: 1,
+    requiredImageCount: 1,
+  },
+  {
+    id: `shadow-card-single`,
+    category: `image`,
+    family: `focus`,
+    textMode: `plain`,
+    name: `投影卡片图`,
+    description: `大圆角配柔和投影，图片像卡片一样浮起来，适合产品图和界面图`,
+    cue: `悬浮`,
+    slotCount: 1,
+    requiredImageCount: 1,
+  },
+  {
+    id: `full-bleed-single`,
+    category: `image`,
+    family: `editorial`,
+    textMode: `plain`,
+    name: `满栏直角图`,
+    description: `去掉圆角贴满栏宽，图注左对齐加细分割线，适合封面和大场景`,
+    cue: `满栏`,
+    slotCount: 1,
+    requiredImageCount: 1,
+  },
+  {
+    id: `compare-pair`,
+    category: `image`,
+    family: `contrast`,
+    textMode: `plain`,
+    name: `左右对比`,
+    description: `两张图中间加分隔线，左右各带一个角标，适合改版前后和方案对照`,
+    cue: `前后`,
+    slotCount: 2,
+    requiredImageCount: 2,
+  },
+  {
+    id: `magazine-spread`,
+    category: `image`,
+    family: `editorial`,
+    textMode: `plain`,
+    name: `杂志跨页`,
+    description: `两张图零间距无缝拼接，外圆角内细缝，适合全景和连续画面`,
+    cue: `跨页`,
+    slotCount: 2,
+    requiredImageCount: 2,
+  },
+  {
+    id: `quad-grid`,
+    category: `image`,
+    family: `quiet`,
+    textMode: `plain`,
+    name: `四宫格`,
+    description: `2×2 等分方图，适合活动返图、素材集和同系列展示`,
+    cue: `四格`,
+    slotCount: 4,
+    requiredImageCount: 4,
+  },
+  {
+    id: `hero-trio`,
+    category: `image`,
+    family: `focus`,
+    textMode: `plain`,
+    name: `一主三副`,
+    description: `上方一张主图压场，下方三张小图补细节，适合专题头图`,
+    cue: `一拖三`,
+    slotCount: 4,
+    requiredImageCount: 4,
+  },
+  {
+    id: `numbered-figure`,
+    category: `mixed`,
+    family: `editorial`,
+    textMode: `brief`,
+    name: `编号图注`,
+    description: `图片左上角带编号角标，下方是左对齐竖线图注，适合步骤讲解`,
+    cue: `编号`,
+    slotCount: 1,
+    requiredImageCount: 1,
+  },
+  {
+    id: `gradient-caption`,
+    category: `mixed`,
+    family: `focus`,
+    textMode: `brief`,
+    name: `渐变标题图`,
+    description: `标题直接压在图片底部的渐变遮罩上，适合封面图和栏目头图`,
+    cue: `遮罩`,
+    slotCount: 1,
+    requiredImageCount: 1,
+  },
+  {
+    id: `quote-figure`,
+    category: `mixed`,
+    family: `quiet`,
+    textMode: `brief`,
+    name: `引用配图`,
+    description: `图片下方接一段竖线引用文字和署名，适合观点、金句和访谈`,
+    cue: `引用`,
+    slotCount: 1,
+    requiredImageCount: 1,
+  },
 ]
+
+const extendedMediaLayoutPresetIds = new Set([
+  `polaroid-single`,
+  `shadow-card-single`,
+  `full-bleed-single`,
+  `compare-pair`,
+  `magazine-spread`,
+  `quad-grid`,
+  `hero-trio`,
+  `numbered-figure`,
+  `gradient-caption`,
+  `quote-figure`,
+])
+
+const badgeMediaLayoutPresetIds = new Set([`compare-pair`, `numbered-figure`])
+
+export function isExtendedMediaLayoutPreset(presetId: string) {
+  return extendedMediaLayoutPresetIds.has(presetId)
+}
+
+export function mediaLayoutPresetSupportsBadge(presetId: string) {
+  return badgeMediaLayoutPresetIds.has(presetId)
+}
+
+export function getMediaLayoutBadgeFallback(presetId: string, index: number) {
+  if (presetId === `compare-pair`) {
+    return index === 0 ? `前` : `后`
+  }
+  if (presetId === `numbered-figure`) {
+    return `0${index + 1}`
+  }
+  return ``
+}
+
+export function getMediaLayoutCopyPlaceholders(presetId: string) {
+  if (presetId === `quote-figure`) {
+    return { title: `署名或出处，可不填`, body: `引用文字，可不填` }
+  }
+  if (presetId === `gradient-caption`) {
+    return { title: `压在图片上的标题，可不填`, body: `压在图片上的副标题，可不填` }
+  }
+  if (presetId === `numbered-figure`) {
+    return { title: `图注标题，可不填`, body: `图注说明，可不填` }
+  }
+  return { title: `标题，可不填`, body: `摘要，一两句话即可，可不填` }
+}
 
 function escapeHtml(value: string) {
   return value
@@ -353,7 +511,22 @@ function resolveImageUrl(slot: MediaLayoutImageSlot, index: number, preview: boo
   return preview ? createPlaceholder(slot.alt || `图片 ${index + 1}`, index) : ``
 }
 
-function renderImageFigure(slot: MediaLayoutImageSlot, index: number, preview: boolean, extraClass = ``) {
+interface FigureRenderOptions {
+  figureStyle?: string
+  frameStyle?: string
+  imageStyle?: string
+  captionStyle?: string
+  overlay?: string
+  suppressCaption?: boolean
+}
+
+function renderImageFigure(
+  slot: MediaLayoutImageSlot,
+  index: number,
+  preview: boolean,
+  extraClass = ``,
+  options: FigureRenderOptions = {},
+) {
   const url = resolveImageUrl(slot, index, preview)
   const alt = escapeHtml(slot.alt.trim() || `图片 ${index + 1}`)
   const ratioClass = slot.aspectRatio === `auto` ? `md-media-figure--auto` : ``
@@ -366,15 +539,23 @@ function renderImageFigure(slot: MediaLayoutImageSlot, index: number, preview: b
   if (slot.minHeight > 0) {
     styleTokens.push(`--md-media-min-height:${Math.round(slot.minHeight)}px`)
   }
+  if (options.figureStyle) {
+    styleTokens.push(options.figureStyle)
+  }
   const style = styleTokens.length > 0 ? ` style="${styleTokens.join(`;`)}"` : ``
-  const caption = hasText(slot.caption)
-    ? `<figcaption class="md-media-figure__caption">${formatText(slot.caption)}</figcaption>`
+  const frameStyle = options.frameStyle ? ` style="${options.frameStyle}"` : ``
+  const imageStyle = options.imageStyle ? ` style="${options.imageStyle}"` : ``
+  const captionStyle = options.captionStyle ? ` style="${options.captionStyle}"` : ``
+  const overlay = options.overlay ?? ``
+  const caption = !options.suppressCaption && hasText(slot.caption)
+    ? `<figcaption class="md-media-figure__caption"${captionStyle}>${formatText(slot.caption)}</figcaption>`
     : ``
 
   return `
     <figure class="${className}"${style}>
-      <span class="md-media-figure__frame">
-        <img class="md-media-figure__image" src="${url}" alt="${alt}" />
+      <span class="md-media-figure__frame"${frameStyle}>
+        <img class="md-media-figure__image" src="${url}" alt="${alt}"${imageStyle} />
+        ${overlay}
       </span>
       ${caption}
     </figure>
@@ -482,6 +663,247 @@ function renderStoryCard(slot: MediaLayoutImageSlot, index: number, preview: boo
   `
 }
 
+const extendedCaptionCenterStyle = `padding:0.62rem 0.2rem 0;font-size:0.82em;line-height:1.6;text-align:center;`
+const extendedBadgeBaseStyle = `position:absolute;z-index:2;left:12px;top:12px;display:inline-block;padding:0.24em 0.72em;border-radius:999px;background:var(--md-primary-color);color:#ffffff;font-size:0.72em;font-weight:700;line-height:1.6;letter-spacing:0.02em;`
+
+function resolveBadgeText(slot: MediaLayoutImageSlot, presetId: string, index: number) {
+  const custom = slot.title.trim()
+  return custom || getMediaLayoutBadgeFallback(presetId, index)
+}
+
+function renderBadge(text: string) {
+  if (!hasText(text)) {
+    return ``
+  }
+  return `<span class="md-media-x-badge" style="${extendedBadgeBaseStyle}">${formatText(text)}</span>`
+}
+
+function renderExtendedGrid(columns: string, gap: string, children: string[], extraStyle = ``) {
+  return `
+    <div class="md-media-x-grid" style="display:grid;grid-template-columns:${columns};gap:${gap};align-items:start;${extraStyle}">
+      ${children.join(`\n`)}
+    </div>
+  `
+}
+
+function renderRuleCopy(form: MediaLayoutFormState, options: { marginTop?: string } = {}) {
+  const title = hasText(form.bodyTitle)
+    ? `<p class="md-media-content__title" style="margin:0;font-size:0.94em;line-height:1.5;">${formatText(form.bodyTitle)}</p>`
+    : ``
+  const body = hasText(form.bodyText)
+    ? `<p class="md-media-content__body" style="margin:${title ? `0.4rem` : `0`} 0 0;font-size:0.86em;line-height:1.72;">${formatText(form.bodyText)}</p>`
+    : ``
+
+  if (!title && !body) {
+    return ``
+  }
+
+  return `
+    <div class="md-media-x-copy" style="margin-top:${options.marginTop ?? `0.75rem`};padding:0.1rem 0 0.1rem 0.75rem;border-left:3px solid var(--md-primary-color);">
+      ${title}
+      ${body}
+    </div>
+  `
+}
+
+function renderQuoteCopy(form: MediaLayoutFormState) {
+  const quote = hasText(form.bodyText)
+    ? `<p class="md-media-content__body" style="margin:0;font-size:0.94em;line-height:1.85;">${formatText(form.bodyText)}</p>`
+    : ``
+  const source = hasText(form.bodyTitle)
+    ? `<p class="md-media-content__meta" style="margin:${quote ? `0.55rem` : `0`} 0 0;font-size:0.8em;line-height:1.6;text-align:right;">— ${formatText(form.bodyTitle)}</p>`
+    : ``
+
+  if (!quote && !source) {
+    return ``
+  }
+
+  return `
+    <div class="md-media-x-copy" style="margin-top:0.85rem;padding:0.1rem 0 0.1rem 0.9rem;border-left:3px solid var(--md-primary-color);">
+      ${quote}
+      ${source}
+    </div>
+  `
+}
+
+function renderGradientOverlay(form: MediaLayoutFormState) {
+  const title = hasText(form.bodyTitle)
+    ? `<span class="md-media-content__title" style="display:block;margin:0;color:#ffffff;font-size:1.02em;font-weight:700;line-height:1.45;">${formatText(form.bodyTitle)}</span>`
+    : ``
+  const body = hasText(form.bodyText)
+    ? `<span class="md-media-content__body" style="display:block;margin:${title ? `0.35rem` : `0`} 0 0;color:rgba(255,255,255,0.84);font-size:0.82em;line-height:1.65;">${formatText(form.bodyText)}</span>`
+    : ``
+
+  if (!title && !body) {
+    return ``
+  }
+
+  return `
+    <span class="md-media-x-copy" style="position:absolute;z-index:2;left:0;right:0;bottom:0;display:block;padding:2.6rem 1rem 0.95rem;background-image:linear-gradient(to top, rgba(15,23,42,0.88), rgba(15,23,42,0.52) 46%, rgba(15,23,42,0));">
+      ${title}
+      ${body}
+    </span>
+  `
+}
+
+function buildExtendedMediaLayoutMarkup(
+  preset: MediaLayoutPreset,
+  form: MediaLayoutFormState,
+  preview: boolean,
+  sectionHeader: string,
+) {
+  const slots = form.images.slice(0, preset.slotCount)
+
+  if (preset.id === `polaroid-single`) {
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        <div class="md-media-x-polaroid" style="padding:0.85rem 0.85rem 1.1rem;border:1px solid #ececec;border-radius:6px;background:#ffffff;box-shadow:0 14px 32px rgba(15,23,42,0.15);">
+          ${renderImageFigure(slots[0], 0, preview, ``, {
+            frameStyle: `border-radius:2px;`,
+            imageStyle: `border-radius:2px;`,
+            captionStyle: `padding:0.85rem 0.3rem 0;font-size:0.82em;line-height:1.6;text-align:center;color:#6b7280;`,
+          })}
+        </div>
+      </section>
+    `)
+  }
+
+  if (preset.id === `shadow-card-single`) {
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        ${renderImageFigure(slots[0], 0, preview, ``, {
+          figureStyle: `overflow:visible;`,
+          frameStyle: `border-radius:20px;border:1px solid rgba(15,23,42,0.06);box-shadow:0 18px 40px rgba(15,23,42,0.2);`,
+          imageStyle: `border-radius:20px;`,
+          captionStyle: `padding:1rem 0.2rem 0;font-size:0.82em;line-height:1.6;text-align:center;`,
+        })}
+      </section>
+    `)
+  }
+
+  if (preset.id === `full-bleed-single`) {
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        ${renderImageFigure(slots[0], 0, preview, ``, {
+          frameStyle: `border-radius:0;`,
+          imageStyle: `border-radius:0;`,
+          captionStyle: `margin-top:0.65rem;padding:0.6rem 0 0;border-top:1px solid #e5e7eb;font-size:0.8em;line-height:1.6;text-align:left;`,
+        })}
+      </section>
+    `)
+  }
+
+  if (preset.id === `compare-pair`) {
+    const left = renderImageFigure(slots[0], 0, preview, ``, {
+      captionStyle: extendedCaptionCenterStyle,
+      overlay: renderBadge(resolveBadgeText(slots[0], preset.id, 0)),
+    })
+    const right = renderImageFigure(slots[1], 1, preview, ``, {
+      captionStyle: extendedCaptionCenterStyle,
+      overlay: renderBadge(resolveBadgeText(slots[1], preset.id, 1)),
+    })
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        <div class="md-media-x-compare" style="display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);gap:0.68rem;align-items:stretch;">
+          ${left}
+          <span class="md-media-x-divider" style="display:block;width:1px;background:#e5e7eb;"></span>
+          ${right}
+        </div>
+      </section>
+    `)
+  }
+
+  if (preset.id === `magazine-spread`) {
+    const left = renderImageFigure(slots[0], 0, preview, ``, {
+      frameStyle: `border-radius:18px 0 0 18px;`,
+      imageStyle: `border-radius:18px 0 0 18px;`,
+      captionStyle: extendedCaptionCenterStyle,
+    })
+    const right = renderImageFigure(slots[1], 1, preview, ``, {
+      frameStyle: `border-radius:0 18px 18px 0;border-left:1px solid rgba(255,255,255,0.55);`,
+      imageStyle: `border-radius:0 18px 18px 0;`,
+      captionStyle: extendedCaptionCenterStyle,
+    })
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        ${renderExtendedGrid(`repeat(2, minmax(0, 1fr))`, `0`, [left, right])}
+      </section>
+    `)
+  }
+
+  if (preset.id === `quad-grid`) {
+    const cells = slots.map((slot, index) => renderImageFigure(slot, index, preview, ``, {
+      captionStyle: extendedCaptionCenterStyle,
+    }))
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        ${renderExtendedGrid(`repeat(2, minmax(0, 1fr))`, `0.5rem`, cells)}
+      </section>
+    `)
+  }
+
+  if (preset.id === `hero-trio`) {
+    const hero = renderImageFigure(slots[0], 0, preview, ``, {
+      captionStyle: extendedCaptionCenterStyle,
+    })
+    const tail = slots.slice(1).map((slot, index) => renderImageFigure(slot, index + 1, preview, ``, {
+      captionStyle: extendedCaptionCenterStyle,
+    }))
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        ${hero}
+        ${renderExtendedGrid(`repeat(3, minmax(0, 1fr))`, `0.45rem`, tail, `margin-top:0.5rem;`)}
+      </section>
+    `)
+  }
+
+  if (preset.id === `numbered-figure`) {
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        ${renderImageFigure(slots[0], 0, preview, ``, {
+          captionStyle: extendedCaptionCenterStyle,
+          overlay: renderBadge(resolveBadgeText(slots[0], preset.id, 0)),
+        })}
+        ${renderRuleCopy(form)}
+      </section>
+    `)
+  }
+
+  if (preset.id === `gradient-caption`) {
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        ${renderImageFigure(slots[0], 0, preview, ``, {
+          captionStyle: extendedCaptionCenterStyle,
+          overlay: renderGradientOverlay(form),
+        })}
+      </section>
+    `)
+  }
+
+  if (preset.id === `quote-figure`) {
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        ${renderImageFigure(slots[0], 0, preview, ``, {
+          captionStyle: extendedCaptionCenterStyle,
+        })}
+        ${renderQuoteCopy(form)}
+      </section>
+    `)
+  }
+
+  return ``
+}
+
 export function createDefaultMediaLayoutState(): MediaLayoutFormState {
   return {
     blockWidth: 100,
@@ -493,7 +915,7 @@ export function createDefaultMediaLayoutState(): MediaLayoutFormState {
     secondaryText: `这里填写补充说明、时间、地点或一句简短结论。`,
     ctaText: `延伸阅读`,
     ctaUrl: `https://example.com`,
-    images: Array.from({ length: 3 }, (_, index) => createDefaultImageSlot(index)),
+    images: Array.from({ length: MEDIA_LAYOUT_MAX_SLOTS }, (_, index) => createDefaultImageSlot(index)),
   }
 }
 
@@ -508,7 +930,7 @@ export function cloneMediaLayoutState(state: MediaLayoutFormState = createDefaul
     secondaryText: state.secondaryText,
     ctaText: state.ctaText,
     ctaUrl: state.ctaUrl,
-    images: Array.from({ length: 3 }, (_, index) => ({
+    images: Array.from({ length: MEDIA_LAYOUT_MAX_SLOTS }, (_, index) => ({
       ...createDefaultImageSlot(index),
       ...(state.images[index] ?? {}),
       aspectRatio: state.images[index]?.aspectRatio ?? createDefaultImageSlot(index).aspectRatio,
@@ -528,13 +950,60 @@ export function normalizeMediaLayoutState(
   return cloneMediaLayoutState({
     ...defaults,
     ...state,
-    images: Array.from({ length: 3 }, (_, index) => ({
+    images: Array.from({ length: MEDIA_LAYOUT_MAX_SLOTS }, (_, index) => ({
       ...defaults.images[index],
       ...(state.images?.[index] ?? {}),
       aspectRatio: state.images?.[index]?.aspectRatio ?? defaults.images[index].aspectRatio,
       minHeight: state.images?.[index]?.minHeight ?? defaults.images[index].minHeight,
     })),
   })
+}
+
+const autoMediaLayoutPresetMap: Record<number, string> = {
+  1: `hero-image`,
+  2: `duo-gallery`,
+  3: `triptych-gallery`,
+  4: `quad-grid`,
+}
+
+/**
+ * 按图片张数挑一个默认版式，用于批量插入时自动套版
+ */
+export function resolveAutoMediaLayoutPresetId(count: number) {
+  return autoMediaLayoutPresetMap[Math.min(Math.max(count, 1), MEDIA_LAYOUT_MAX_SLOTS)] ?? `hero-image`
+}
+
+export function createMediaLayoutStateFromImages(
+  preset: MediaLayoutPreset,
+  images: Array<{ url: string, alt?: string }>,
+): MediaLayoutFormState {
+  const state = createDefaultMediaLayoutState()
+  const slotDefaults = getMediaLayoutPresetSlotDefaults(preset.id)
+
+  state.sectionLabel = ``
+  state.sectionTitle = ``
+  state.sectionLead = ``
+  state.bodyTitle = ``
+  state.bodyText = ``
+  state.secondaryText = ``
+  state.ctaText = ``
+  state.ctaUrl = ``
+  state.images = state.images.map((slot, index) => {
+    const defaults = slotDefaults[index] ?? slotDefaults[slotDefaults.length - 1]
+    const image = images[index]
+    return {
+      ...slot,
+      url: image?.url ?? ``,
+      alt: image?.alt?.trim() || `图片 ${index + 1}`,
+      caption: ``,
+      title: mediaLayoutPresetSupportsBadge(preset.id) ? getMediaLayoutBadgeFallback(preset.id, index) : ``,
+      summary: ``,
+      aspectRatio: defaults?.aspectRatio ?? slot.aspectRatio,
+      minHeight: defaults?.minHeight ?? slot.minHeight,
+    }
+  })
+
+  return state
 }
 
 export function getMediaLayoutPresetSlotDefaults(presetId: string) {
@@ -615,6 +1084,47 @@ export function getMediaLayoutPresetSlotDefaults(presetId: string) {
       { aspectRatio: `4:3` as MediaAspectRatio, minHeight: 220 },
     ]
   }
+  if (presetId === `polaroid-single`) {
+    return [{ aspectRatio: `1:1` as MediaAspectRatio, minHeight: 300 }]
+  }
+  if (presetId === `shadow-card-single`) {
+    return [{ aspectRatio: `16:9` as MediaAspectRatio, minHeight: 300 }]
+  }
+  if (presetId === `full-bleed-single`) {
+    return [{ aspectRatio: `16:9` as MediaAspectRatio, minHeight: 300 }]
+  }
+  if (presetId === `compare-pair`) {
+    return [
+      { aspectRatio: `4:3` as MediaAspectRatio, minHeight: 240 },
+      { aspectRatio: `4:3` as MediaAspectRatio, minHeight: 240 },
+    ]
+  }
+  if (presetId === `magazine-spread`) {
+    return [
+      { aspectRatio: `4:3` as MediaAspectRatio, minHeight: 240 },
+      { aspectRatio: `4:3` as MediaAspectRatio, minHeight: 240 },
+    ]
+  }
+  if (presetId === `quad-grid`) {
+    return Array.from({ length: 4 }, () => ({ aspectRatio: `1:1` as MediaAspectRatio, minHeight: 180 }))
+  }
+  if (presetId === `hero-trio`) {
+    return [
+      { aspectRatio: `16:9` as MediaAspectRatio, minHeight: 260 },
+      { aspectRatio: `1:1` as MediaAspectRatio, minHeight: 140 },
+      { aspectRatio: `1:1` as MediaAspectRatio, minHeight: 140 },
+      { aspectRatio: `1:1` as MediaAspectRatio, minHeight: 140 },
+    ]
+  }
+  if (presetId === `numbered-figure`) {
+    return [{ aspectRatio: `4:3` as MediaAspectRatio, minHeight: 280 }]
+  }
+  if (presetId === `gradient-caption`) {
+    return [{ aspectRatio: `16:9` as MediaAspectRatio, minHeight: 300 }]
+  }
+  if (presetId === `quote-figure`) {
+    return [{ aspectRatio: `16:9` as MediaAspectRatio, minHeight: 280 }]
+  }
 
   return [
     { aspectRatio: `4:3` as MediaAspectRatio, minHeight: 260 },
@@ -689,7 +1199,8 @@ export function parseMediaLayoutBlocks(content: string): MediaLayoutBlockEntry[]
       to: from + raw.length,
       title,
       presetId,
-      layoutType: raw.includes(`md-media-combo`) ? `mixed` : `image`,
+      layoutType: mediaLayoutPresets.find(item => item.id === presetId)?.category
+        ?? (raw.includes(`md-media-combo`) ? `mixed` : `image`),
       form,
       images,
     })
@@ -835,6 +1346,15 @@ function parseMediaLayoutForm(raw: string): MediaLayoutFormState {
       form.images[0].aspectRatio = `auto`
     }
 
+    if (mediaLayoutPresetSupportsBadge(presetId)) {
+      figures.forEach((figure, index) => {
+        if (!form.images[index]) {
+          return
+        }
+        form.images[index].title = figure.querySelector(`.md-media-x-badge`)?.textContent?.trim() || ``
+      })
+    }
+
     if (presetId === `story-pair`) {
       const cards = Array.from(section.querySelectorAll<HTMLElement>(`.md-media-story-card`))
       cards.forEach((card, index) => {
@@ -847,7 +1367,15 @@ function parseMediaLayoutForm(raw: string): MediaLayoutFormState {
       return form
     }
 
-    const contentBlock = section.querySelector<HTMLElement>(`.md-media-combo__content, .md-media-combo__spotlight-card, .md-media-combo__caption-band`)
+    if (presetId === `quote-figure`) {
+      const quoteBlock = section.querySelector<HTMLElement>(`.md-media-x-copy`)
+      form.bodyText = quoteBlock?.querySelector(`.md-media-content__body`)?.textContent?.trim() || ``
+      form.bodyTitle = (quoteBlock?.querySelector(`.md-media-content__meta`)?.textContent?.trim() || ``)
+        .replace(/^—\s*/u, ``)
+      return form
+    }
+
+    const contentBlock = section.querySelector<HTMLElement>(`.md-media-combo__content, .md-media-combo__spotlight-card, .md-media-combo__caption-band, .md-media-x-copy`)
     if (contentBlock) {
       form.bodyTitle = contentBlock.querySelector(`.md-media-content__title`)?.textContent?.trim() || ``
       const bodyParagraphs = Array.from(contentBlock.querySelectorAll<HTMLElement>(`.md-media-content__body`))
@@ -874,6 +1402,10 @@ export function restoreMediaLayoutBlockToMarkdown(block: MediaLayoutBlockEntry) 
 export function buildMediaLayoutMarkup(preset: MediaLayoutPreset, form: MediaLayoutFormState, preview = false) {
   const slots = form.images.slice(0, preset.slotCount)
   const sectionHeader = renderSectionHeader(form)
+
+  if (isExtendedMediaLayoutPreset(preset.id)) {
+    return buildExtendedMediaLayoutMarkup(preset, form, preview, sectionHeader)
+  }
 
   if (preset.id === `hero-image`) {
     return stripMarkupIndent(`

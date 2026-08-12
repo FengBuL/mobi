@@ -1,0 +1,245 @@
+/**
+ * 参数化骨架层 (Theme Skeleton)
+ *
+ * 审计发现 14 套主题共用同一副 CSS 骨架，最高结构相似度 91.7%，两个文件的差别只有色值。
+ * 这一层把那副骨架收进来做成可配置的默认皮肤：主题只声明一组 token，剩下的结构由这里出。
+ *
+ * 注入顺序：变量 → base.css → 本层 → 主题 CSS → 标题预设 → 编辑器覆盖层 → 用户 CSS。
+ * 本层和主题 CSS 走同一套作用域包装，特异性相同而主题在后，所以主题永远能覆盖本层——
+ * 想给某套主题换一种独特的标题手法，直接在它自己的文件里写就行，不需要动这里。
+ *
+ * 调色板 token（主题在 section 与 container 上声明）：
+ *   --theme-accent   强调色，默认跟随用户主色
+ *   --theme-ink      标题墨色，同时作为整体前景色
+ *   --theme-body     正文字色
+ *   --theme-dim      图注与弱化字色
+ *   --theme-line     分隔线与描边
+ *   --theme-surface  浅色块底
+ *   --theme-paper    纸面底色
+ *   --theme-panel    面板底色，深色主题用它把提示块从纸面上抬起来
+ *
+ * ── 间距一律以正文字号为基准 ──
+ * `margin: 2.8em` 写在 h2 上时，em 是相对 h2 自己的字号的，字号越大间距被放大得越多。
+ * 958 篇真实公众号文章实测：标题上间距中位数是正文的 1.88em、下间距 0.94em，严格 2:1
+ * （来源是微信编辑器自己的 margin-top:30px / margin-bottom:15px 默认值，全行业都继承了）。
+ * 所以这里所有纵向间距都写成 `calc(var(--md-font-size) * N * var(--sk-space))`，
+ * 代码里的 N 就是「正文 em」，跟语料的表能直接对上，换字号也不会连锁走形。
+ *
+ *   --sk-space           整套节奏倍率，留白型主题调到 1.1~1.2，紧凑型 0.85~0.95
+ *   --sk-hN-lead/trail   第 N 级标题的上 / 下间距，单位是正文 em
+ *   --sk-para-gap 等     段落、列表、引用块、代码块、表格、图片、分隔线的块间距
+ *
+ * ── 字号阶梯 ──
+ * 语料中位数是 1.13 / 1.25 / 1.38 / 1.50（h4/h3/h2/h1），等差 0.125 的克制线性递增。
+ * 这里取 1.12 / 1.25 / 1.38 / 1.62：h4~h2 照抄语料，h1 因为在我们这里承担的是
+ * 正文内的篇名（语料的 h1 样本只有 99 个且大多是小标题）而抬到 P75 与 P90 之间。
+ *
+ * 结构 token 一律以「不加装饰」为默认值，主题声明了才生效。
+ *
+ * 注意：作用域包装器会把注释算进选择器文本，所以标题规则前面不要放注释，
+ * 否则 h1 拿不到 `#output section h1` 那一档特异性。
+ */
+
+section,
+container {
+  --theme-accent: var(--md-primary-color);
+  --theme-ink: #151515;
+  --theme-body: #3d3d3d;
+  --theme-dim: #8a8a8a;
+  --theme-line: #dcdcdc;
+  --theme-surface: #f4f4f4;
+  --theme-paper: #ffffff;
+
+  --md-alert-paper: var(--theme-panel, var(--theme-paper));
+  --md-alert-ink: var(--theme-ink);
+  --md-alert-radius: var(--sk-radius, 12px);
+
+  color: var(--theme-ink);
+}
+
+h1 {
+  margin-top: calc(var(--md-font-size) * var(--sk-h1-lead, 2) * var(--sk-space, 1));
+  margin-bottom: calc(var(--md-font-size) * var(--sk-h1-trail, 1) * var(--sk-space, 1));
+  color: var(--sk-h1-color, var(--theme-ink));
+  font-size: calc(var(--md-font-size) * var(--sk-h1-scale, 1.62));
+  font-weight: var(--sk-h1-weight, 800);
+  line-height: var(--sk-h1-leading, 1.3);
+}
+
+h2 {
+  margin-top: calc(var(--md-font-size) * var(--sk-h2-lead, 1.9) * var(--sk-space, 1));
+  margin-bottom: calc(var(--md-font-size) * var(--sk-h2-trail, 0.95) * var(--sk-space, 1));
+  margin-left: var(--sk-h2-inset, 0);
+  margin-right: var(--sk-h2-inset, 0);
+  padding: var(--sk-h2-pad, 0);
+  color: var(--sk-h2-color, var(--theme-ink));
+  font-size: calc(var(--md-font-size) * var(--sk-h2-scale, 1.38));
+  font-weight: var(--sk-h2-weight, 800);
+  line-height: var(--sk-h2-leading, 1.36);
+  border-left: var(--sk-h2-bar, 0) solid var(--sk-h2-bar-color, var(--theme-accent));
+  border-radius: var(--sk-h2-radius, 0);
+  background: var(--sk-h2-surface, transparent);
+}
+
+h3 {
+  margin-top: calc(var(--md-font-size) * var(--sk-h3-lead, 1.7) * var(--sk-space, 1));
+  margin-bottom: calc(var(--md-font-size) * var(--sk-h3-trail, 0.85) * var(--sk-space, 1));
+  padding: var(--sk-h3-pad, 0);
+  color: var(--sk-h3-color, var(--theme-ink));
+  font-size: calc(var(--md-font-size) * var(--sk-h3-scale, 1.25));
+  font-weight: var(--sk-h3-weight, 750);
+  line-height: var(--sk-h3-leading, 1.42);
+  border-left: var(--sk-h3-bar, 0) solid var(--sk-h3-bar-color, var(--theme-accent));
+}
+
+h4 {
+  margin-top: calc(var(--md-font-size) * var(--sk-h4-lead, 1.4) * var(--sk-space, 1));
+  margin-bottom: calc(var(--md-font-size) * var(--sk-h4-trail, 0.7) * var(--sk-space, 1));
+  color: var(--sk-h4-color, var(--theme-body));
+  font-size: calc(var(--md-font-size) * var(--sk-h4-scale, 1.12));
+  font-weight: var(--sk-h4-weight, 700);
+  line-height: 1.45;
+}
+
+h5,
+h6 {
+  margin-top: calc(var(--md-font-size) * 1.25 * var(--sk-space, 1));
+  margin-bottom: calc(var(--md-font-size) * 0.62 * var(--sk-space, 1));
+  color: var(--sk-h5-color, var(--theme-body));
+  font-size: calc(var(--md-font-size) * 0.94);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: calc(var(--md-font-size) * var(--sk-para-gap, 1.2) * var(--sk-space, 1));
+}
+
+p,
+li {
+  color: var(--theme-body);
+  line-height: var(--sk-body-leading, 1.8);
+  letter-spacing: var(--sk-body-tracking, 0);
+}
+
+ul,
+ol {
+  margin-top: calc(var(--md-font-size) * var(--sk-list-lead, 0.9) * var(--sk-space, 1));
+  margin-bottom: calc(var(--md-font-size) * var(--sk-list-trail, 1.3) * var(--sk-space, 1));
+  padding-left: var(--sk-list-indent, 1.5em);
+  list-style-type: none;
+}
+
+li {
+  margin-top: calc(var(--md-font-size) * 0.36 * var(--sk-space, 1));
+  margin-bottom: calc(var(--md-font-size) * 0.36 * var(--sk-space, 1));
+}
+
+.listitem-marker {
+  color: var(--sk-marker-color, var(--theme-accent));
+  font-weight: var(--sk-marker-weight, 700);
+}
+
+strong {
+  color: var(--sk-strong-color, var(--theme-ink));
+  font-weight: 700;
+}
+
+em {
+  color: var(--sk-em-color, var(--theme-body));
+  font-style: italic;
+}
+
+a {
+  color: var(--sk-link-color, var(--theme-accent));
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--sk-link-color, var(--theme-accent)) 45%, transparent);
+}
+
+blockquote {
+  margin-top: calc(var(--md-font-size) * var(--sk-quote-gap, 1.5) * var(--sk-space, 1));
+  margin-bottom: calc(var(--md-font-size) * var(--sk-quote-gap, 1.5) * var(--sk-space, 1));
+  padding: var(--sk-quote-pad, 1.1em 1.3em);
+  border: 0;
+  border-left: var(--sk-quote-bar, 4px) solid var(--sk-quote-bar-color, var(--theme-accent));
+  border-radius: var(--sk-quote-radius, 0);
+  background: var(--sk-quote-surface, var(--theme-surface));
+  color: var(--sk-quote-color, var(--theme-body));
+  overflow: auto;
+}
+
+blockquote p {
+  color: var(--sk-quote-color, var(--theme-body));
+}
+
+blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+code {
+  padding: 0.16em 0.42em;
+  border-radius: var(--sk-code-radius, 6px);
+  color: var(--sk-code-color, var(--theme-ink));
+  background: var(--sk-code-surface, var(--theme-surface));
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  margin-top: calc(var(--md-font-size) * var(--sk-pre-gap, 1.4) * var(--sk-space, 1));
+  margin-bottom: calc(var(--md-font-size) * var(--sk-pre-gap, 1.4) * var(--sk-space, 1));
+  border: 1px solid var(--sk-pre-border, var(--theme-line));
+  border-radius: var(--sk-radius, 12px);
+}
+
+table {
+  margin-top: calc(var(--md-font-size) * var(--sk-table-gap, 1.4) * var(--sk-space, 1));
+  margin-bottom: calc(var(--md-font-size) * var(--sk-table-gap, 1.4) * var(--sk-space, 1));
+  border-collapse: var(--sk-table-collapse, collapse);
+  border-spacing: 0;
+  font-size: calc(var(--md-font-size) * var(--sk-table-scale, 0.88));
+  line-height: 1.55;
+}
+
+th {
+  padding: var(--sk-cell-pad, 0.78em 0.9em);
+  border-bottom: 1px solid var(--sk-table-head-line, var(--theme-line));
+  background: var(--sk-table-head-surface, transparent);
+  color: var(--sk-table-head-ink, var(--theme-ink));
+  font-weight: 700;
+}
+
+td {
+  padding: var(--sk-cell-pad, 0.78em 0.9em);
+  border-bottom: 1px solid var(--theme-line);
+  color: var(--theme-body);
+}
+
+tbody tr:nth-child(even) td {
+  background: var(--sk-table-zebra, color-mix(in srgb, var(--theme-surface) 55%, var(--theme-paper)));
+}
+
+figure {
+  margin-top: calc(var(--md-font-size) * var(--sk-figure-gap, 1.5) * var(--sk-space, 1));
+  margin-bottom: calc(var(--md-font-size) * var(--sk-figure-gap, 1.5) * var(--sk-space, 1));
+}
+
+img {
+  border-radius: var(--sk-img-radius, 0);
+}
+
+figcaption,
+.md-figcaption {
+  color: var(--theme-dim);
+  font-size: calc(var(--md-font-size) * 0.8);
+  line-height: 1.6;
+}
+
+hr {
+  height: 0;
+  margin-top: calc(var(--md-font-size) * var(--sk-hr-gap, 2.4) * var(--sk-space, 1));
+  margin-bottom: calc(var(--md-font-size) * var(--sk-hr-gap, 2.4) * var(--sk-space, 1));
+  border: 0;
+  border-top: var(--sk-hr-height, 1px) solid var(--sk-hr-color, var(--theme-line));
+  background: transparent;
+}

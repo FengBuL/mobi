@@ -34,12 +34,29 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
   const start = () => options.onStart?.()
   const normalizeErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error))
   const isWechatHostedImage = (src: string) => /mmbiz\.q(pic|logo)\.cn|res\.wx\.qq\.com/i.test(src)
+
+  // 复制中止时只报一个数字，用户根本不知道是哪张图卡住了。
+  // 长图版式尤其容易踩：一张几 MB 的长海报会被公众号图床接口拒收，
+  // 于是「滚动图复制不成功」，而提示语只说「仍是外链或本地地址」。
+  const describeClipboardImage = (image: HTMLImageElement, index: number) => {
+    const src = image.getAttribute(`src`)?.trim() || ``
+    const scheme = src.startsWith(`data:`) ? `内嵌图片` : src.startsWith(`blob:`) ? `本地图片` : src.split(`/`)[2] || src.slice(0, 40)
+    const width = image.naturalWidth
+    const height = image.naturalHeight
+    const shape = width && height ? `${width}×${height}` : `尺寸未知`
+    const isLong = width > 0 && height / width >= 3
+
+    return {
+      src,
+      error: image.getAttribute(`data-mp-upload-error`) || ``,
+      label: `第 ${index + 1} 张（${scheme}，${shape}${isLong ? `，长图` : ``}）`,
+      isLong,
+    }
+  }
+
   const getUnsafeClipboardImages = (root: HTMLElement) => {
     return Array.from(root.querySelectorAll<HTMLImageElement>(`img`))
-      .map(image => ({
-        src: image.getAttribute(`src`)?.trim() || ``,
-        error: image.getAttribute(`data-mp-upload-error`) || ``,
-      }))
+      .map(describeClipboardImage)
       .filter(item => item.src && !isWechatHostedImage(item.src))
   }
 
@@ -144,14 +161,17 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
           const unsafeImages = getUnsafeClipboardImages(clipboardDiv)
           if (unsafeImages.length > 0) {
             const hasConfig = await hasMpUploadConfig()
-            const firstError = unsafeImages.find(item => item.error)?.error || ``
+            const blocker = unsafeImages.find(item => item.error) || unsafeImages[0]
+            const longHint = unsafeImages.some(item => item.isLong)
+              ? `长图容易超过公众号图床的体积上限，可以先压缩或裁短再插入。`
+              : ``
             clipboardDiv.innerHTML = output.value
             window.getSelection()?.removeAllRanges()
             editorRefresh()
             toast.error(
               hasConfig
-                ? `仍有 ${unsafeImages.length} 张图片没有转成公众号安全地址。${firstError ? `首个失败原因：${firstError}` : `请检查图片格式、代理域名或图床配置后重试。`}`
-                : `检测到 ${unsafeImages.length} 张图片仍是外链或本地地址。先配置公众号图床，再复制到公众号。`,
+                ? `仍有 ${unsafeImages.length} 张图片没有转成公众号安全地址，卡在${blocker.label}。${blocker.error ? `失败原因：${blocker.error}。` : ``}${longHint}`
+                : `检测到 ${unsafeImages.length} 张图片仍是外链或本地地址，例如${blocker.label}。先配置公众号图床，再复制到公众号。`,
             )
             finish()
             return

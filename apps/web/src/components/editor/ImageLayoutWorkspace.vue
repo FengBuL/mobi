@@ -6,7 +6,8 @@ import type {
   MediaLayoutPreset,
   MediaLayoutTextMode,
 } from '@/utils/image-layouts'
-import { Check, LayoutTemplate, RotateCcw, Sparkles } from 'lucide-vue-next'
+import { Check, ImagePlus, LayoutTemplate, RotateCcw, Sparkles } from 'lucide-vue-next'
+import { useImageQuickInsert } from '@/composables/useImageQuickInsert'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
@@ -15,10 +16,13 @@ import {
   buildMediaLayoutMarkup,
   cloneMediaLayoutState,
   createDefaultMediaLayoutState,
+  getMediaLayoutBadgeFallback,
+  getMediaLayoutCopyPlaceholders,
   getMediaLayoutPresetSlotDefaults,
   mediaAspectRatioOptions,
   mediaLayoutFamilyLabels,
   mediaLayoutPresets,
+  mediaLayoutPresetSupportsBadge,
   mediaLayoutTextModeLabels,
   parseMediaLayoutBlocks,
   restoreMediaLayoutBlockToMarkdown,
@@ -53,8 +57,9 @@ interface PresetPreviewBlueprint {
   bands?: PresetPreviewBand[]
 }
 
-type TemplateCountFilter = `1` | `2` | `3`
+type TemplateCountFilter = `1` | `2` | `3` | `4`
 
+const { open: openQuickInsert } = useImageQuickInsert()
 const editorStore = useEditorStore()
 const postStore = usePostStore()
 const renderStore = useRenderStore()
@@ -81,6 +86,7 @@ const templateCountOptions: Array<{ label: string, value: TemplateCountFilter }>
   { label: `1 张图`, value: `1` },
   { label: `2 张图`, value: `2` },
   { label: `3 张图`, value: `3` },
+  { label: `4 张图`, value: `4` },
 ]
 
 const templateModeOptions: Array<{ label: string, value: MediaLayoutTextMode }> = [
@@ -196,6 +202,73 @@ const presetPreviewBlueprints: Record<string, PresetPreviewBlueprint> = {
       { left: `53%`, top: `56%`, width: `39%`, height: `14%` },
     ],
   },
+  'polaroid-single': {
+    cells: [{ left: `30%`, top: `12%`, width: `40%`, height: `52%`, tone: `strong` }],
+    bands: [
+      { left: `26%`, top: `8%`, width: `48%`, height: `78%` },
+      { left: `34%`, top: `70%`, width: `32%`, height: `8%` },
+    ],
+  },
+  'shadow-card-single': {
+    cells: [{ left: `12%`, top: `14%`, width: `76%`, height: `52%`, tone: `strong` }],
+    bands: [{ left: `17%`, top: `70%`, width: `66%`, height: `8%` }],
+  },
+  'full-bleed-single': {
+    cells: [{ left: `0%`, top: `14%`, width: `100%`, height: `54%`, tone: `strong` }],
+    bands: [{ left: `0%`, top: `74%`, width: `44%`, height: `7%` }],
+  },
+  'compare-pair': {
+    cells: [
+      { left: `7%`, top: `16%`, width: `40%`, height: `56%`, tone: `strong` },
+      { left: `53%`, top: `16%`, width: `40%`, height: `56%`, tone: `muted` },
+    ],
+    bands: [{ left: `49.6%`, top: `12%`, width: `0.8%`, height: `64%` }],
+  },
+  'magazine-spread': {
+    cells: [
+      { left: `8%`, top: `16%`, width: `42%`, height: `56%`, tone: `strong` },
+      { left: `50%`, top: `16%`, width: `42%`, height: `56%`, tone: `soft` },
+    ],
+  },
+  'quad-grid': {
+    cells: [
+      { left: `13%`, top: `10%`, width: `36%`, height: `36%`, tone: `strong` },
+      { left: `51%`, top: `10%`, width: `36%`, height: `36%`, tone: `soft` },
+      { left: `13%`, top: `50%`, width: `36%`, height: `36%`, tone: `muted` },
+      { left: `51%`, top: `50%`, width: `36%`, height: `36%`, tone: `soft` },
+    ],
+  },
+  'hero-trio': {
+    cells: [
+      { left: `8%`, top: `10%`, width: `84%`, height: `40%`, tone: `strong` },
+      { left: `8%`, top: `56%`, width: `26%`, height: `26%`, tone: `soft` },
+      { left: `37%`, top: `56%`, width: `26%`, height: `26%`, tone: `muted` },
+      { left: `66%`, top: `56%`, width: `26%`, height: `26%`, tone: `soft` },
+    ],
+  },
+  'numbered-figure': {
+    cells: [{ left: `10%`, top: `10%`, width: `80%`, height: `48%`, tone: `strong` }],
+    bands: [
+      { left: `14%`, top: `15%`, width: `12%`, height: `10%` },
+      { left: `10%`, top: `66%`, width: `56%`, height: `7%` },
+      { left: `10%`, top: `77%`, width: `44%`, height: `6%` },
+    ],
+  },
+  'gradient-caption': {
+    cells: [{ left: `8%`, top: `12%`, width: `84%`, height: `64%`, tone: `strong` }],
+    bands: [
+      { left: `8%`, top: `56%`, width: `84%`, height: `20%` },
+      { left: `14%`, top: `62%`, width: `44%`, height: `8%` },
+    ],
+  },
+  'quote-figure': {
+    cells: [{ left: `10%`, top: `10%`, width: `80%`, height: `44%`, tone: `strong` }],
+    bands: [
+      { left: `10%`, top: `62%`, width: `1.6%`, height: `22%` },
+      { left: `16%`, top: `63%`, width: `60%`, height: `7%` },
+      { left: `16%`, top: `74%`, width: `40%`, height: `6%` },
+    ],
+  },
 }
 
 const markdownContent = computed(() => currentPost.value?.content ?? editorStore.getContent() ?? ``)
@@ -211,10 +284,11 @@ const availableImages = computed<MarkdownImageEntry[]>(() => {
 const hasPrimaryTemplateFilters = computed(() => Boolean(templateCountFilter.value && templateModeFilter.value))
 
 const quickPresetOrderMap: Record<string, string[]> = {
-  '1:plain': [`hero-image`, `frame-single`, `scroll-window`],
-  '2:plain': [`duo-gallery`, `vertical-pair`, `duo-focus`],
+  '1:plain': [`hero-image`, `shadow-card-single`, `frame-single`, `polaroid-single`, `full-bleed-single`, `scroll-window`],
+  '2:plain': [`duo-gallery`, `compare-pair`, `magazine-spread`, `vertical-pair`, `duo-focus`],
   '3:plain': [`triptych-gallery`, `vertical-strip`, `stack-gallery`, `mosaic-focus`, `filmstrip-gallery`],
-  '1:brief': [`split-left`, `caption-band`, `spotlight-card`, `split-right`],
+  '4:plain': [`quad-grid`, `hero-trio`],
+  '1:brief': [`gradient-caption`, `numbered-figure`, `quote-figure`, `split-left`, `caption-band`, `spotlight-card`, `split-right`],
   '2:story': [`story-pair`],
 }
 
@@ -272,6 +346,22 @@ const activeSlotState = computed(() => {
 
 const selectedImages = computed(() => {
   return selectedImageEntries.value.filter((item): item is MarkdownImageEntry => Boolean(item))
+})
+
+const supportsSlotBadge = computed(() => {
+  return Boolean(selectedPreset.value && mediaLayoutPresetSupportsBadge(selectedPreset.value.id))
+})
+
+const activeSlotBadgePlaceholder = computed(() => {
+  if (!selectedPreset.value) {
+    return `角标文字，可不填`
+  }
+  const fallback = getMediaLayoutBadgeFallback(selectedPreset.value.id, activeSlotIndex.value)
+  return fallback ? `角标文字，默认「${fallback}」` : `角标文字，可不填`
+})
+
+const copyPlaceholders = computed(() => {
+  return getMediaLayoutCopyPlaceholders(selectedPreset.value?.id ?? ``)
 })
 
 const filledSlotCount = computed(() => {
@@ -648,7 +738,7 @@ function buildLayoutStateFromSelection(images: Array<MarkdownImageEntry | null>)
     nextState.images = nextState.images.map(slot => ({
       ...slot,
       caption: ``,
-      title: ``,
+      title: supportsSlotBadge.value ? slot.title : ``,
       summary: ``,
     }))
   }
@@ -840,7 +930,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
               <SelectTrigger class="w-full">
                 <SelectValue placeholder="先选图片数量" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent @close-auto-focus.prevent>
                 <SelectItem v-for="option in templateCountOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </SelectItem>
@@ -854,7 +944,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
               <SelectTrigger class="w-full">
                 <SelectValue placeholder="再选表达方式" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent @close-auto-focus.prevent>
                 <SelectItem v-for="option in templateModeOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </SelectItem>
@@ -868,7 +958,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
               <SelectTrigger class="w-full">
                 <SelectValue placeholder="可选，默认全部风格" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent @close-auto-focus.prevent>
                 <SelectItem v-for="option in templateFamilyOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </SelectItem>
@@ -947,6 +1037,10 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
           <div class="flex gap-2">
             <Button v-if="editingBlock" variant="outline" size="sm" class="h-8 px-3 text-xs" @click="cancelEditingBlock">
               取消编辑
+            </Button>
+            <Button variant="outline" size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('upload')">
+              <ImagePlus class="mr-2 size-3.5" />
+              加图片
             </Button>
             <Button variant="outline" size="sm" class="h-8 px-3 text-xs" :disabled="!selectedPreset" @click="selectSuggestedImages">
               自动填充
@@ -1070,6 +1164,11 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
                   step="10"
                 >
               </div>
+
+              <div v-if="supportsSlotBadge" class="grid gap-2">
+                <label class="media-layout-filter-label">当前图角标</label>
+                <Input v-model="activeSlotState.title" :placeholder="activeSlotBadgePlaceholder" />
+              </div>
             </div>
           </div>
 
@@ -1111,7 +1210,19 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
         </div>
 
         <div v-else class="media-layout-empty">
-          {{ editingBlock ? '当前模块没有可回填的图片，暂时无法编辑。' : '还没有识别到 Markdown 图片。先在左侧 Markdown 中插入 `![](url)` 图片，这里会自动接管。' }}
+          <p>{{ editingBlock ? '当前模块没有可回填的图片，暂时无法编辑。' : '还没有识别到 Markdown 图片。可以直接从这里批量加图，也可以在左侧 Markdown 中插入 `![](url)`。' }}</p>
+          <div v-if="!editingBlock" class="media-layout-inline-actions">
+            <Button size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('upload')">
+              <ImagePlus class="mr-2 size-3.5" />
+              批量上传图片
+            </Button>
+            <Button variant="outline" size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('link')">
+              按链接插入
+            </Button>
+            <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('recent')">
+              最近使用的图片
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -1134,8 +1245,8 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
         <div v-if="showTextEditor" class="media-layout-copy-stage">
           <template v-if="usesBodyCopyPreset">
             <div class="media-layout-copy-stage__core">
-              <Input v-model="formState.bodyTitle" placeholder="标题，可不填" />
-              <Textarea v-model="formState.bodyText" class="min-h-[88px]" placeholder="摘要，一两句话即可，可不填" />
+              <Input v-model="formState.bodyTitle" :placeholder="copyPlaceholders.title" />
+              <Textarea v-model="formState.bodyText" class="min-h-[88px]" :placeholder="copyPlaceholders.body" />
             </div>
           </template>
 

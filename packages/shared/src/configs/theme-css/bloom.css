@@ -1,0 +1,182 @@
+/* 花期柔粉：奶白纸面、花瓣渐层与轻柔焦边，留住细腻而不铺满甜色。 */
+
+section,
+container {
+  --theme-accent: var(--md-primary-color);
+  --theme-ink: #452b34;
+  --theme-body: #654b54;
+  --theme-dim: #806872;
+  --theme-line: #ead6dc;
+  --theme-surface: #fbf3f5;
+  --theme-paper: #fffdfd;
+  --theme-panel: #fff8fa;
+  --theme-petal: color-mix(in srgb, var(--theme-accent) 74%, #9b4964);
+
+  --sk-space: 1.04;
+  --sk-h1-scale: 1.62;
+  --sk-h2-scale: 1.38;
+  --sk-h3-scale: 1.25;
+  --sk-h4-scale: 1.12;
+  --sk-h1-weight: 650;
+  --sk-h1-leading: 1.38;
+  --sk-h2-weight: 650;
+  --sk-h3-weight: 650;
+  --sk-h3-color: #694351;
+  --sk-radius: 14px;
+  --sk-body-leading: 1.98;
+  --sk-para-gap: 1.4;
+  --sk-body-tracking: 0.02em;
+  --sk-list-indent: 1.58em;
+  --sk-marker-color: var(--theme-petal);
+  --sk-code-radius: 7px;
+  --sk-code-color: #754557;
+  --sk-code-surface: #f8e8ed;
+  --sk-cell-pad: 0.76em 0.88em;
+  --sk-table-head-surface: #9d5069;
+  --sk-table-head-ink: #ffffff;
+  --sk-table-head-line: var(--theme-line);
+  --sk-table-zebra: #fff8fa;
+  --sk-img-radius: 16px;
+  --sk-link-color: #9b4c67;
+  --sk-strong-color: #8c415c;
+  --sk-em-color: #7e5b68;
+  --sk-hr-color: #d7adb9;
+
+  background-color: var(--theme-paper);
+}
+
+h1 {
+  padding: 0.95em 0.55em 0.82em;
+  text-align: center;
+  letter-spacing: 0.09em;
+  border-bottom: 1px solid var(--theme-line);
+  background-color: var(--theme-panel);
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='104'%20viewBox='0%200%20320%20104'%3E%3Cg%20fill='%23c96684'%20fill-opacity='.2'%3E%3Cpath%20d='M20%2026C20%209%2045%209%2045%2026C45%2041%2028%2048%2020%2056C12%2048-5%2041-5%2026C-5%209%2020%209%2020%2026Z'/%3E%3Cpath%20d='M300%2078C300%2095%20275%2095%20275%2078C275%2063%20292%2056%20300%2048C308%2056%20325%2063%20325%2078C325%2095%20300%2095%20300%2078Z'/%3E%3C/g%3E%3Cg%20fill='none'%20stroke='%23c96684'%20stroke-opacity='.34'%3E%3Cpath%20d='M8%2072C38%2048%2050%2026%2058%208M312%2032C282%2056%20270%2078%20262%2096'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+h1::before {
+  content: "BLOOMING NOTE";
+  display: block;
+  margin-bottom: 0.85em;
+  color: #a57484;
+  font-size: calc(var(--md-font-size) * 0.6);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.28em;
+}
+
+h2 {
+  color: #673746;
+  text-align: center;
+  letter-spacing: 0.06em;
+}
+
+h2::before {
+  content: "";
+  display: inline-block;
+  width: 0.68em;
+  height: 0.68em;
+  margin-right: 0.62em;
+  border-radius: 0.68em 0.08em 0.68em 0.08em;
+  background-color: var(--theme-petal);
+  box-shadow: 0.34em -0.24em 0 #efd3dc;
+  transform: rotate(-18deg);
+  vertical-align: 0.05em;
+}
+
+h2::after {
+  content: "";
+  display: block;
+  width: 3.8em;
+  height: 2px;
+  margin-top: 0.5em;
+  margin-left: auto;
+  margin-right: auto;
+  background-color: #d9a8b7;
+  background-image: linear-gradient(90deg, var(--theme-petal), #f7e5ea);
+}
+
+h3 {
+  text-align: center;
+}
+
+h4,
+h5,
+h6 {
+  color: #7e5b68;
+  letter-spacing: 0.05em;
+}
+
+p {
+  text-align: left;
+  text-indent: 0;
+}
+
+blockquote {
+  padding: 1.1em 1.3em 1.1em 1.45em;
+  border: 1px solid var(--theme-line);
+  border-left: 3px solid #c98299;
+  border-radius: 4px 18px 18px 4px;
+  background-color: var(--theme-surface);
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='88'%20viewBox='0%200%20320%2088'%3E%3Cg%20fill='%23c96684'%20fill-opacity='.1'%3E%3Cpath%20d='M288%2072C272%2056%20282%2038%20300%2042C316%2046%20322%2064%20310%2076C304%2082%20296%2080%20288%2072Z'/%3E%3Cpath%20d='M296%2050C294%2034%20310%2025%20320%2032V68C310%2070%20298%2062%20296%2050Z'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  color: #674653;
+}
+
+blockquote p {
+  color: #674653;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border-color: var(--theme-line);
+  background: #fff9fa;
+}
+
+table {
+  border-collapse: separate;
+  overflow: hidden;
+  border: 1px solid var(--theme-line);
+  border-radius: 14px;
+}
+
+th {
+  border-bottom: 0;
+  font-weight: 700;
+}
+
+td {
+  border-bottom: 0;
+  border-top: 1px solid var(--theme-line);
+  background: #fffdfd;
+}
+
+strong {
+  background-image: linear-gradient(180deg, transparent 72%, #f2d4dd 72%);
+}
+
+img {
+  border: 1px solid #f0dce2;
+  box-shadow: 0 16px 34px rgba(106, 62, 76, 0.12);
+}
+
+hr {
+  width: 42%;
+  margin-left: auto;
+  margin-right: auto;
+  border-top: 2px dotted #d29aaa;
+}
+
+figcaption,
+.md-figcaption {
+  letter-spacing: 0.06em;
+}
+
+figcaption::before,
+.md-figcaption::before {
+  content: "花影 · ";
+  color: #a95f77;
+}

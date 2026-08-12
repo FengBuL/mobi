@@ -2,15 +2,17 @@
 import type { ThemeName } from '@md/shared'
 import { exportMergedTheme } from '@md/core'
 import { themeMap, themeOptions, themeOptionsMap } from '@md/shared'
-import { Download, Edit3, Ellipsis, Eye, Plus, X } from 'lucide-vue-next'
+import { Download, Edit3, Ellipsis, Eye, Plus, SlidersHorizontal, X } from 'lucide-vue-next'
 import { useCssEditorStore } from '@/stores/cssEditor'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
+import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 import { copyPlain } from '@/utils/clipboard'
 
 const cssEditorStore = useCssEditorStore()
+const themeDesignerStore = useThemeDesignerStore()
 const uiStore = useUIStore()
 const renderStore = useRenderStore()
 const editorStore = useEditorStore()
@@ -175,6 +177,11 @@ function createFromViewTheme() {
   isOpenAddDialog.value = true
 }
 
+function openThemeDesigner() {
+  themeDesignerStore.open()
+  uiStore.isOpenRightSlider = true
+}
+
 function tabChanged(tabName: string | number) {
   console.log(`tabChanged`, tabName)
   cssEditorStore.tabChanged(tabName as string)
@@ -330,6 +337,23 @@ function exportCurrentTheme() {
           <X class="size-3.5" />
         </button>
       </div>
+    </div>
+
+    <!-- 可视化编辑器的覆盖层在这份 CSS 之前应用，说明一下优先级关系 -->
+    <div
+      v-if="themeDesignerStore.hasOverrides"
+      class="flex shrink-0 items-center gap-2 border-b bg-muted/30 px-3 py-1.5"
+    >
+      <SlidersHorizontal class="size-3 shrink-0 text-muted-foreground" />
+      <span class="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+        可视化编辑器有 {{ themeDesignerStore.modifiedCount }} 项调整先于这里生效，这里写的 CSS 优先级更高
+      </span>
+      <button
+        class="shrink-0 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        @click="openThemeDesigner"
+      >
+        去调整
+      </button>
     </div>
 
     <!-- CSS编辑器内容区域 -->

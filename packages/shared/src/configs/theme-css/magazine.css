@@ -1,43 +1,123 @@
-/**
- * 奢刊衬线主题 (Luxe Editorial)
- * 参考高端杂志封面和 Canva 中常见的 serif editorial 排版。
- */
+/* 奢刊衬线：香槟金、装饰艺术扇纹与高留白的文化杂志内页。 */
 
 section,
 container {
-  color: #181818;
+  --theme-accent: var(--md-primary-color);
+  --theme-ink: #111111;
+  --theme-body: #2d2d2d;
+  --theme-dim: #7a7268;
+  --theme-line: #ddd4cb;
+  --theme-surface: rgba(17, 17, 17, 0.06);
+  --theme-paper: #ffffff;
+  --theme-rule: color-mix(in srgb, var(--theme-accent) 45%, var(--theme-ink));
+
+  --sk-space: 1;
+  --sk-h1-scale: 1.62;
+  --sk-h2-scale: 1.38;
+  --sk-h3-scale: 1.25;
+  --sk-h4-scale: 1.05;
+  --sk-h1-lead: 1.88;
+  --sk-h1-trail: 0.94;
+  --sk-h2-lead: 1.88;
+  --sk-h2-trail: 0.94;
+  --sk-h1-weight: 500;
+  --sk-h1-leading: 1.2;
+  --sk-h2-inset: 12%;
+  --sk-h2-pad: 0.7em 0;
+  --sk-h2-weight: 500;
+  --sk-radius: 16px;
+  --sk-body-leading: 1.75;
+  --sk-para-gap: 0;
+  --sk-body-tracking: 0.02em;
+  --sk-list-indent: 1.6em;
+  --sk-marker-color: #b4a894;
+  --sk-code-radius: 6px;
+  --sk-code-color: var(--theme-ink);
+  --sk-cell-pad: 0.75em 0.85em;
+  --sk-table-head-line: var(--theme-ink);
+  --sk-table-zebra: #faf8f4;
+  --sk-img-radius: 18px;
+  --sk-link-color: color-mix(in srgb, var(--theme-accent) 62%, var(--theme-ink));
+  --sk-em-color: #4a4a4a;
+  --sk-hr-color: var(--theme-rule);
+
   letter-spacing: 0.02em;
 }
 
+p {
+  text-align: justify;
+  text-indent: 2em;
+}
+
+li {
+  text-align: justify;
+}
+
+blockquote p,
+.markdown-alert p,
+li p,
+th p,
+td p,
+figcaption p,
+.md-figcaption p {
+  text-indent: 0;
+}
+
 h1 {
-  margin: 2.4em 0 1.4em;
-  color: #111;
-  font-size: calc(var(--md-font-size) * 1.92);
-  font-weight: 500;
-  line-height: 1.18;
+  padding: 1.15em 0.8em 0.95em;
   text-align: center;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  border-top: 1px solid var(--theme-rule);
+  border-bottom: 1px solid var(--theme-rule);
+  background-color: #fcfaf6;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='92'%20viewBox='0%200%20320%2092'%3E%3Cg%20fill='none'%20stroke='%23a08652'%20stroke-opacity='.48'%3E%3Cpath%20d='M8%2084L8%2028L36%208L64%2028L64%2084M256%2084L256%2028L284%208L312%2028L312%2084'/%3E%3Cpath%20d='M8%2048L36%2028L64%2048M256%2048L284%2028L312%2048'/%3E%3Ccircle%20cx='36'%20cy='28'%20r='7'/%3E%3Ccircle%20cx='284'%20cy='28'%20r='7'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: inset 0 0 0 0.35em #fcfaf6;
+}
+
+h1::before {
+  content: "EDITORIAL";
+  display: block;
+  margin-bottom: 1.5em;
+  color: #a89a86;
+  font-size: calc(var(--md-font-size) * 0.6);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.42em;
 }
 
 h2 {
-  margin: 3em 14% 1.4em;
-  padding: 0.7em 0;
-  color: #111;
-  font-size: calc(var(--md-font-size) * 1.34);
-  font-weight: 500;
   text-align: center;
   letter-spacing: 0.1em;
-  border-top: 1px solid color-mix(in srgb, var(--md-primary-color) 45%, #111);
-  border-bottom: 1px solid color-mix(in srgb, var(--md-primary-color) 45%, #111);
+  border-top: 1px solid var(--theme-rule);
+  border-bottom: 1px solid var(--theme-rule);
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='44'%20viewBox='0%200%20320%2044'%3E%3Cg%20fill='none'%20stroke='%23a08652'%20stroke-opacity='.3'%3E%3Cpath%20d='M4%2022L22%204L40%2022L22%2040Z'/%3E%3Cpath%20d='M280%2022L298%204L316%2022L298%2040Z'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 h3 {
-  margin: 2em 0 0.9em;
-  color: #111;
-  font-size: calc(var(--md-font-size) * 1.16);
-  font-weight: 700;
   text-align: center;
+}
+
+h3::before,
+h3::after {
+  content: "";
+  display: inline-block;
+  width: 1.4em;
+  border-top: 1px solid #c4bbae;
+  vertical-align: 0.3em;
+}
+
+h3::before {
+  margin-right: 1.15em;
+}
+
+h3::after {
+  margin-left: 1.15em;
 }
 
 h4,
@@ -49,74 +129,56 @@ h6 {
   text-align: center;
 }
 
-p,
-li {
-  color: #2d2d2d;
-  line-height: 2;
-}
-
 blockquote {
   padding: 1.4em 0;
+  border: 1px solid #ddd4cb;
   border-top: 1px dotted #c9c9c9;
   border-bottom: 1px dotted #c9c9c9;
-  background: transparent;
-  color: #111;
+  border-radius: 0;
+  background-color: #fcfaf6;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='100'%20viewBox='0%200%20320%20100'%3E%3Cg%20fill='none'%20stroke='%23a08652'%20stroke-opacity='.2'%3E%3Cpath%20d='M0%2050A50%2050%200%200%201%2050%200M320%2050A50%2050%200%200%200%20270%20100'/%3E%3Cpath%20d='M0%2072A72%2072%200%200%201%2072%200M320%2028A72%2072%200%200%200%20248%20100'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  color: var(--theme-ink);
   font-style: italic;
   text-align: center;
 }
 
+blockquote p {
+  color: var(--theme-ink);
+}
+
 pre.code__pre,
 .hljs.code__pre {
-  border: 1px solid #ece7e0;
-  border-radius: 16px;
+  border-color: #ece7e0;
   background: #faf8f4;
 }
 
-code {
-  padding: 0.14em 0.36em;
-  border-radius: 6px;
-  color: #111;
-  background: rgba(17, 17, 17, 0.06);
-}
-
 table {
-  border-collapse: collapse;
-  border-top: 2px solid #111;
-  border-bottom: 2px solid #111;
+  border-top: 2px solid var(--theme-ink);
+  border-bottom: 2px solid var(--theme-ink);
 }
 
 th {
-  padding: 0.75em 0.85em;
-  border-bottom: 1px solid #111;
-  color: #111;
-  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  font-weight: 600;
 }
 
 td {
-  padding: 0.75em 0.85em;
-  border-bottom: 1px solid #ddd4cb;
   color: #3d3d3d;
 }
 
-a {
-  color: color-mix(in srgb, var(--md-primary-color) 62%, #111);
-  text-decoration: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--md-primary-color) 45%, #111);
-}
-
 strong {
-  color: #111;
   font-weight: 700;
 }
 
-img {
-  border-radius: 18px;
-  box-shadow: 0 18px 36px rgba(17, 17, 17, 0.08);
+figcaption,
+.md-figcaption {
+  font-size: calc(var(--md-font-size) * 0.78);
+  letter-spacing: 0.12em;
 }
 
-hr {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--md-primary-color) 65%, #111), transparent);
+img {
+  box-shadow: 0 18px 36px rgba(17, 17, 17, 0.08);
 }

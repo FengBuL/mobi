@@ -310,9 +310,12 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
           .replace(PARAGRAPH_WRAPPER_REGEX, `$1`)
       }
 
+      // 序号 / 圆点包一层 span：实测 li::marker 的样式进不了剪贴板（juice 的
+      // inlinePseudoElements 只处理 ::before/::after），而 <ul> 的原生 marker 又会
+      // 和这里的字面前缀在公众号里叠成两个点。写成真实节点后主题才能给它上色。
       return styledContent(
         `listitem`,
-        `${prefix}${content}`,
+        `<span class="listitem-marker">${prefix}</span>${content}`,
         `li`,
       )
     },

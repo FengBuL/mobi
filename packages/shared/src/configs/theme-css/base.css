@@ -120,134 +120,113 @@ container {
   margin: 0;
 }
 
-#output .markdown-alert-note,
-#output .markdown-alert-tip,
-#output .markdown-alert-info,
-#output .markdown-alert-important,
-#output .markdown-alert-warning,
-#output .markdown-alert-caution,
-#output .markdown-alert-abstract,
-#output .markdown-alert-summary,
-#output .markdown-alert-tldr,
-#output .markdown-alert-todo,
-#output .markdown-alert-success,
-#output .markdown-alert-done,
-#output .markdown-alert-question,
-#output .markdown-alert-help,
-#output .markdown-alert-faq,
-#output .markdown-alert-failure,
-#output .markdown-alert-fail,
-#output .markdown-alert-missing,
-#output .markdown-alert-danger,
-#output .markdown-alert-error,
-#output .markdown-alert-bug,
-#output .markdown-alert-example,
-#output .markdown-alert-quote,
-#output .markdown-alert-cite {
+/* GFM 提示块。
+ *
+ * 提示块的 DOM 就是 <blockquote class="markdown-alert ...">，主题为自己的引用块写的
+ * `blockquote { color }` 会被它继承。所以这里必须用 class 选择器把前景色显式写死——
+ * class 的特异性高于主题的元素选择器，主题的字色不会再漏进来。
+ *
+ * 配色全部由两个变量推导：--md-alert-paper（纸面）与 --md-alert-ink（墨色）。
+ * 主题只要在 section 上声明这两个值，提示块就会跟着主题走；深色主题给深纸面浅墨色，
+ * 推导出来的仍然是达标的对比度。
+ */
+#output .markdown-alert {
+  --alert-paper: var(--md-alert-paper, #ffffff);
+  --alert-ink: var(--md-alert-ink, #1f2733);
+  --alert-hue: #5b6675;
+  --alert-accent: var(--alert-hue);
+  --alert-border: color-mix(in srgb, var(--alert-hue) 30%, var(--alert-paper));
+  --alert-background: color-mix(in srgb, var(--alert-hue) 9%, var(--alert-paper));
+  --alert-foreground: color-mix(in srgb, var(--alert-ink) 92%, var(--alert-hue));
+  --alert-title-color: color-mix(in srgb, var(--alert-hue) 82%, var(--alert-ink));
+
   padding: 1em 1.1em;
   border: 1px solid var(--alert-border);
   border-left: 4px solid var(--alert-accent);
-  border-radius: 16px;
+  border-radius: var(--md-alert-radius, 12px);
   background: var(--alert-background);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+  color: var(--alert-foreground);
+  box-shadow: none;
+  /* 主题给引用块定的排版（居中、斜体、加粗）同样会漏进来，一起归位 */
+  font-style: normal;
+  font-weight: 400;
+  text-align: left;
 }
 
-#output .markdown-alert-note { --alert-accent: #478be6; --alert-border: #cdddfb; --alert-background: #eef5ff; }
-#output .markdown-alert-tip { --alert-accent: #57ab5a; --alert-border: #cde8cf; --alert-background: #effaf0; }
+#output .markdown-alert-note,
+#output .markdown-alert-todo { --alert-hue: #2f6fd0; }
+
+#output .markdown-alert-tip,
+#output .markdown-alert-success,
+#output .markdown-alert-done { --alert-hue: #2f8a45; }
+
 #output .markdown-alert-info,
 #output .markdown-alert-abstract,
 #output .markdown-alert-summary,
-#output .markdown-alert-tldr { --alert-accent: #00bfff; --alert-border: #c9ecfb; --alert-background: #effaff; }
+#output .markdown-alert-tldr { --alert-hue: #0f7fa8; }
+
 #output .markdown-alert-important,
-#output .markdown-alert-example { --alert-accent: #986ee2; --alert-border: #dfd2fb; --alert-background: #f6f1ff; }
+#output .markdown-alert-example { --alert-hue: #7a4fd0; }
+
 #output .markdown-alert-warning,
 #output .markdown-alert-question,
 #output .markdown-alert-help,
-#output .markdown-alert-faq { --alert-accent: #c69026; --alert-border: #f1dfb5; --alert-background: #fff8e9; }
+#output .markdown-alert-faq { --alert-hue: #a8730f; }
+
 #output .markdown-alert-caution,
 #output .markdown-alert-failure,
 #output .markdown-alert-fail,
 #output .markdown-alert-missing,
 #output .markdown-alert-danger,
 #output .markdown-alert-error,
-#output .markdown-alert-bug { --alert-accent: #e5534b; --alert-border: #f6c9c6; --alert-background: #fff1f0; }
-#output .markdown-alert-todo { --alert-accent: #478be6; --alert-border: #cdddfb; --alert-background: #eef5ff; }
-#output .markdown-alert-success,
-#output .markdown-alert-done { --alert-accent: #57ab5a; --alert-border: #cde8cf; --alert-background: #effaf0; }
-#output .markdown-alert-quote,
-#output .markdown-alert-cite { --alert-accent: #8892a0; --alert-border: #dbe1e8; --alert-background: #f7f9fb; }
+#output .markdown-alert-bug { --alert-hue: #c93b32; }
 
-#output .alert-title,
-#output [class^="alert-title-"],
-#output [class*=" alert-title-"] {
+#output .markdown-alert-quote,
+#output .markdown-alert-cite { --alert-hue: #5b6675; }
+
+/* 主题给 blockquote 加的伪元素装饰（例如引号字符）不应该跑到提示块上 */
+#output .markdown-alert::before,
+#output .markdown-alert::after {
+  content: none;
+}
+
+#output .markdown-alert p,
+#output .markdown-alert li,
+#output .markdown-alert td,
+#output .markdown-alert th,
+#output .markdown-alert blockquote {
+  color: var(--alert-foreground);
+}
+
+#output .markdown-alert p {
+  text-indent: 0;
+  font-style: normal;
+  font-weight: 400;
+  text-align: left;
+}
+
+#output .markdown-alert > :last-child {
+  margin-bottom: 0;
+}
+
+#output .markdown-alert > :first-child {
+  margin-top: 0;
+}
+
+#output .markdown-alert [class*="alert-title"],
+#output .alert-title {
   display: flex;
   align-items: center;
   gap: 0.55em;
   margin: 0 0 0.55em;
+  color: var(--alert-title-color);
   font-weight: 700;
 }
 
-#output .alert-content,
-#output [class^="alert-content-"],
-#output [class*=" alert-content-"] {
-  margin: 0;
-  color: inherit;
+#output .markdown-alert [class*="alert-icon"] {
+  color: var(--alert-title-color);
+  fill: currentColor;
 }
-
-#output .alert-icon-note,
-#output .alert-title-note,
-#output .alert-icon-todo,
-#output .alert-title-todo { color: #478be6; fill: #478be6; }
-
-#output .alert-icon-tip,
-#output .alert-title-tip,
-#output .alert-icon-success,
-#output .alert-title-success,
-#output .alert-icon-done,
-#output .alert-title-done { color: #57ab5a; fill: #57ab5a; }
-
-#output .alert-icon-info,
-#output .alert-title-info,
-#output .alert-icon-abstract,
-#output .alert-title-abstract,
-#output .alert-icon-summary,
-#output .alert-title-summary,
-#output .alert-icon-tldr,
-#output .alert-title-tldr { color: #00bfff; fill: #00bfff; }
-
-#output .alert-icon-important,
-#output .alert-title-important,
-#output .alert-icon-example,
-#output .alert-title-example { color: #986ee2; fill: #986ee2; }
-
-#output .alert-icon-warning,
-#output .alert-title-warning,
-#output .alert-icon-question,
-#output .alert-title-question,
-#output .alert-icon-help,
-#output .alert-title-help,
-#output .alert-icon-faq,
-#output .alert-title-faq { color: #c69026; fill: #c69026; }
-
-#output .alert-icon-caution,
-#output .alert-title-caution,
-#output .alert-icon-failure,
-#output .alert-title-failure,
-#output .alert-icon-fail,
-#output .alert-title-fail,
-#output .alert-icon-missing,
-#output .alert-title-missing,
-#output .alert-icon-danger,
-#output .alert-title-danger,
-#output .alert-icon-error,
-#output .alert-title-error,
-#output .alert-icon-bug,
-#output .alert-title-bug { color: #e5534b; fill: #e5534b; }
-
-#output .alert-icon-quote,
-#output .alert-title-quote,
-#output .alert-icon-cite,
-#output .alert-title-cite { color: #8892a0; fill: #8892a0; }
 
 .mermaid-diagram .nodeLabel p {
   color: unset !important;

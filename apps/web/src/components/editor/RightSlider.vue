@@ -4,9 +4,10 @@ import type {
   HeadingStyles,
   HeadingStyleType,
   IStylePreset,
-  themeMap,
+  ThemeName,
 } from '@md/shared/configs'
 import type { Format } from 'vue-pick-colors'
+import type { CustomTheme } from '@/utils/theme-designer'
 import {
   codeBlockThemeOptions,
   colorCategoryOptions,
@@ -20,18 +21,24 @@ import {
   legendOptions,
   stylePresetOptions,
   themeCategoryOptions,
+  themeMap,
   themeOptions,
+  themeOptionsMap,
 } from '@md/shared/configs'
-import { X } from 'lucide-vue-next'
+import { SlidersHorizontal, X } from 'lucide-vue-next'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import PickColors from 'vue-pick-colors'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
+import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
+import { exportCustomThemeAsCSS, exportCustomThemeAsJSON } from '@/utils/theme-designer'
 
 const uiStore = useUIStore()
 const themeStore = useThemeStore()
+const themeDesignerStore = useThemeDesignerStore()
+const { customThemes: customVisualThemes, draft: visualThemeDraft } = storeToRefs(themeDesignerStore)
 const {
   theme,
   fontFamily,
@@ -50,7 +57,15 @@ const {
   favoriteColors,
   hiddenColors,
   savedCustomColors,
+  isPrimaryColorFollowingTheme,
 } = storeToRefs(themeStore)
+
+function restoreThemePrimaryColor() {
+  themeStore.followThemePrimaryColor()
+  selectColorCategoryByColor(primaryColor.value as string)
+  themeStore.applyCurrentTheme()
+  editorRefresh()
+}
 
 // 主题分类筛选
 const selectedThemeCategory = ref(`全部`)
@@ -146,6 +161,9 @@ const headingStatusSummary = computed(() => {
   }
 
   return `已混搭 ${activeLevels.length} 个级别`
+})
+const hasVisualHeadingOverride = computed(() => {
+  return headingLevels.some(level => themeDesignerStore.groupCount(level) > 0)
 })
 const paragraphStatusSummary = computed(() => {
   const parts = [
@@ -388,6 +406,67 @@ function themeChanged(newTheme: keyof typeof themeMap) {
   editorRefresh()
 }
 
+function openThemeDesigner() {
+  if (!visualThemeDraft.value.sourceId) {
+    themeDesignerStore.setBaseTheme(theme.value)
+  }
+  themeDesignerStore.open()
+}
+
+function applyCustomVisualTheme(id: string) {
+  const target = themeDesignerStore.loadCustomTheme(id)
+  if (!target)
+    return
+
+  themeStore.theme = target.baseTheme as ThemeName
+  selectThemeCategoryByTheme(target.baseTheme)
+  themeStore.applyCurrentTheme()
+  editorRefresh()
+}
+
+function editCustomVisualTheme(id: string) {
+  applyCustomVisualTheme(id)
+  themeDesignerStore.open()
+}
+
+function renameCustomVisualTheme(item: CustomTheme) {
+  const name = window.prompt(`请输入新的主题名称`, item.name)?.trim()
+  if (!name)
+    return
+
+  if (themeDesignerStore.isNameTaken(name, item.id)) {
+    toast.error(`已经有同名主题了`)
+    return
+  }
+
+  themeDesignerStore.renameCustomTheme(item.id, name)
+  toast.success(`已重命名为「${name}」`)
+}
+
+function deleteCustomVisualTheme(item: CustomTheme) {
+  themeDesignerStore.deleteCustomTheme(item.id)
+  themeStore.applyCurrentTheme()
+  toast.success(`主题「${item.name}」已删除`)
+}
+
+function exportCustomVisualThemeCSS(item: CustomTheme) {
+  const baseCSS = themeMap[item.baseTheme as ThemeName] || themeMap.default
+  const label = themeOptionsMap[item.baseTheme as ThemeName]?.label || item.baseTheme
+  exportCustomThemeAsCSS(item, baseCSS, label)
+  toast.success(`已导出 CSS`)
+}
+
+function exportCustomVisualThemeJSON(item: CustomTheme) {
+  exportCustomThemeAsJSON(item)
+  toast.success(`已导出 JSON`)
+}
+
+function clearVisualOverrides() {
+  themeDesignerStore.resetAll()
+  themeDesignerStore.detachSource()
+  toast.success(`已清除可视化调整`)
+}
+
 function fontChanged(fonts: string) {
   themeStore.fontFamily = fonts
   // 使用新主题系统
@@ -607,7 +686,10 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
     }"
     :style="isMobile ? { transform: isOpenRightSlider ? 'translateX(0)' : 'translateX(100%)' } : undefined"
   >
+    <ThemeDesignerPanel v-if="themeDesignerStore.isOpen" />
+
     <div
+      v-else
       class="space-y-4 h-full overflow-auto p-4"
       :class="{ 'pt-0': isMobile }"
     >
@@ -801,6 +883,73 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
                 </ContextMenuContent>
               </ContextMenu>
             </div>
+
+            <div v-if="customVisualThemes.length" class="space-y-2 border-t pt-3">
+              <div class="flex items-center justify-between">
+                <div class="text-xs font-medium">
+                  我的主题
+                </div>
+                <span class="text-[11px] text-muted-foreground">
+                  右键可编辑、导出或删除
+                </span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <ContextMenu v-for="item in customVisualThemes" :key="item.id">
+                  <ContextMenuTrigger as-child>
+                    <Button
+                      class="w-full justify-start" variant="outline" :class="{
+                        'border-black dark:border-white border-2': visualThemeDraft.sourceId === item.id,
+                      }" @click="applyCustomVisualTheme(item.id)"
+                    >
+                      <span class="truncate">{{ item.name }}</span>
+                    </Button>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem @click="editCustomVisualTheme(item.id)">
+                      可视化编辑
+                    </ContextMenuItem>
+                    <ContextMenuItem @click="renameCustomVisualTheme(item)">
+                      重命名
+                    </ContextMenuItem>
+                    <ContextMenuItem @click="exportCustomVisualThemeCSS(item)">
+                      导出为 CSS
+                    </ContextMenuItem>
+                    <ContextMenuItem @click="exportCustomVisualThemeJSON(item)">
+                      导出为 JSON
+                    </ContextMenuItem>
+                    <ContextMenuItem @click="deleteCustomVisualTheme(item)">
+                      删除
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
+              </div>
+            </div>
+
+            <div class="space-y-2 border-t pt-3">
+              <Button variant="secondary" class="w-full justify-center" @click="openThemeDesigner">
+                <SlidersHorizontal class="mr-2 h-4 w-4" />
+                可视化编辑主题
+              </Button>
+              <p v-if="!themeDesignerStore.hasOverrides" class="text-[11px] leading-4 text-muted-foreground">
+                不用写 CSS，直接调标题、正文、引用、表格、代码这些细节，改完可以存成自己的主题。
+              </p>
+              <div
+                v-else
+                class="flex items-center justify-between gap-2 rounded-xl border border-dashed bg-muted/30 px-3 py-2"
+              >
+                <span class="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+                  {{ themeDesignerStore.sourceTheme ? themeDesignerStore.sourceTheme.name : '未保存的调整' }} ·
+                  {{ themeDesignerStore.modifiedCount }} 项生效中
+                </span>
+                <button
+                  type="button"
+                  class="shrink-0 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  @click="clearVisualOverrides"
+                >
+                  清除
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
@@ -854,6 +1003,7 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
             </div>
             <div class="rounded-xl border border-dashed border-border bg-muted/35 px-3 py-2 text-xs leading-5 text-muted-foreground">
               当前正在编辑 {{ selectedHeadingLevelLabel }}，{{ selectedHeadingStyleMeta.desc }}。
+              <span v-if="hasVisualHeadingOverride">可视化编辑器里的标题调整会覆盖这里的预设。</span>
             </div>
           </div>
         </TabsContent>
@@ -922,11 +1072,22 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
 
           <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
             <div class="space-y-1">
-              <h2 class="text-sm font-semibold">
-                2. 选择主题色
-              </h2>
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="text-sm font-semibold">
+                  2. 选择主题色
+                </h2>
+                <Button
+                  v-if="!isPrimaryColorFollowingTheme"
+                  variant="ghost"
+                  size="sm"
+                  class="h-6 shrink-0 px-2 text-xs"
+                  @click="restoreThemePrimaryColor"
+                >
+                  跟随主题
+                </Button>
+              </div>
               <p class="text-xs leading-5 text-muted-foreground">
-                主题色会影响标题强调、引用块和部分模块高光。
+                {{ isPrimaryColorFollowingTheme ? `当前跟随主题的出厂配色，换主题会一起换。` : `已自定义，换主题不会覆盖。` }}主题色会影响标题强调、引用块和部分模块高光。
               </p>
             </div>
             <div class="flex flex-wrap gap-1">

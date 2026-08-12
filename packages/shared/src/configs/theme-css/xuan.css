@@ -1,0 +1,212 @@
+/* 宣纸信笺：暖黄熟纸、尺牍编号与克制折痕，像一封被细心展开的长信。 */
+
+section,
+container {
+  --theme-accent: var(--md-primary-color);
+  --theme-ink: #352b20;
+  --theme-body: #544432;
+  --theme-dim: #79664b;
+  --theme-line: #ddcaa8;
+  --theme-surface: #f3e8cf;
+  --theme-paper: #fbf5e8;
+  --theme-panel: #fffaf0;
+  --theme-fold: #c9ae7c;
+
+  --sk-space: 1.08;
+  --sk-h1-scale: 1.62;
+  --sk-h2-scale: 1.38;
+  --sk-h3-scale: 1.25;
+  --sk-h4-scale: 1.12;
+  --sk-h1-lead: 1.74;
+  --sk-h1-trail: 0.87;
+  --sk-h1-weight: 600;
+  --sk-h1-leading: 1.42;
+  --sk-h1-color: var(--theme-ink);
+  --sk-h2-weight: 600;
+  --sk-h2-color: #493824;
+  --sk-h3-weight: 600;
+  --sk-h3-color: #654d30;
+  --sk-radius: 3px;
+  --sk-body-leading: 2.02;
+  --sk-para-gap: 0;
+  --sk-body-tracking: 0.04em;
+  --sk-list-indent: 1.6em;
+  --sk-marker-color: #9c7342;
+  --sk-code-radius: 2px;
+  --sk-code-color: #61492d;
+  --sk-code-surface: #f2e5ca;
+  --sk-cell-pad: 0.72em 0.82em;
+  --sk-table-head-surface: #ead9b8;
+  --sk-table-head-ink: #413321;
+  --sk-table-head-line: var(--theme-line);
+  --sk-table-zebra: #f8efdd;
+  --sk-img-radius: 1px;
+  --sk-link-color: #76501f;
+  --sk-strong-color: #42311e;
+  --sk-em-color: #725d40;
+  --sk-hr-color: var(--theme-fold);
+
+  background-color: var(--theme-paper);
+  padding: 1.25em 1.05em 1.5em;
+  border-top: 1px solid var(--theme-fold);
+  border-bottom: 1px solid var(--theme-fold);
+  counter-reset: xuan-letter;
+}
+
+h1 {
+  padding: 0.9em 0.35em 0.78em;
+  text-align: right;
+  letter-spacing: 0.13em;
+  border-top: 1px solid var(--theme-fold);
+  border-bottom: 1px solid var(--theme-fold);
+  background-color: var(--theme-panel);
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='320'%20height='98'%20viewBox='0%200%20320%2098'%3E%3Cg%20fill='none'%20stroke='%239c7a4a'%20stroke-opacity='.42'%3E%3Cpath%20d='M18%2014V84M26%2014V84M294%2014V84M302%2014V84'%20stroke-dasharray='3%207'/%3E%3Cpath%20d='M8%2049H42M278%2049H312'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+h1::before {
+  content: "尺牍 · LETTER";
+  display: block;
+  margin-bottom: 0.9em;
+  color: var(--theme-dim);
+  font-size: calc(var(--md-font-size) * 0.62);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.28em;
+}
+
+h2 {
+  padding: 0.34em 0 0.42em;
+  text-align: right;
+  letter-spacing: 0.09em;
+  border-bottom: 1px solid var(--theme-fold);
+}
+
+h2::before {
+  counter-increment: xuan-letter;
+  content: counter(xuan-letter);
+  display: inline-block;
+  width: 1.75em;
+  height: 1.75em;
+  margin-right: 0.62em;
+  color: #fffaf0;
+  background-color: #7d613e;
+  font-size: calc(var(--md-font-size) * 0.72);
+  font-weight: 600;
+  line-height: 1.75em;
+  text-align: center;
+  letter-spacing: 0;
+  vertical-align: 0.14em;
+}
+
+h3 {
+  text-align: right;
+  letter-spacing: 0.1em;
+  border-right: 3px double var(--theme-fold);
+  padding-right: 0.72em;
+}
+
+h4,
+h5,
+h6 {
+  color: #725d40;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+p {
+  margin-bottom: 0;
+  text-align: left;
+  text-indent: 2em;
+}
+
+.markdown-alert p,
+li p,
+th p,
+td p,
+figcaption p,
+.md-figcaption p {
+  text-indent: 0;
+}
+
+blockquote {
+  margin-left: 0.7em;
+  margin-right: 0.7em;
+  padding: 1em 1.2em 1em 1.45em;
+  border: 1px solid var(--theme-line);
+  border-left: 3px double #a8895c;
+  border-radius: 0;
+  background-color: #f6ecd5;
+  color: #5e482e;
+}
+
+blockquote::before {
+  content: "附言";
+  display: block;
+  margin-bottom: 0.55em;
+  color: #8b6c42;
+  font-size: calc(var(--md-font-size) * 0.68);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.24em;
+}
+
+blockquote p {
+  color: #5e482e;
+  font-style: italic;
+  text-indent: 0;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border-color: var(--theme-line);
+  background: var(--theme-panel);
+}
+
+table {
+  border-top: 2px solid #8f744f;
+  border-bottom: 1px solid #8f744f;
+}
+
+th {
+  border-bottom: 1px solid #bba27c;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+td {
+  border-bottom: 1px dotted var(--theme-line);
+}
+
+a {
+  border-bottom: 1px dotted #9d7d4e;
+}
+
+strong {
+  color: #42311e;
+}
+
+img {
+  border: 6px solid #fffaf0;
+  border-bottom-width: 10px;
+  box-shadow: 0 10px 22px rgba(79, 59, 34, 0.14);
+}
+
+figcaption,
+.md-figcaption {
+  letter-spacing: 0.12em;
+}
+
+figcaption::before,
+.md-figcaption::before {
+  content: "留影 · ";
+  color: #9c7a4a;
+}
+
+hr {
+  width: 62%;
+  margin-left: auto;
+  margin-right: auto;
+  border-top: 1px dashed var(--theme-fold);
+}

@@ -15,10 +15,13 @@ import {
   Heading4,
   Heading5,
   Heading6,
+  History,
   Image,
+  ImagePlus,
   Import,
   Italic,
   Link,
+  Link2,
   List,
   ListOrdered,
   RefreshCw,
@@ -29,7 +32,9 @@ import {
   Wand2,
 } from 'lucide-vue-next'
 import DEFAULT_CONTENT from '@/assets/example/markdown.md?raw'
+import ImageQuickInsertDialog from '@/components/editor/ImageQuickInsertDialog.vue'
 import { useEditorFormat } from '@/composables/useEditorFormat'
+import { useImageQuickInsert } from '@/composables/useImageQuickInsert'
 import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
 import { usePostStore } from '@/stores/post'
@@ -51,6 +56,7 @@ const {
 } = uiStore
 
 const { editor } = storeToRefs(editorStore)
+const { open: openQuickInsert } = useImageQuickInsert()
 
 const { addFormat } = useEditorFormat(editor)
 
@@ -144,6 +150,18 @@ function downloadAsCardImage() {
           <ContextMenuItem @click="toggleShowUploadImgDialog()">
             <Image class="mr-2 h-4 w-4" />
             图片
+          </ContextMenuItem>
+          <ContextMenuItem @click="openQuickInsert('upload')">
+            <ImagePlus class="mr-2 h-4 w-4" />
+            批量插入图片
+          </ContextMenuItem>
+          <ContextMenuItem @click="openQuickInsert('link')">
+            <Link2 class="mr-2 h-4 w-4" />
+            按链接插入图片
+          </ContextMenuItem>
+          <ContextMenuItem @click="openQuickInsert('recent')">
+            <History class="mr-2 h-4 w-4" />
+            最近使用的图片
           </ContextMenuItem>
           <ContextMenuItem @click="openMediaLayout">
             <FileImage class="mr-2 h-4 w-4" />
@@ -329,4 +347,6 @@ function downloadAsCardImage() {
       </ContextMenuItem>
     </ContextMenuContent>
   </ContextMenu>
+
+  <ImageQuickInsertDialog />
 </template>
