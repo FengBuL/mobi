@@ -10,6 +10,7 @@ import {
 import type { WeChatMediaPalette } from '@/utils/wechat-media'
 import { buildExtendedWeChatMediaBody, defaultWeChatMediaPalette } from '@/utils/wechat-media'
 import { compactWeChatMarkup, renderWeChatRow, renderWeChatStack, renderWeChatVerticalScroller } from '@/utils/wechat-layout'
+import { convertBlocksForWeChat } from '@/utils/blocks/registry'
 // 直接导入供本文件内部使用
 import {
   checkImage,
@@ -355,6 +356,13 @@ function modifyHtmlStructure(htmlString: string): string {
   })
 
   return tempDiv.innerHTML
+}
+
+function removeSourcePositionAttributes(root: HTMLElement) {
+  root.querySelectorAll<HTMLElement>(`[data-src-kind], [data-src-ordinal]`).forEach((element) => {
+    element.removeAttribute(`data-src-kind`)
+    element.removeAttribute(`data-src-ordinal`)
+  })
 }
 
 function camelToKebab(property: string) {
@@ -1881,6 +1889,8 @@ export async function processClipboardContent(primaryColor: string) {
 
   // 图文模块改写为公众号更稳定的内联结构，避免 grid / flex / aspect-ratio 粘贴后失效
   convertMediaLayoutsForWeChat(clipboardDiv, primaryColor)
+  convertBlocksForWeChat(clipboardDiv)
+  removeSourcePositionAttributes(clipboardDiv)
   prunePreviewOnlyClipboardStyles(clipboardDiv)
 
   const rootSkin = withLightAppearance(() => {

@@ -8,10 +8,13 @@ import type {
 } from '@/utils/image-layouts'
 import { Check, ImagePlus, LayoutTemplate, RotateCcw, Sparkles } from 'lucide-vue-next'
 import { useImageQuickInsert } from '@/composables/useImageQuickInsert'
+import { useBlockSelectionStore } from '@/stores/blockSelection'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
 import { hasMpUploadConfig } from '@/utils/file'
+import type { BlockCategoryId } from '@/utils/blocks/types'
+import { blockCategories } from '@/utils/blocks/registry'
 import {
   buildMediaLayoutMarkup,
   cloneMediaLayoutState,
@@ -60,10 +63,12 @@ interface PresetPreviewBlueprint {
 type TemplateCountFilter = `1` | `2` | `3` | `4`
 
 const { open: openQuickInsert } = useImageQuickInsert()
+const blockSelectionStore = useBlockSelectionStore()
 const editorStore = useEditorStore()
 const postStore = usePostStore()
 const renderStore = useRenderStore()
 const { currentPost } = storeToRefs(postStore)
+const { selection: blockSelection } = storeToRefs(blockSelectionStore)
 
 const selectedPresetId = ref(``)
 const selectedImageIds = ref<string[]>([])
@@ -81,6 +86,42 @@ const templateModeFilter = ref<MediaLayoutTextMode | ``>(``)
 const templateFamilyFilter = ref<MediaLayoutFamily | `all`>(`all`)
 const mpUploadReady = ref(false)
 const formState = reactive(createWorkspaceLayoutFormState())
+const activeLibraryCategory = ref<BlockCategoryId>(`heading`)
+
+watch(blockSelection, (selection) => {
+  if (selection) {
+    activeLibraryCategory.value = selection.category
+  }
+})
+
+function selectLibraryCategory(category: BlockCategoryId) {
+  if (blockSelection.value?.category !== category) {
+    blockSelectionStore.clear()
+  }
+  activeLibraryCategory.value = category
+}
+
+const registeredBlockCategoryIds = computed(() => new Set(blockCategories.map(category => category.id)))
+const blockLibraryCategories = computed<Array<{ id: BlockCategoryId, name: string, count: string }>>(() => {
+  const labels: Record<BlockCategoryId, string> = {
+    heading: `标题`,
+    quote: `引用`,
+    list: `列表`,
+    card: `卡片`,
+    data: `数据`,
+    interactive: `互动`,
+    divider: `分隔`,
+    image: `图片`,
+  }
+  return (Object.keys(labels) as BlockCategoryId[]).map((id) => {
+    const registered = blockCategories.find(category => category.id === id)
+    return {
+      id,
+      name: labels[id],
+      count: id === `image` ? `26` : registered ? String(registered.presets.length) : `待接入`,
+    }
+  })
+})
 
 const templateCountOptions: Array<{ label: string, value: TemplateCountFilter }> = [
   { label: `1 张图`, value: `1` },
@@ -888,7 +929,37 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
 </script>
 
 <template>
-  <div class="media-layout-workspace">
+  <div class="block-library-shell">
+    <header class="block-library-shell__header">
+      <div>
+        <span>Block Library</span>
+        <h2>板块库</h2>
+        <p>选样式、填内容，像拼积木一样组合公众号排版。</p>
+      </div>
+      <div class="block-library-shell__status">独立配色</div>
+    </header>
+
+    <nav class="block-library-nav" aria-label="板块类别">
+      <button
+        v-for="category in blockLibraryCategories"
+        :key="category.id"
+        type="button"
+        :class="{ 'block-library-nav__item--active': activeLibraryCategory === category.id }"
+        class="block-library-nav__item"
+        @click="selectLibraryCategory(category.id)"
+      >
+        <strong>{{ category.name }}</strong>
+        <small>{{ category.count }}</small>
+      </button>
+    </nav>
+
+    <div class="block-library-shell__body">
+      <HeadingBlockWorkspace
+        v-if="activeLibraryCategory !== 'image' && registeredBlockCategoryIds.has(activeLibraryCategory)"
+        :category-id="activeLibraryCategory"
+      />
+
+      <div v-else-if="activeLibraryCategory === 'image'" class="media-layout-workspace">
     <div class="media-layout-workspace__header">
       <div class="media-layout-workspace__eyebrow">
         <LayoutTemplate class="size-3.5" />
@@ -1372,14 +1443,135 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
         </div>
       </section>
     </div>
+      </div>
+
+      <div v-else class="block-library-placeholder">
+        <strong>{{ blockLibraryCategories.find(item => item.id === activeLibraryCategory)?.name }}板块</strong>
+        <p>类别接口和自动注册已就绪，后续实现只需新增独立 manifest 文件。</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped lang="less">
-.media-layout-workspace {
+.block-library-shell {
   display: flex;
   min-height: 0;
   height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border) / 0.82);
+  border-radius: 28px;
+  background: hsl(var(--background));
+  box-shadow: 0 22px 70px hsl(var(--foreground) / 0.07);
+}
+
+.block-library-shell__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.2rem 0.9rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.72);
+}
+
+.block-library-shell__header span {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+.block-library-shell__header h2 {
+  margin: 0.18rem 0 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.block-library-shell__header p {
+  margin: 0.3rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: hsl(var(--muted-foreground));
+}
+
+.block-library-shell__status {
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  font-size: 0.68rem;
+  white-space: nowrap;
+  color: hsl(var(--primary-foreground));
+}
+
+.block-library-nav {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.7rem 0.85rem;
+  overflow-x: auto;
+  border-bottom: 1px solid hsl(var(--border) / 0.72);
+}
+
+.block-library-nav__item {
+  display: grid;
+  min-width: 4.5rem;
+  gap: 0.12rem;
+  padding: 0.5rem 0.58rem;
+  border-radius: 12px;
+  background: hsl(var(--secondary) / 0.62);
+  text-align: left;
+}
+
+.block-library-nav__item strong {
+  font-size: 0.75rem;
+}
+
+.block-library-nav__item small {
+  font-size: 0.61rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.block-library-nav__item--active {
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+}
+
+.block-library-nav__item--active small {
+  color: hsl(var(--background) / 0.68);
+}
+
+.block-library-shell__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem;
+  background: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted) / 0.36));
+}
+
+.block-library-placeholder {
+  padding: 1.4rem;
+  border: 1px dashed hsl(var(--border));
+  border-radius: 22px;
+  background: hsl(var(--background));
+}
+
+.block-library-placeholder strong {
+  font-size: 0.95rem;
+}
+
+.block-library-placeholder p {
+  margin: 0.4rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+}
+
+.media-layout-workspace {
+  display: flex;
+  min-height: 0;
+  height: auto;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid hsl(var(--border) / 0.82);

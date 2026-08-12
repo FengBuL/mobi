@@ -27,7 +27,7 @@ function openMediaLayout() {
     return
   }
 
-  toast.success(`图文排版工作台已经固定在第二栏`)
+  toast.success(`板块库已经固定在第二栏`)
 }
 </script>
 
@@ -56,7 +56,7 @@ function openMediaLayout() {
       </MenubarItem>
       <MenubarItem @click="openMediaLayout">
         <Image class="mr-2 h-4 w-4" />
-        图片排版模块
+        板块库
       </MenubarItem>
       <MenubarItem @click="toggleShowInsertFormDialog()">
         <Table class="mr-2 h-4 w-4" />
@@ -93,7 +93,7 @@ function openMediaLayout() {
       </MenubarItem>
       <MenubarItem @click="openMediaLayout">
         <Image class="mr-2 h-4 w-4" />
-        图片排版模块
+        板块库
       </MenubarItem>
       <MenubarItem @click="toggleShowInsertFormDialog()">
         <Table class="mr-2 h-4 w-4" />

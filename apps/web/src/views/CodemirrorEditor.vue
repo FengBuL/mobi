@@ -6,6 +6,7 @@ import { EditorView } from '@codemirror/view'
 import { highlightPendingBlocks, hljs } from '@md/core'
 import { markdownSetup, theme } from '@md/shared/editor'
 import imageCompression from 'browser-image-compression'
+import { X } from 'lucide-vue-next'
 import FolderSourcePanel from '@/components/editor/FolderSourcePanel.vue'
 import {
   ResizableHandle,
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/resizable'
 import { SearchTab } from '@/components/ui/search-tab'
 import { useImageUploader } from '@/composables/useImageUploader'
+import { useBlockSelectionStore } from '@/stores/blockSelection'
 import { useCssEditorStore } from '@/stores/cssEditor'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
@@ -24,13 +26,17 @@ import { checkImage, toBase64 } from '@/utils'
 import { fileUpload } from '@/utils/file'
 import { store } from '@/utils/storage'
 import { repairIndentedMediaLayoutBlocks } from '@/utils/image-layouts'
+import { blockCategories, parseBlockEntries } from '@/utils/blocks/registry'
+import { resolveMarkdownSourceRange } from '@/utils/blocks/source-selection'
 
+const blockSelectionStore = useBlockSelectionStore()
 const editorStore = useEditorStore()
 const postStore = usePostStore()
 const renderStore = useRenderStore()
 const themeStore = useThemeStore()
 const uiStore = useUIStore()
 const cssEditorStore = useCssEditorStore()
+const { selection: blockSelection } = storeToRefs(blockSelectionStore)
 const { upload } = useImageUploader()
 
 const { editor } = storeToRefs(editorStore)
@@ -74,8 +80,13 @@ watch(output, () => {
     const outputElement = document.getElementById(`output`)
     if (outputElement) {
       highlightPendingBlocks(hljs, outputElement)
+      applyBlockSelectionHighlight()
     }
   })
+})
+
+watch(blockSelection, () => {
+  nextTick(applyBlockSelectionHighlight)
 })
 
 const backLight = ref(false)
@@ -487,11 +498,293 @@ function syncEditorToPreviewElement(el: HTMLElement) {
   }
 }
 
+function extractBlockText(element: HTMLElement) {
+  const clone = element.cloneNode(true) as HTMLElement
+  clone.querySelectorAll(`br`).forEach(node => node.replaceWith(`\n`))
+  return (clone.textContent || ``)
+    .split(`\n`)
+    .map(normalizeText)
+    .filter(Boolean)
+    .join(`\n`)
+}
+
+function createNativeBlockSelection(element: HTMLElement) {
+  const sourceKind = element.dataset.srcKind
+  const sourceOrdinal = Number(element.dataset.srcOrdinal)
+  if (!sourceKind || !Number.isInteger(sourceOrdinal)) {
+    return null
+  }
+
+  const categoryId = sourceKind.startsWith(`heading-`)
+    ? `heading`
+    : sourceKind === `quote`
+      ? `quote`
+      : sourceKind.startsWith(`list-`)
+        ? `list`
+        : sourceKind === `divider`
+          ? `divider`
+          : null
+  const category = blockCategories.find(item => item.id === categoryId)
+  const preset = category?.presets[0]
+  if (!category || !preset) {
+    return null
+  }
+
+  const content = editorStore.getContent()
+  const range = resolveMarkdownSourceRange(content, sourceKind, sourceOrdinal)
+  if (!range) {
+    return null
+  }
+
+  const state = category.createDefaultState(preset)
+  preset.fields.forEach((field) => {
+    if (typeof state[field.key] === `string`) {
+      state[field.key] = ``
+    }
+  })
+
+  let title = normalizeText(element.textContent || ``)
+  if (category.id === `heading`) {
+    state.title = title
+  }
+  else if (category.id === `quote`) {
+    const paragraphs = Array.from(element.querySelectorAll<HTMLElement>(`:scope > p`))
+      .map(extractBlockText)
+      .filter(Boolean)
+    const quote = paragraphs.join(`\n`) || title
+    state.quote = quote
+    title = quote
+  }
+  else if (category.id === `list`) {
+    const items = Array.from(element.querySelectorAll<HTMLElement>(`li`))
+      .map((item) => {
+        const clone = item.cloneNode(true) as HTMLElement
+        clone.querySelectorAll(`ul, ol, .listitem-marker`).forEach(node => node.remove())
+        return normalizeText(clone.textContent || ``)
+      })
+      .filter(Boolean)
+      .slice(0, 6)
+    items.forEach((item, index) => {
+      state[`item${index + 1}`] = item
+    })
+    title = items[0] || `列表`
+  }
+
+  return {
+    category: category.id,
+    from: range.from,
+    to: range.to,
+    sourceKind,
+    sourceOrdinal,
+    state,
+    title,
+  }
+}
+
+function createExistingBlockSelection(element: HTMLElement) {
+  const outputElement = element.closest(`#output`)
+  if (!outputElement) {
+    return null
+  }
+
+  const blockElements = Array.from(outputElement.querySelectorAll<HTMLElement>(`section.md-block`))
+  const index = blockElements.indexOf(element)
+  const block = parseBlockEntries(editorStore.getContent())[index]
+  if (!block) {
+    return null
+  }
+
+  return {
+    category: block.category,
+    from: block.from,
+    to: block.to,
+    presetId: block.presetId,
+    state: { ...block.state },
+    title: block.title,
+  }
+}
+
+function isSameBlockSelection(
+  left: typeof blockSelection.value,
+  right: NonNullable<typeof blockSelection.value>,
+) {
+  return Boolean(
+    left
+    && left.from === right.from
+    && left.to === right.to
+    && left.sourceKind === right.sourceKind
+    && left.sourceOrdinal === right.sourceOrdinal,
+  )
+}
+
+function applyBlockSelectionHighlight() {
+  document.querySelectorAll<HTMLElement>(`#output`).forEach((outputElement) => {
+    outputElement.querySelectorAll(`.preview-block-selected`).forEach(element => element.classList.remove(`preview-block-selected`))
+    const selection = blockSelection.value
+    if (!selection) {
+      return
+    }
+
+    let selectedElement: HTMLElement | undefined
+    if (selection.sourceKind && selection.sourceOrdinal) {
+      selectedElement = outputElement.querySelector<HTMLElement>(
+        `[data-src-kind="${selection.sourceKind}"][data-src-ordinal="${selection.sourceOrdinal}"]`,
+      ) ?? undefined
+    }
+    else {
+      const entries = parseBlockEntries(editorStore.getContent())
+      const index = entries.findIndex(entry => (
+        entry.from === selection.from
+        && entry.to === selection.to
+        && entry.presetId === selection.presetId
+      ))
+      if (index >= 0) {
+        selectedElement = outputElement.querySelectorAll<HTMLElement>(`section.md-block`)[index]
+      }
+    }
+    selectedElement?.classList.add(`preview-block-selected`)
+  })
+}
+
+// 悬停在已插入板块上时，在其右上角浮出一个删除按钮。
+// 用浮层而不是往预览 DOM 里插节点，避免按钮混进公众号复制产物。
+const hoveredBlockElement = shallowRef<HTMLElement | null>(null)
+const hoveredBlockAnchor = ref<{ top: number, left: number } | null>(null)
+
+const hoverInset = 10
+let hoverHideTimer: ReturnType<typeof setTimeout> | undefined
+
+function measureHoveredBlock() {
+  const element = hoveredBlockElement.value
+  const container = element?.closest<HTMLElement>(`.preview`)
+  if (!element || !container) {
+    hoveredBlockAnchor.value = null
+    return
+  }
+
+  const containerRect = container.getBoundingClientRect()
+  const blockRect = element.getBoundingClientRect()
+  if (blockRect.bottom < containerRect.top || blockRect.top > containerRect.bottom) {
+    hoveredBlockAnchor.value = null
+    return
+  }
+
+  // 按钮压在板块内侧而不是骑在边线上，这样从板块移到按钮的过程中指针始终没离开板块
+  hoveredBlockAnchor.value = {
+    top: blockRect.top - containerRect.top + hoverInset,
+    left: blockRect.right - containerRect.left - hoverInset,
+  }
+}
+
+function cancelHoverHide() {
+  if (hoverHideTimer) {
+    clearTimeout(hoverHideTimer)
+    hoverHideTimer = undefined
+  }
+}
+
+function handlePreviewPointerMove(event: PointerEvent) {
+  const target = event.target as HTMLElement | null
+
+  // 指针落在按钮自身上时按钮必须留住，否则移过去的一瞬间它就消失了
+  if (target?.closest(`.preview-block-remove`)) {
+    cancelHoverHide()
+    return
+  }
+
+  const block = target?.closest<HTMLElement>(`#output section.md-block`) ?? null
+
+  if (!block) {
+    if (hoveredBlockElement.value && !hoverHideTimer) {
+      hoverHideTimer = setTimeout(() => {
+        hoverHideTimer = undefined
+        hoveredBlockElement.value = null
+        hoveredBlockAnchor.value = null
+      }, 180)
+    }
+    return
+  }
+
+  cancelHoverHide()
+  if (block === hoveredBlockElement.value) {
+    return
+  }
+  hoveredBlockElement.value = block
+  measureHoveredBlock()
+}
+
+function clearHoveredBlock() {
+  cancelHoverHide()
+  hoveredBlockElement.value = null
+  hoveredBlockAnchor.value = null
+}
+
+function handlePreviewScroll() {
+  if (hoveredBlockElement.value) {
+    measureHoveredBlock()
+  }
+}
+
+function deleteHoveredBlock() {
+  const element = hoveredBlockElement.value
+  if (!element) {
+    return
+  }
+
+  const selection = createExistingBlockSelection(element)
+  if (!selection) {
+    toast.error(`没能定位这个板块，请在板块库里删除`)
+    return
+  }
+
+  const current = editorStore.getContent()
+  let { from, to } = selection
+  while (from > 0 && /[\t ]/.test(current[from - 1])) {
+    from -= 1
+  }
+  while (to < current.length && /[\t ]/.test(current[to])) {
+    to += 1
+  }
+  if (current[from - 1] === `\n` && current[to] === `\n`) {
+    to += 1
+  }
+
+  const next = `${current.slice(0, from)}${current.slice(to)}`
+  editorStore.importContent(next)
+  if (currentPost.value) {
+    postStore.updatePostContent(currentPost.value.id, next)
+  }
+  renderStore.render(next)
+  blockSelectionStore.clear()
+  clearHoveredBlock()
+  toast.success(`已删除该板块`)
+}
+
 function handlePreviewContentClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null
   if (!target)
     return
 
+  const existingBlock = target.closest<HTMLElement>(`section.md-block`)
+  const nativeBlock = target.closest<HTMLElement>(`[data-src-kind][data-src-ordinal]`)
+  const nextSelection = existingBlock
+    ? createExistingBlockSelection(existingBlock)
+    : nativeBlock
+      ? createNativeBlockSelection(nativeBlock)
+      : null
+
+  if (nextSelection) {
+    if (isSameBlockSelection(blockSelection.value, nextSelection)) {
+      blockSelectionStore.clear()
+    }
+    else {
+      blockSelectionStore.select(nextSelection)
+    }
+    focusEditorAtPos(nextSelection.from)
+    return
+  }
+
+  blockSelectionStore.clear()
   const block = target.closest(`h1,h2,h3,h4,h5,h6,p,li,blockquote,pre,td,th,img`) as HTMLElement | null
   if (!block)
     return
@@ -590,6 +883,8 @@ function handleGlobalKeydown(e: KeyboardEvent) {
 onMounted(() => {
   // 使用较低优先级确保 CodeMirror 键盘事件先处理
   document.addEventListener(`keydown`, handleGlobalKeydown, { passive: false, capture: false })
+  // 捕获阶段监听，任意祖先容器滚动都能让删除按钮跟住板块
+  window.addEventListener(`scroll`, handlePreviewScroll, { passive: true, capture: true })
 })
 
 async function beforeImageUpload(file: File) {
@@ -811,6 +1106,7 @@ function createFormTextArea(dom: HTMLDivElement) {
       themeCompartment.of(theme(isDark.value)),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
+          blockSelectionStore.clear()
           const value = update.state.doc.toString()
           clearTimeout(changeTimer.value)
           changeTimer.value = setTimeout(() => {
@@ -1071,8 +1367,11 @@ onUnmounted(() => {
   clearTimeout(changeTimer.value)
   clearTimeout(cursorSyncTimer.value)
 
+  cancelHoverHide()
+
   // 清理全局事件监听器 - 防止全局事件触发已销毁的组件
   document.removeEventListener(`keydown`, handleGlobalKeydown)
+  window.removeEventListener(`scroll`, handlePreviewScroll, { capture: true })
 })
 </script>
 
@@ -1196,8 +1495,20 @@ onUnmounted(() => {
                                 effectivePreviewWidth,
                                 effectivePreviewWidth === 'w-[375px]' ? 'max-w-full' : '',
                               ]"
+                              @pointermove="handlePreviewPointerMove"
+                              @pointerleave="clearHoveredBlock"
                             >
                               <section id="output" class="w-full" @click="handlePreviewContentClick" v-html="output" />
+                              <button
+                                v-if="hoveredBlockAnchor"
+                                type="button"
+                                class="preview-block-remove"
+                                :style="{ top: `${hoveredBlockAnchor.top}px`, left: `${hoveredBlockAnchor.left}px` }"
+                                title="删除这个板块"
+                                @click.stop="deleteHoveredBlock"
+                              >
+                                <X class="size-3.5" />
+                              </button>
                               <div v-if="isCoping" class="loading-mask">
                                 <div class="loading-mask-box">
                                   <div class="loading__img" />
@@ -1324,8 +1635,20 @@ onUnmounted(() => {
                                 effectivePreviewWidth,
                                 effectivePreviewWidth === 'w-[375px]' ? 'max-w-full' : '',
                               ]"
+                              @pointermove="handlePreviewPointerMove"
+                              @pointerleave="clearHoveredBlock"
                             >
                               <section id="output" class="w-full" @click="handlePreviewContentClick" v-html="output" />
+                              <button
+                                v-if="hoveredBlockAnchor"
+                                type="button"
+                                class="preview-block-remove"
+                                :style="{ top: `${hoveredBlockAnchor.top}px`, left: `${hoveredBlockAnchor.left}px` }"
+                                title="删除这个板块"
+                                @click.stop="deleteHoveredBlock"
+                              >
+                                <X class="size-3.5" />
+                              </button>
                               <div v-if="isCoping" class="loading-mask">
                                 <div class="loading-mask-box">
                                   <div class="loading__img" />
@@ -1799,6 +2122,50 @@ onUnmounted(() => {
 
 :deep(.preview-table) {
   border-spacing: 0;
+}
+
+:deep(#output [data-src-kind]),
+:deep(#output section.md-block) {
+  cursor: pointer;
+}
+
+.preview-block-remove {
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--border));
+  border-radius: 999px;
+  background: hsl(var(--background));
+  color: hsl(var(--muted-foreground));
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+// 24px 的圆点对鼠标偏小，用透明外扩把命中区放到 40px
+.preview-block-remove::before {
+  position: absolute;
+  content: '';
+  inset: -8px;
+  border-radius: inherit;
+}
+
+.preview-block-remove:hover {
+  border-color: hsl(var(--destructive));
+  background: hsl(var(--destructive));
+  color: hsl(var(--destructive-foreground));
+}
+
+:deep(#output .preview-block-selected) {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 4px;
+  border-radius: 6px;
+  box-shadow: 0 0 0 6px hsl(var(--primary) / 0.12);
 }
 
 .codeMirror-wrapper,

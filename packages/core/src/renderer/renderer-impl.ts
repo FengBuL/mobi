@@ -157,6 +157,8 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
   let footnoteIndex: number = 0
   const listOrderedStack: boolean[] = []
   const listCounters: number[] = []
+  const sourceOrdinals = new Map<string, number>()
+  let sourceBlockDepth = 0
 
   function getOpts(): IOpts {
     return opts
@@ -168,11 +170,20 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
    * @param content 内容
    * @param tagName HTML 标签名（可选）
    */
-  function styledContent(styleLabel: string, content: string, tagName?: string): string {
+  function styledContent(styleLabel: string, content: string, tagName?: string, attrs = ``): string {
     const tag = tagName ?? styleLabel
     const className = `${styleLabel.replace(UNDERSCORE_REGEX, `-`)}`
     const headingAttr = HEADING_TAG_REGEX.test(tag) ? ` data-heading="true"` : ``
-    return `<${tag} class="${className}"${headingAttr}>${content}</${tag}>`
+    return `<${tag} class="${className}"${headingAttr}${attrs}>${content}</${tag}>`
+  }
+
+  function buildSourceAttrs(kind: string) {
+    if (sourceBlockDepth > 0) {
+      return ``
+    }
+    const ordinal = (sourceOrdinals.get(kind) ?? 0) + 1
+    sourceOrdinals.set(kind, ordinal)
+    return ` data-src-kind="${kind}" data-src-ordinal="${ordinal}"`
   }
 
   function addFootnote(title: string, link: string): number {
@@ -190,6 +201,8 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
   function reset(newOpts: Partial<IOpts>): void {
     footnotes.length = 0
     footnoteIndex = 0
+    sourceOrdinals.clear()
+    sourceBlockDepth = 0
     setOptions(newOpts)
   }
 
@@ -227,7 +240,7 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
     heading({ tokens, depth }: Tokens.Heading) {
       const text = this.parser.parseInline(tokens)
       const tag = `h${depth}`
-      return styledContent(tag, text)
+      return styledContent(tag, text, undefined, buildSourceAttrs(`heading-${depth}`))
     },
 
     paragraph({ tokens }: Tokens.Paragraph): string {
@@ -241,9 +254,15 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
     },
 
     blockquote({ tokens }: Tokens.Blockquote): string {
-      const text = this.parser.parse(tokens)
-      // 新主题系统：blockquote 内的 p 标签由 CSS 选择器 `blockquote p` 控制
-      return styledContent(`blockquote`, text)
+      const attrs = buildSourceAttrs(`quote`)
+      sourceBlockDepth += 1
+      try {
+        const text = this.parser.parse(tokens)
+        return styledContent(`blockquote`, text, undefined, attrs)
+      }
+      finally {
+        sourceBlockDepth -= 1
+      }
     },
 
     code({ text, lang = `` }: Tokens.Code): string {
@@ -271,20 +290,28 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
     },
 
     list({ ordered, items, start = 1 }: Tokens.List) {
+      const attrs = buildSourceAttrs(ordered ? `list-ol` : `list-ul`)
+      sourceBlockDepth += 1
       listOrderedStack.push(ordered)
       listCounters.push(Number(start))
 
-      const html = items
-        .map(item => this.listitem(item))
-        .join(``)
+      try {
+        const html = items
+          .map(item => this.listitem(item))
+          .join(``)
 
-      listOrderedStack.pop()
-      listCounters.pop()
-
-      return styledContent(
-        ordered ? `ol` : `ul`,
-        html,
-      )
+        return styledContent(
+          ordered ? `ol` : `ul`,
+          html,
+          undefined,
+          attrs,
+        )
+      }
+      finally {
+        listOrderedStack.pop()
+        listCounters.pop()
+        sourceBlockDepth -= 1
+      }
     },
 
     // 2. listitem：从栈顶取 ordered + counter，计算 prefix 并自增
@@ -389,7 +416,7 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
       else if (raw.includes(`_`)) {
         variant = `underscore`
       }
-      return `<hr class="hr hr-${variant}">`
+      return `<hr class="hr hr-${variant}"${buildSourceAttrs(`divider`)}>`
     },
   }
 

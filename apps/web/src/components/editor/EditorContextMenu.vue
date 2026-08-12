@@ -72,7 +72,7 @@ function openMediaLayout() {
     return
   }
 
-  toast.success(`图文排版工作台已经固定在第二栏`)
+  toast.success(`板块库已经固定在第二栏`)
 }
 
 // 格式化文档
@@ -165,7 +165,7 @@ function downloadAsCardImage() {
           </ContextMenuItem>
           <ContextMenuItem @click="openMediaLayout">
             <FileImage class="mr-2 h-4 w-4" />
-            图片排版模块
+            板块库
           </ContextMenuItem>
           <ContextMenuItem @click="toggleShowInsertFormDialog()">
             <Table class="mr-2 h-4 w-4" />
