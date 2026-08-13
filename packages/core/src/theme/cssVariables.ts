@@ -55,7 +55,7 @@ function generateHeadingStylesCSS(headingStyles?: HeadingStyles): string {
 
   for (const level of levels) {
     const style = headingStyles[level]
-    // 自定义样式由用户在 CSS 编辑器中直接编辑，这里只处理预设样式
+    // custom 是自定义 CSS 面板留下的旧值，没有对应预设可生成，读到就跳过
     if (style && style !== `default` && style !== `custom`) {
       cssRules.push(generateHeadingCSS(level, style))
     }
