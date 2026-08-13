@@ -59,8 +59,17 @@ jobs:
         run: pnpm --filter @md/desktop package:${{ matrix.target }}
         env:
           ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/v
-          # 还没有证书，别让 electron-builder 去钥匙串里翻
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      # 签名对不上 bundle 时，Apple Silicon 会判「已损坏」并拒绝打开，
+      # 而这在装了应用的开发机上看不出来——本地跑的时候隔离属性早被摘掉了。
+      # 所以让 CI 在产物出厂前自己验一遍，签名坏了就别发出去。
+      - name: Verify macOS signature
+        if: matrix.target == 'mac'
+        run: |
+          for app in apps/desktop/release/mac*/*.app; do
+            echo "检查 $app"
+            codesign --verify --deep --strict --verbose=2 "$app"
+          done
 
       - name: Upload installers
         uses: actions/upload-artifact@v4

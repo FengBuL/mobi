@@ -22,8 +22,12 @@ mac:
       arch:
         - arm64
         - x64
-  # 还没有开发者证书，先明确关掉签名，免得本地构建去钥匙串里乱找
-  identity: null
+  # 没有开发者证书，但不能不签：Apple Silicon 要求所有代码都有能对上 bundle 的签名，
+  # 对不上系统会直接判「已损坏」并拒绝打开，那比「无法验证开发者」严重得多——后者右键还能打开。
+  # 这里走 ad-hoc 签名，不需要证书也不花钱，afterPack 里补一刀确保签名贴合最终产物。
+  identity: '-'
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
 
 dmg:
   title: 墨笔 ${version}
