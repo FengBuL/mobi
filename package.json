@@ -1,7 +1,7 @@
 {
   "name": "mobi",
   "type": "module",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "private": true,
   "description": "墨笔 · 写完就能贴进公众号的 Markdown 排版编辑器",
   "engines": {

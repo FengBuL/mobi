@@ -236,6 +236,7 @@ const readingTimeLabel = computed(() => {
 })
 
 const previewRef = useTemplateRef<HTMLDivElement>(`previewRef`)
+const mainSectionRef = useTemplateRef<HTMLDivElement>(`mainSectionRef`)
 
 const codeMirrorView = ref<EditorView | null>(null)
 const themeCompartment = new Compartment()
@@ -345,9 +346,14 @@ function scrollPreviewToElement(el: HTMLElement, behavior: ScrollBehavior = `aut
   const eRect = el.getBoundingClientRect()
   const inView = eRect.top >= cRect.top + 32 && eRect.bottom <= cRect.bottom - 32
 
-  if (!inView) {
-    el.scrollIntoView({ behavior, block: `center` })
+  if (inView) {
+    return
   }
+
+  // 只滚预览这一个容器。scrollIntoView 会把每一层可滚动祖先都滚一遍，
+  // 外面的工作区容器是 overflow 隐藏的，被滚上去之后没有滚动条能让用户拉回来
+  const centered = eRect.top - cRect.top - (cRect.height - Math.min(eRect.height, cRect.height)) / 2
+  container.scrollTo({ top: container.scrollTop + centered, behavior })
 }
 
 function findHeadingElementInPreview(title: string, level?: number) {
@@ -1415,6 +1421,32 @@ watch([viewMode, isMobile], ([mode, mobile]) => {
 
 // 历史记录的定时器
 const historyTimer = ref<NodeJS.Timeout>()
+/**
+ * scrollIntoView 和焦点管理会顺带把外壳容器也滚上去——它是 overflow 隐藏的，
+ * 没有滚动条，用户只能看着整个版面卡在上移的位置，重启才能恢复。
+ *
+ * 不用 overflow: clip 换掉 hidden：clip 之后这个 flex 子项不再受父级高度约束，
+ * 工作区会被预览内容直接撑到几千像素高。这里改成滚动一发生就归零。
+ */
+onMounted(() => {
+  const shell = mainSectionRef.value
+  if (!shell) {
+    return
+  }
+
+  const resetShellScroll = () => {
+    if (shell.scrollTop !== 0) {
+      shell.scrollTop = 0
+    }
+    if (shell.scrollLeft !== 0) {
+      shell.scrollLeft = 0
+    }
+  }
+
+  shell.addEventListener(`scroll`, resetShellScroll, { passive: true })
+  onBeforeUnmount(() => shell.removeEventListener(`scroll`, resetShellScroll))
+})
+
 onMounted(() => {
   // 定时，30 秒记录一次文章的历史记录
   historyTimer.value = setInterval(() => {
@@ -1460,7 +1492,7 @@ onUnmounted(() => {
     />
 
     <main class="container-main flex flex-1 flex-col">
-      <div class="container-main-section border-radius-10 relative flex flex-1 overflow-hidden border-x border-b">
+      <div ref="mainSectionRef" class="container-main-section border-radius-10 relative flex flex-1 overflow-hidden border-x border-b">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel
             v-if="showPostRail"
