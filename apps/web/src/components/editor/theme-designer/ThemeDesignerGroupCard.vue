@@ -32,7 +32,7 @@ function toggle() {
 
 <template>
   <div
-    class="style-group-card overflow-hidden rounded-2xl border bg-background/80"
+    class="style-group-card overflow-hidden rounded-2xl border"
     :class="{ 'is-focused': isFocused }"
     :data-style-group="focusId"
   >
@@ -69,7 +69,7 @@ function toggle() {
       </span>
     </button>
 
-    <div v-if="isExpanded" class="space-y-3.5 border-t bg-muted/10 px-3 py-3">
+    <div v-if="isExpanded" class="space-y-3.5 border-t px-3 py-3">
       <slot name="before-fields" />
       <ThemeDesignerField
         v-for="field in visibleFields"

@@ -650,7 +650,7 @@ watch(isOpen, () => {
         </p>
         <div
           v-if="themeDesignerStore.hasOverrides"
-          class="flex items-center justify-between gap-2 rounded-xl border border-dashed bg-background/60 px-2.5 py-1.5"
+          class="flex items-center justify-between gap-2 rounded-xl border border-dashed px-2.5 py-1.5"
         >
           <span class="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
             {{ themeDesignerStore.sourceTheme ? themeDesignerStore.sourceTheme.name : '未保存的调整' }} ·

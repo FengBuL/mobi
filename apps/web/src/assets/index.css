@@ -133,11 +133,20 @@
     background: transparent;
   }
 
+  /*
+   * 常驻块和折叠组在面板里是同级的，共用一种材质。
+   * 折叠组原先写的是 bg-background/80，面板底色去掉后它就和纸融成一片，
+   * 于是同一页里出现「白卡片」和「看不见的行」两种东西。
+   */
+  .style-card,
+  .style-group-card {
+    background: hsl(var(--card));
+  }
+
   .style-card {
     padding: 1rem;
     border: 1px solid hsl(var(--border));
     border-radius: 1rem;
-    background: hsl(var(--card));
     box-shadow: none;
   }
 
@@ -152,7 +161,8 @@
     background: transparent;
   }
 
-  .dark .style-card {
+  .dark .style-card,
+  .dark .style-group-card {
     background: hsl(var(--muted) / 0.55);
     box-shadow: none;
   }
