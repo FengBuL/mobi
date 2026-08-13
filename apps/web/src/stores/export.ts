@@ -8,6 +8,7 @@ import {
   getHtmlContent,
   sanitizeTitle,
 } from '@/utils'
+import { trackEvent } from '@/utils/telemetry'
 import { usePostStore } from './post'
 import { useRenderStore } from './render'
 import { useUIStore } from './ui'
@@ -83,6 +84,7 @@ export const useExportStore = defineStore(`export`, () => {
     if (!currentPost)
       return
 
+    trackEvent(`export`, { format: `html` })
     await exportHTML(currentPost.title)
     document.querySelector(`#output`)!.innerHTML = renderStore.output
   }
@@ -93,6 +95,7 @@ export const useExportStore = defineStore(`export`, () => {
     if (!currentPost)
       return
 
+    trackEvent(`export`, { format: `pure-html` })
     exportPureHTML(content, currentPost.title)
   }
 
@@ -102,6 +105,7 @@ export const useExportStore = defineStore(`export`, () => {
     if (!result)
       return
 
+    trackEvent(`export`, { format: `png` })
     downloadFile(result.dataUrl, result.fileName, `image/png`)
   }
 
@@ -111,6 +115,7 @@ export const useExportStore = defineStore(`export`, () => {
     if (!currentPost)
       return
 
+    trackEvent(`export`, { format: `pdf` })
     await exportPDF(currentPost.title)
     document.querySelector(`#output`)!.innerHTML = renderStore.output
   }
@@ -121,6 +126,7 @@ export const useExportStore = defineStore(`export`, () => {
     if (!currentPost)
       return
 
+    trackEvent(`export`, { format: `md` })
     downloadMD(content, currentPost.title)
   }
 

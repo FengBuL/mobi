@@ -7,6 +7,7 @@ import { isDesktopRuntime } from '@/services/desktop/bridge'
 import { useUIStore } from '@/stores/ui'
 import { checkImage } from '@/utils'
 import { store } from '@/utils/storage'
+import { trackEvent } from '@/utils/telemetry'
 
 const emit = defineEmits([`uploadImage`])
 
@@ -212,6 +213,7 @@ const mpConfig = store.reactive(`mpConfig`, {
 
 async function mpSubmit(formValues: any) {
   Object.assign(mpConfig.value, formValues)
+  trackEvent(`mp_config_saved`)
   toast.success(`保存成功`)
 }
 
@@ -352,6 +354,14 @@ const imgHost = store.reactive(`imgHost`, `default`)
 const useCompression = store.reactive(`useCompression`, false)
 const activeName = ref(`upload`)
 
+// 别处（板块库、复制警告）可以要求打开时直接定位到某个图床页签
+watch(() => uiStore.isShowUploadImgDialog, (open) => {
+  if (open && uiStore.uploadImgDialogInitialTab) {
+    activeName.value = uiStore.uploadImgDialogInitialTab
+    uiStore.uploadImgDialogInitialTab = null
+  }
+})
+
 async function changeImgHost() {
   toast.success(`图床已切换`)
 }
@@ -454,7 +464,10 @@ function onTabScroll(e: WheelEvent) {
   <Dialog v-model:open="uiStore.isShowUploadImgDialog">
     <DialogContent class="md:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden" @pointer-down-outside="ev => ev.preventDefault()">
       <DialogHeader>
-        <DialogTitle>本地上传</DialogTitle>
+        <DialogTitle>插入图片</DialogTitle>
+        <DialogDescription>
+          上传本地图片，或在下方页签配置图床。配好「公众号图床」后，复制到公众号时会自动把图片转成微信地址，排版才不会丢。
+        </DialogDescription>
       </DialogHeader>
       <Tabs v-model="activeName" class="w-full md:w-full flex flex-col flex-1 overflow-hidden">
         <TabsList

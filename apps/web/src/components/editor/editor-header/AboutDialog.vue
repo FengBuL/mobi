@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getTelemetryConsent, isTelemetryConfigured, setTelemetryConsent } from '@/utils/telemetry'
+
 const props = defineProps({
   visible: {
     type: Boolean,
@@ -12,6 +14,16 @@ function onUpdate(val: boolean) {
   if (!val) {
     emit(`close`)
   }
+}
+
+const appVersion = typeof __APP_VERSION__ !== `undefined` ? __APP_VERSION__ : `dev`
+
+const telemetryConfigured = isTelemetryConfigured()
+const telemetryConsent = ref(getTelemetryConsent())
+
+function onTelemetryChange(val: boolean) {
+  telemetryConsent.value = val
+  setTelemetryConsent(val)
 }
 
 const links = [
@@ -41,7 +53,30 @@ function onRedirect(url: string) {
         <p class="text-sm text-muted-foreground">
           写完就能贴进公众号的 Markdown 排版编辑器
         </p>
+        <p class="text-xs text-muted-foreground">
+          v{{ appVersion }}
+        </p>
       </div>
+
+      <div class="flex items-center justify-between gap-4 rounded-xl border px-3 py-2.5">
+        <div class="min-w-0 text-left">
+          <div class="text-sm font-medium">
+            匿名使用统计
+          </div>
+          <p class="text-xs leading-5 text-muted-foreground">
+            {{ telemetryConfigured
+              ? '只统计功能使用次数，不包含文章内容和个人信息，可随时关闭。'
+              : '当前版本未配置统计端点，不会发送任何数据。' }}
+          </p>
+        </div>
+        <Switch
+          :checked="telemetryConsent"
+          :disabled="!telemetryConfigured"
+          name="TelemetryConsent"
+          @update:checked="onTelemetryChange"
+        />
+      </div>
+
       <DialogFooter class="sm:justify-evenly flex flex-wrap gap-2">
         <Button
           v-for="link in links"

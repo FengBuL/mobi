@@ -32,6 +32,7 @@ import {
   parseMediaLayoutBlocks,
   restoreMediaLayoutBlockToMarkdown,
 } from '@/utils/image-layouts'
+import { trackEvent } from '@/utils/telemetry'
 
 interface MarkdownImageEntry {
   id: string
@@ -590,6 +591,17 @@ async function refreshMpUploadStatus() {
   mpUploadReady.value = await hasMpUploadConfig()
 }
 
+function openMpUploadConfig() {
+  uiStore.openUploadImgDialog(`mp`)
+}
+
+// 在弹窗里配好图床回来后，安全提示要立刻变绿，不能等窗口重新聚焦
+watch(() => uiStore.isShowUploadImgDialog, (open) => {
+  if (!open) {
+    void refreshMpUploadStatus()
+  }
+})
+
 function createWorkspaceLayoutFormState() {
   const state = createDefaultMediaLayoutState()
   state.blockWidth = 100
@@ -920,6 +932,8 @@ function applyLayoutToMarkdown() {
     return
   }
 
+  trackEvent(`image_layout_apply`, { preset: selectedPreset.value.id })
+
   const currentContent = markdownContent.value
   const layoutMarkup = buildMediaLayoutMarkup(selectedPreset.value, buildLayoutStateFromSelection(selectedImages.value))
 
@@ -1080,6 +1094,15 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
             <div class="media-layout-safety-note" :class="{ 'media-layout-safety-note--warning': !mpUploadReady }">
               <strong>{{ mpSafetyLabel }}</strong>
               <span>{{ mpSafetyHint }}</span>
+              <Button
+                v-if="!mpUploadReady"
+                size="sm"
+                variant="outline"
+                class="h-7 shrink-0 px-2.5 text-xs"
+                @click="openMpUploadConfig"
+              >
+                去配置图床
+              </Button>
             </div>
 
             <div class="media-layout-count-switch">

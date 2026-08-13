@@ -2,9 +2,11 @@ import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
 import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
+import { useUIStore } from '@/stores/ui'
 import { addPrefix, generatePureHTML, processClipboardContent } from '@/utils'
 import { hasMpUploadConfig } from '@/utils/file'
 import { store } from '@/utils/storage'
+import { trackEvent } from '@/utils/telemetry'
 
 type CopyMode = 'txt' | 'html' | 'html-without-style' | 'html-and-style' | 'md'
 
@@ -18,6 +20,7 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
   const themeStore = useThemeStore()
   const renderStore = useRenderStore()
   const exportStore = useExportStore()
+  const uiStore = useUIStore()
 
   const { editor } = storeToRefs(editorStore)
   const { output } = storeToRefs(renderStore)
@@ -133,6 +136,7 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
       const mdContent = editor.value?.state.doc.toString() || ``
       await copyContent(mdContent)
       toast.success(`已复制 Markdown 源码到剪贴板。`)
+      trackEvent(`copy`, { mode: `md` })
       return
     }
 
@@ -172,7 +176,13 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
             clipboardDiv.innerHTML = output.value
             window.getSelection()?.removeAllRanges()
             editorRefresh()
-            toast.error(`${localImages.length} 张图片还是本地地址（${blocker.label}），公众号读不到。先配置图床把它们传上去，或者换成网络图片链接。`)
+            toast.error(
+              `${localImages.length} 张图片还是本地地址（${blocker.label}），公众号读不到。先配置图床把它们传上去，或者换成网络图片链接。`,
+              {
+                duration: 10000,
+                action: { label: `去配置图床`, onClick: () => uiStore.openUploadImgDialog(`mp`) },
+              },
+            )
             finish()
             return
           }
@@ -183,11 +193,23 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
             const longHint = remoteImages.some(item => item.isLong)
               ? `长图容易超过公众号图床的体积上限，可以先压缩或裁短。`
               : ``
-            toast.warning(
-              hasConfig
-                ? `${remoteImages.length} 张图片没能转成公众号地址，卡在${blocker.label}。${blocker.error ? `原因：${blocker.error}。` : ``}已按外链复制，粘贴后请确认图片是否显示。${longHint}`
-                : `${remoteImages.length} 张图片是外链，已按原样复制。粘到公众号后编辑器通常会自动转存，请确认图片是否显示。${longHint}`,
-            )
+            if (hasConfig) {
+              toast.warning(
+                `${remoteImages.length} 张图片没能转成公众号地址，卡在${blocker.label}。${blocker.error ? `原因：${blocker.error}。` : ``}已按外链复制，粘贴后请确认图片是否显示。${longHint}`,
+                { duration: 10000 },
+              )
+            }
+            else {
+              // 微信转存外链图时经常顺手把整段排版洗掉，这正是「粘过去只剩图片」的主因，
+              // 必须把因果讲透，并给一步直达的修复入口
+              toast.warning(
+                `${remoteImages.length} 张图片是外链。微信编辑器转存外链图时，很可能把这段内容的排版清洗掉（只剩图片）。配置「公众号图床」后重新复制，图片会先转成微信地址，排版就稳了。${longHint}`,
+                {
+                  duration: 12000,
+                  action: { label: `去配置图床`, onClick: () => uiStore.openUploadImgDialog(`mp`) },
+                },
+              )
+            }
           }
         }
 
@@ -240,6 +262,7 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
             ? `已复制 HTML 源码，请进行下一步操作。`
             : `已复制渲染后的内容到剪贴板，可直接到公众号后台粘贴。`,
         )
+        trackEvent(`copy`, { mode: copyMode.value })
 
         window.dispatchEvent(
           new CustomEvent(`copyToMp`, {

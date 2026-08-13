@@ -82,6 +82,14 @@ export const useUIStore = defineStore(`ui`, () => {
   const isShowUploadImgDialog = ref(false)
   const toggleShowUploadImgDialog = useToggle(isShowUploadImgDialog)
 
+  /** 打开插入图片对话框时希望直接定位到的页签（如 'mp' 公众号图床），用完即清 */
+  const uploadImgDialogInitialTab = ref<string | null>(null)
+
+  function openUploadImgDialog(tab?: string) {
+    uploadImgDialogInitialTab.value = tab ?? null
+    isShowUploadImgDialog.value = true
+  }
+
   // 是否展示图片排版对话框
   const isShowImageLayoutDialog = ref(false)
   const toggleShowImageLayoutDialog = useToggle(isShowImageLayoutDialog)
@@ -340,6 +348,8 @@ export const useUIStore = defineStore(`ui`, () => {
     toggleShowInsertMpCardDialog,
     isShowUploadImgDialog,
     toggleShowUploadImgDialog,
+    uploadImgDialogInitialTab,
+    openUploadImgDialog,
     isShowImageLayoutDialog,
     toggleShowImageLayoutDialog,
     isShowImportMdDialog,

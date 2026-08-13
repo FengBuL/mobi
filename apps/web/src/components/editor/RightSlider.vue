@@ -28,6 +28,7 @@ import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useUIStore } from '@/stores/ui'
+import { trackEvent } from '@/utils/telemetry'
 import { exportCustomThemeAsCSS, exportCustomThemeAsJSON, themeDesignerGroupMap } from '@/utils/theme-designer'
 
 const uiStore = useUIStore()
@@ -312,6 +313,7 @@ function applyStylePreset(preset: IStylePreset) {
   selectThemeCategoryByTheme(preset.theme)
   themeStore.applyCurrentTheme()
   editorRefresh()
+  trackEvent(`style_preset_apply`, { preset: preset.value })
 }
 
 function saveCurrentStylePreset() {
@@ -383,6 +385,7 @@ function themeChanged(newTheme: keyof typeof themeMap) {
   // 使用新主题系统
   themeStore.applyCurrentTheme()
   editorRefresh()
+  trackEvent(`theme_change`, { theme: newTheme })
 }
 
 function getDesignerGroup(groupId: string) {

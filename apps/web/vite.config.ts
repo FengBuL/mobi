@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
@@ -11,6 +12,10 @@ import { mathjaxLocalPlugin } from './plugins/vite-plugin-mathjax-local'
 const PKG_NAME_SPECIAL_CHARS = /[^\w-]/g
 const LOCAL_BASE = `/md/`
 const DEFAULT_REPO_NAME = `mobi`
+
+const rootPackage = JSON.parse(
+  readFileSync(path.resolve(__dirname, `../../package.json`), `utf-8`),
+) as { version?: string }
 
 function normalizeBase(value: string) {
   let next = value.trim()
@@ -36,6 +41,9 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     base,
+    define: {
+      __APP_VERSION__: JSON.stringify(rootPackage.version ?? `0.0.0`),
+    },
     plugins: [
       vue(),
       tailwindcss(),

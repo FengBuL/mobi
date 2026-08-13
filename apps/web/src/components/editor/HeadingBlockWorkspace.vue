@@ -10,6 +10,7 @@ import {
   buildBlockMarkup,
   parseBlockEntries,
 } from '@/utils/blocks/registry'
+import { trackEvent } from '@/utils/telemetry'
 
 const props = withDefaults(defineProps<{
   categoryId?: string
@@ -176,6 +177,7 @@ function persistContent(nextContent: string) {
 function writeBlock(preset: BlockPreset, message: string) {
   const markup = buildBlockMarkup(preset, state)
   const current = editorStore.getContent()
+  trackEvent(`block_apply`, { category: preset.category, preset: preset.id })
 
   if (editingRange.value) {
     const { from, to } = editingRange.value

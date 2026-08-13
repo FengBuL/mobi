@@ -1,0 +1,13 @@
+name = "mobi-telemetry"
+main = "worker.js"
+compatibility_date = "2026-08-01"
+
+# 先运行 `wrangler d1 create mobi-telemetry`，把输出的 database_id 填到下面
+[[d1_databases]]
+binding = "DB"
+database_name = "mobi-telemetry"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[vars]
+# 查询 /stats 用的口令，换成自己的长随机字符串
+ADMIN_KEY = "REPLACE_WITH_A_LONG_RANDOM_STRING"
