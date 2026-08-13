@@ -1,6 +1,6 @@
 import type { HeadingLevel, HeadingStyles, HeadingStyleType, ThemeName } from '@md/shared/configs'
 import { applyTheme } from '@md/core'
-import { defaultStyleConfig, getThemeDefaultPrimaryColor, resolveThemeName, widthOptions } from '@md/shared/configs'
+import { defaultStyleConfig, getThemeDefaultPrimaryColor, resolveCodeBlockThemeUrl, resolveThemeName, widthOptions } from '@md/shared/configs'
 import { useCssEditorStore } from '@/stores/cssEditor'
 import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { addPrefix } from '@/utils'
@@ -273,7 +273,7 @@ export const useThemeStore = defineStore(`theme`, () => {
       return
     }
 
-    const cssUrl = codeBlockTheme.value
+    const cssUrl = resolveCodeBlockThemeUrl(codeBlockTheme.value)
     const el = document.querySelector<HTMLLinkElement>(`#hljs`)
 
     const syncSurface = () => {

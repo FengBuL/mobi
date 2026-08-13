@@ -50,7 +50,7 @@ const VERIFY_LABELS: Record<string, string> = {
 
 /** 组装 HTML 片段 */
 function buildMpHtml(account: MpAccount) {
-  const logo = account.logo || `https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/md/images/mp-logo.png`
+  const logo = account.logo || ``
   const attrs = [
     `data-pluginname="mpprofile"`,
     `data-id="${account.mpId}"`,

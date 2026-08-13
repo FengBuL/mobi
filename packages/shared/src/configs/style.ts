@@ -1,5 +1,6 @@
 import type { IConfigOption } from '../types'
 import type { ThemeName } from './theme'
+import { HLJS_ASSET_BASE, localAssetUrl } from '../utils/localAsset'
 import { themeOptions } from './theme'
 
 /**
@@ -184,7 +185,23 @@ export const widthOptions: IConfigOption[] = [
   },
 ]
 
-const codeBlockUrlPrefix = `https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/npm/highlightjs/11.11.1/styles/`
+const codeBlockUrlPrefix = localAssetUrl(`${HLJS_ASSET_BASE}/styles/`)
+
+/**
+ * 早期版本把完整的 CDN 地址存进了 localStorage，样式改成本地打包之后那些地址就失效了。
+ * 读取时按文件名重新拼一遍，老用户不用手动换主题。
+ */
+export function resolveCodeBlockThemeUrl(stored: string): string {
+  if (!stored) {
+    return stored
+  }
+  if (stored.startsWith(codeBlockUrlPrefix)) {
+    return stored
+  }
+
+  const fileName = stored.split(`/`).pop()
+  return fileName ? `${codeBlockUrlPrefix}${fileName}` : stored
+}
 const codeBlockThemeList = [
   `1c-light`,
   `a11y-dark`,

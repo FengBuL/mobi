@@ -635,7 +635,7 @@ function onTabScroll(e: WheelEvent) {
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    placeholder="如：doocs"
+                    placeholder="如：my-bucket"
                   />
                 </FormItem>
               </Field>
@@ -912,7 +912,7 @@ function onTabScroll(e: WheelEvent) {
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    placeholder="如：doocs"
+                    placeholder="如：my-bucket"
                   />
                 </FormItem>
               </Field>
@@ -1100,15 +1100,6 @@ function onTabScroll(e: WheelEvent) {
                   >
                     如何开启公众号开发者模式并获取应用账号密钥？
                   </Button>
-                  <Button
-                    variant="link"
-                    class="p-0 h-auto text-left whitespace-normal"
-                    as="a"
-                    href="https://md-pages.doocs.org/tutorial/"
-                    target="_blank"
-                  >
-                    如何在浏览器插件中使用公众号图床？
-                  </Button>
                 </div>
               </FormItem>
             </div>
@@ -1259,17 +1250,6 @@ function onTabScroll(e: WheelEvent) {
                   <Input v-bind="field" v-model="field.value" placeholder="如：-1001234567890" />
                 </FormItem>
               </Field>
-              <FormItem>
-                <Button
-                  variant="link"
-                  class="p-0 h-auto text-left whitespace-normal"
-                  as="a"
-                  href="https://github.com/doocs/md/blob/main/docs/telegram-usage.md"
-                  target="_blank"
-                >
-                  如何使用 Telegram？
-                </Button>
-              </FormItem>
             </div>
 
             <DialogFooter class="p-1">

@@ -77,7 +77,6 @@ declare module 'vue' {
     Footer: typeof import('./src/components/editor/Footer.vue')['default']
     FormatDropdown: typeof import('./src/components/editor/editor-header/FormatDropdown.vue')['default']
     FormItem: typeof import('./src/components/editor/FormItem.vue')['default']
-    FundDialog: typeof import('./src/components/editor/editor-header/FundDialog.vue')['default']
     HeadingBlockWorkspace: typeof import('./src/components/editor/HeadingBlockWorkspace.vue')['default']
     HelpDropdown: typeof import('./src/components/editor/editor-header/HelpDropdown.vue')['default']
     HoverCard: typeof import('./src/components/ui/hover-card/HoverCard.vue')['default']

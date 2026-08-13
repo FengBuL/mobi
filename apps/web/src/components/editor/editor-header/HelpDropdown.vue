@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Heart, HelpCircle, MessageSquare, Tag } from 'lucide-vue-next'
+import { HelpCircle, MessageSquare, Tag } from 'lucide-vue-next'
 
 const props = withDefaults(defineProps<{
   asSub?: boolean
@@ -7,24 +7,22 @@ const props = withDefaults(defineProps<{
   asSub: false,
 })
 
-const emit = defineEmits([`openAbout`, `openFund`])
+const emit = defineEmits([`openAbout`])
 
 const { asSub } = toRefs(props)
+
+const REPO_URL = `https://github.com/FengBuL/mobi`
 
 function openAboutDialog() {
   emit(`openAbout`)
 }
 
-function openFundDialog() {
-  emit(`openFund`)
-}
-
 function openFeedback() {
-  window.open(`https://github.com/doocs/md/issues`, `_blank`)
+  window.open(`${REPO_URL}/issues`, `_blank`)
 }
 
 function openReleases() {
-  window.open(`https://github.com/doocs/md/releases`, `_blank`)
+  window.open(`${REPO_URL}/releases`, `_blank`)
 }
 </script>
 
@@ -47,10 +45,6 @@ function openReleases() {
         <HelpCircle class="mr-2 h-4 w-4" />
         关于
       </MenubarItem>
-      <MenubarItem @click="openFundDialog()">
-        <Heart class="mr-2 h-4 w-4" />
-        赞赏
-      </MenubarItem>
     </MenubarSubContent>
   </MenubarSub>
 
@@ -69,10 +63,6 @@ function openReleases() {
       <MenubarItem @click="openAboutDialog()">
         <HelpCircle class="mr-2 h-4 w-4" />
         关于
-      </MenubarItem>
-      <MenubarItem @click="openFundDialog()">
-        <Heart class="mr-2 h-4 w-4" />
-        赞赏
       </MenubarItem>
     </MenubarContent>
   </MenubarMenu>

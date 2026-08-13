@@ -29,6 +29,7 @@
     "codemirror": "^6.0.2",
     "crypto-js": "^4.2.0",
     "es-toolkit": "^1.45.1",
+    "highlight.js": "^11.11.1",
     "html-to-image": "^1.11.13",
     "jszip": "^3.10.1",
     "juice": "11.0.3",

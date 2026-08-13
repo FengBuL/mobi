@@ -37,16 +37,11 @@ const copyFormats = [
 
 // 对话框状态
 const aboutDialogVisible = ref(false)
-const fundDialogVisible = ref(false)
 const editorStateDialogVisible = ref(false)
 
 // 处理帮助菜单事件
 function handleOpenAbout() {
   aboutDialogVisible.value = true
-}
-
-function handleOpenFund() {
-  fundDialogVisible.value = true
 }
 
 function handleOpenEditorState() {
@@ -83,7 +78,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
         <EditDropdown @copy="handleCopy" />
         <FormatDropdown />
         <InsertDropdown />
-        <HelpDropdown @open-about="handleOpenAbout" @open-fund="handleOpenFund" />
+        <HelpDropdown @open-about="handleOpenAbout" />
       </Menubar>
     </div>
 
@@ -101,7 +96,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
             <EditDropdown :as-sub="true" @copy="handleCopy" />
             <FormatDropdown :as-sub="true" />
             <InsertDropdown :as-sub="true" />
-            <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-fund="handleOpenFund" />
+            <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" />
           </MenubarContent>
         </MenubarMenu>
       </Menubar>
@@ -178,7 +173,6 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
 
   <!-- 对话框组件，嵌套菜单无法正常挂载，需要提取层级 -->
   <AboutDialog :visible="aboutDialogVisible" @close="aboutDialogVisible = false" />
-  <FundDialog :visible="fundDialogVisible" @close="fundDialogVisible = false" />
   <EditorStateDialog :visible="editorStateDialogVisible" @close="editorStateDialogVisible = false" />
 </template>
 

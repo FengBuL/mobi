@@ -19,8 +19,6 @@ const isUrlLoading = ref(false)
 const urlError = ref(``)
 let abortController: AbortController | null = null
 
-const ANYTHING_MD_API = `https://anything-md.doocs.org/`
-
 /** 判断链接是否直接指向 Markdown 文件 */
 function isMarkdownUrl(rawUrl: string): boolean {
   try {
@@ -45,34 +43,6 @@ async function fetchMarkdownFile(rawUrl: string, signal: AbortSignal): Promise<s
   return content
 }
 
-/** 通过 Anything-MD 将网页转换为 Markdown */
-async function fetchViaAnythingMd(rawUrl: string, signal: AbortSignal): Promise<string> {
-  const response = await fetch(ANYTHING_MD_API, {
-    method: `POST`,
-    headers: { 'Content-Type': `application/json` },
-    body: JSON.stringify({ url: rawUrl }),
-    signal,
-  })
-
-  if (!response.ok) {
-    throw new Error(`请求失败: ${response.status} ${response.statusText}`)
-  }
-
-  const data = await response.json()
-  if (signal.aborted)
-    throw new DOMException(``, `AbortError`)
-
-  if (!data.success) {
-    throw new Error(data.error || `转换失败`)
-  }
-
-  const markdown = data.markdown?.trim()
-  if (!markdown) {
-    throw new Error(`转换结果为空`)
-  }
-  return markdown
-}
-
 async function importFromUrl() {
   const rawUrl = url.value.trim()
   if (!rawUrl) {
@@ -85,6 +55,11 @@ async function importFromUrl() {
     return
   }
 
+  if (!isMarkdownUrl(rawUrl)) {
+    urlError.value = `只能导入 .md / .markdown / .txt 的直链，网页请先自行转成 Markdown`
+    return
+  }
+
   urlError.value = ``
   isUrlLoading.value = true
   abortController?.abort()
@@ -92,9 +67,7 @@ async function importFromUrl() {
   const { signal } = abortController
 
   try {
-    const content = isMarkdownUrl(rawUrl)
-      ? await fetchMarkdownFile(rawUrl, signal)
-      : await fetchViaAnythingMd(rawUrl, signal)
+    const content = await fetchMarkdownFile(rawUrl, signal)
 
     editorStore.importContent(content)
     closeDialog()
@@ -227,7 +200,7 @@ watch(isShowImportMdDialog, (visible) => {
             <div class="space-y-2">
               <Input
                 v-model="url"
-                placeholder="如：https://mp.weixin.qq.com/s/xxxxx"
+                placeholder="如：https://example.com/notes/article.md"
                 :class="{ 'border-destructive': urlError }"
                 @keydown.enter="importFromUrl"
                 @input="urlError = ``"
@@ -236,7 +209,7 @@ watch(isShowImportMdDialog, (visible) => {
                 {{ urlError }}
               </p>
               <p v-else class="text-xs text-muted-foreground">
-                支持 Markdown 文件链接直接导入，或网页链接自动转换
+                填 Markdown 文件的直链，支持 .md / .markdown / .txt
               </p>
             </div>
             <Button
@@ -247,15 +220,6 @@ watch(isShowImportMdDialog, (visible) => {
               <Loader2 v-if="isUrlLoading" class="mr-2 size-4 animate-spin" />
               {{ isUrlLoading ? '导入中...' : '导入' }}
             </Button>
-            <p class="text-center text-xs text-muted-foreground/60">
-              基于
-              <a
-                href="https://github.com/doocs/anything-md"
-                target="_blank"
-                class="underline hover:text-muted-foreground"
-              >Anything-MD</a>
-              提供转换服务
-            </p>
           </div>
         </TabsContent>
       </Tabs>

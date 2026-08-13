@@ -15,9 +15,8 @@ function onUpdate(val: boolean) {
 }
 
 const links = [
-  { label: `GitHub 仓库`, url: `https://github.com/doocs/md` },
-  { label: `Gitee 仓库`, url: `https://gitee.com/doocs/md` },
-  { label: `GitCode 仓库`, url: `https://gitcode.com/doocs/md` },
+  { label: `项目主页`, url: `https://github.com/FengBuL/mobi` },
+  { label: `下载桌面版`, url: `https://github.com/FengBuL/mobi/releases/latest` },
 ]
 
 function onRedirect(url: string) {
@@ -29,22 +28,25 @@ function onRedirect(url: string) {
   <Dialog :open="props.visible" @update:open="onUpdate">
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>关于</DialogTitle>
+        <DialogTitle>关于墨笔</DialogTitle>
       </DialogHeader>
-      <div class="text-center">
-        <h3>一款高度简洁的微信 Markdown 编辑器</h3>
-        <p>扫码关注公众号 Doocs，原创技术内容第一时间推送！</p>
-        <img
-          class="mx-auto my-5"
-          src="https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/md/images/1648303220922-7e14aefa-816e-44c1-8604-ade709ca1c69.png"
-          alt="Doocs Markdown 编辑器"
-          style="width: 40%"
-        >
+      <div class="space-y-3 py-2 text-center">
+        <svg class="mx-auto" width="56" height="56" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="64" height="64" rx="15" fill="#B93A26" />
+          <path d="M46 11C46 30.5 37 44 17.5 52.5L13.5 44.5C28 37 34.5 26.5 34.5 11Z" fill="#FBF7F0" />
+        </svg>
+        <h3 class="text-base font-semibold">
+          墨笔
+        </h3>
+        <p class="text-sm text-muted-foreground">
+          写完就能贴进公众号的 Markdown 排版编辑器
+        </p>
       </div>
       <DialogFooter class="sm:justify-evenly flex flex-wrap gap-2">
         <Button
           v-for="link in links"
           :key="link.url"
+          variant="outline"
           @click="onRedirect(link.url)"
         >
           {{ link.label }}

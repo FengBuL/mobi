@@ -5,6 +5,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig, loadEnv } from 'vite'
 
+import { hljsLocalPlugin } from './plugins/vite-plugin-hljs-local'
 import { mathjaxLocalPlugin } from './plugins/vite-plugin-mathjax-local'
 
 const PKG_NAME_SPECIAL_CHARS = /[^\w-]/g
@@ -46,6 +47,7 @@ export default defineConfig(({ command, mode }) => {
         resolvers: [],
       }),
       mathjaxLocalPlugin(),
+      hljsLocalPlugin(),
     ],
     resolve: {
       alias: { '@': path.resolve(__dirname, `./src`) },

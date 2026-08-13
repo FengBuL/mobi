@@ -1,4 +1,5 @@
 import type { LanguageFn } from 'highlight.js'
+import { HLJS_ASSET_BASE, localAssetUrl } from '@md/shared/utils/localAsset'
 import bash from 'highlight.js/lib/languages/bash'
 import c from 'highlight.js/lib/languages/c'
 import cpp from 'highlight.js/lib/languages/cpp'
@@ -75,18 +76,15 @@ export const COMMON_LANGUAGES: Record<string, LanguageFn> = {
   yaml,
 }
 
-// highlight.js CDN 配置
-const HLJS_VERSION = `11.11.1`
-const HLJS_CDN_BASE = `https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/npm/highlightjs/${HLJS_VERSION}`
-
 // 缓存正在加载的语言
 const loadingLanguages = new Map<string, Promise<void>>()
 
 /**
- * 生成语言包的 CDN URL
+ * 常用语言在上面静态导入，冷门语言到这里才按需加载。
+ * 语言包随应用打包，npm 包里是未压缩的 .js（CDN 上那份 .min.js 不在 npm 里）。
  */
 function grammarUrlFor(language: string): string {
-  return `${HLJS_CDN_BASE}/es/languages/${language}.min.js`
+  return localAssetUrl(`${HLJS_ASSET_BASE}/es/languages/${language}.js`)
 }
 
 /**

@@ -179,11 +179,6 @@ export async function exportPDF(title: string = `untitled`) {
         font-size: 12px;
         color: #666;
       }
-      @bottom-left {
-        content: "https://md.doocs.org";
-        font-size: 10px;
-        color: #999;
-      }
       @bottom-right {
         content: "第 " counter(page) " 页，共 " counter(pages) " 页";
         font-size: 10px;
