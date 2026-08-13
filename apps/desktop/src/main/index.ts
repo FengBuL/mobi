@@ -1,4 +1,5 @@
 import { app, BrowserWindow } from 'electron'
+import { installCrossOriginRelaxations } from './crossOrigin'
 import { isDev } from './env'
 import { registerWechatIpc } from './ipc'
 import { installApplicationMenu } from './menu'
@@ -33,6 +34,7 @@ else {
   app.whenReady().then(() => {
     handleAppProtocol()
     installPermissionHandlers()
+    installCrossOriginRelaxations()
     installApplicationMenu()
     registerWechatIpc()
     createMainWindow()
