@@ -548,7 +548,7 @@ function onTabScroll(e: WheelEvent) {
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    placeholder="如：github.com/yanglbme/resource"
+                    placeholder="如：github.com/yourname/notes"
                   />
                 </FormItem>
               </Field>
@@ -569,7 +569,7 @@ function onTabScroll(e: WheelEvent) {
                     v-bind="field"
                     v-model="field.value"
                     type="password"
-                    placeholder="如：cc1d0c1426d0fd0902bd2d7184b14da61b8abc46"
+                    placeholder="如：ghp_EXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMPLEE"
                   />
                 </FormItem>
               </Field>
@@ -614,7 +614,7 @@ function onTabScroll(e: WheelEvent) {
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    placeholder="如：LTAI4GdoocsmdoxUf13ylbaNHk"
+                    placeholder="如：LTAIEXAMPLEEXAMPLEEXAMPLEE"
                   />
                 </FormItem>
               </Field>
@@ -625,7 +625,7 @@ function onTabScroll(e: WheelEvent) {
                     v-bind="field"
                     v-model="field.value"
                     type="password"
-                    placeholder="如：cc1d0c142doocs0902bd2d7md4b14da6ylbabc46"
+                    placeholder="如：EXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMP"
                   />
                 </FormItem>
               </Field>
@@ -710,7 +710,7 @@ function onTabScroll(e: WheelEvent) {
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    placeholder="如：AKIDnQp1w3DOOCSs8F5MDp9tdoocsmdUPonW3"
+                    placeholder="如：AKIDEXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMP"
                   />
                 </FormItem>
               </Field>
@@ -721,7 +721,7 @@ function onTabScroll(e: WheelEvent) {
                     v-bind="field"
                     v-model="field.value"
                     type="password"
-                    placeholder="如：ukLmdtEJ9271f3DOocsMDsCXdS3YlbW0"
+                    placeholder="如：EXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAM"
                   />
                 </FormItem>
               </Field>
@@ -731,7 +731,7 @@ function onTabScroll(e: WheelEvent) {
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    placeholder="如：doocs-3212520134"
+                    placeholder="如：my-bucket-example"
                   />
                 </FormItem>
               </Field>
@@ -795,7 +795,7 @@ function onTabScroll(e: WheelEvent) {
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    placeholder="如：6DD3VaLJ_SQgOdoocsyTV_YWaDmdnL2n8EGx7kG"
+                    placeholder="如：EXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAM"
                   />
                 </FormItem>
               </Field>
@@ -806,7 +806,7 @@ function onTabScroll(e: WheelEvent) {
                     v-bind="field"
                     v-model="field.value"
                     type="password"
-                    placeholder="如：qgZa5qrvDOOcsmdKStD1oCjZ9nB7MDvJUs_34SIm"
+                    placeholder="如：EXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMP"
                   />
                 </FormItem>
               </Field>
