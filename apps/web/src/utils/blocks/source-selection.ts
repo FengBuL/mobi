@@ -1,12 +1,12 @@
 import type { Token } from 'marked'
 import { marked } from 'marked'
 
-export type MarkdownSourceKind =
-  | `heading-${1 | 2 | 3 | 4 | 5 | 6}`
-  | `quote`
-  | `list-ul`
-  | `list-ol`
-  | `divider`
+export type MarkdownSourceKind
+  = | `heading-${1 | 2 | 3 | 4 | 5 | 6}`
+    | 'quote'
+    | 'list-ul'
+    | 'list-ol'
+    | 'divider'
 
 export interface MarkdownSourceRange {
   from: number

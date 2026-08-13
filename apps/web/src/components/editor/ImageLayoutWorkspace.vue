@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BlockCategoryId } from '@/utils/blocks/types'
 import type {
   MediaLayoutBlockEntry,
   MediaLayoutFamily,
@@ -12,9 +13,8 @@ import { useBlockSelectionStore } from '@/stores/blockSelection'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
-import { hasMpUploadConfig } from '@/utils/file'
-import type { BlockCategoryId } from '@/utils/blocks/types'
 import { blockCategories } from '@/utils/blocks/registry'
+import { hasMpUploadConfig } from '@/utils/file'
 import {
   buildMediaLayoutMarkup,
   cloneMediaLayoutState,
@@ -22,6 +22,7 @@ import {
   getMediaLayoutBadgeFallback,
   getMediaLayoutCopyPlaceholders,
   getMediaLayoutPresetSlotDefaults,
+  MEDIA_LAYOUT_MAX_SLOTS,
   mediaAspectRatioOptions,
   mediaLayoutFamilyLabels,
   mediaLayoutPresets,
@@ -60,7 +61,7 @@ interface PresetPreviewBlueprint {
   bands?: PresetPreviewBand[]
 }
 
-type TemplateCountFilter = `1` | `2` | `3` | `4`
+type TemplateCountFilter = '1' | '2' | '3' | '4'
 
 const { open: openQuickInsert } = useImageQuickInsert()
 const blockSelectionStore = useBlockSelectionStore()
@@ -81,9 +82,11 @@ const showImageLibrary = ref(false)
 const showSlotTuning = ref(false)
 const showTextEditor = ref(false)
 const showAllTemplates = ref(false)
-const templateCountFilter = ref<TemplateCountFilter | ``>(``)
-const templateModeFilter = ref<MediaLayoutTextMode | ``>(``)
-const templateFamilyFilter = ref<MediaLayoutFamily | `all`>(`all`)
+const templateCountFilter = ref<TemplateCountFilter | ''>(``)
+// 纯图片覆盖绝大多数场景，先给上默认值，省掉一次「必须先选才有东西看」的空转
+const templateModeFilter = ref<MediaLayoutTextMode | ''>(`plain`)
+const showMoreTemplateFilters = ref(false)
+const templateFamilyFilter = ref<MediaLayoutFamily | 'all'>(`all`)
 const mpUploadReady = ref(false)
 const formState = reactive(createWorkspaceLayoutFormState())
 const activeLibraryCategory = ref<BlockCategoryId>(`heading`)
@@ -118,7 +121,7 @@ const blockLibraryCategories = computed<Array<{ id: BlockCategoryId, name: strin
     return {
       id,
       name: labels[id],
-      count: id === `image` ? `26` : registered ? String(registered.presets.length) : `待接入`,
+      count: id === `image` ? String(mediaLayoutPresets.length) : registered ? String(registered.presets.length) : `待接入`,
     }
   })
 })
@@ -310,6 +313,56 @@ const presetPreviewBlueprints: Record<string, PresetPreviewBlueprint> = {
       { left: `16%`, top: `74%`, width: `40%`, height: `6%` },
     ],
   },
+  'double-rule-single': {
+    cells: [{ left: `18%`, top: `22%`, width: `64%`, height: `42%`, tone: `strong` }],
+    bands: [
+      { left: `12%`, top: `15%`, width: `76%`, height: `56%` },
+      { left: `38%`, top: `76%`, width: `24%`, height: `6%` },
+    ],
+  },
+  'passepartout-single': {
+    cells: [{ left: `25%`, top: `26%`, width: `50%`, height: `34%`, tone: `strong` }],
+    bands: [
+      { left: `14%`, top: `14%`, width: `72%`, height: `60%` },
+      { left: `36%`, top: `64%`, width: `28%`, height: `6%` },
+    ],
+  },
+  'dashed-note-single': {
+    cells: [{ left: `20%`, top: `24%`, width: `60%`, height: `38%`, tone: `soft` }],
+    bands: [
+      { left: `14%`, top: `17%`, width: `72%`, height: `54%` },
+      { left: `20%`, top: `75%`, width: `34%`, height: `6%` },
+    ],
+  },
+  'accent-band-single': {
+    cells: [{ left: `10%`, top: `28%`, width: `80%`, height: `38%`, tone: `strong` }],
+    bands: [
+      { left: `10%`, top: `18%`, width: `80%`, height: `6%` },
+      { left: `10%`, top: `70%`, width: `80%`, height: `6%` },
+    ],
+  },
+  'duo-framed-gallery': {
+    cells: [
+      { left: `11%`, top: `24%`, width: `34%`, height: `44%`, tone: `strong` },
+      { left: `55%`, top: `24%`, width: `34%`, height: `44%`, tone: `soft` },
+    ],
+    bands: [
+      { left: `7%`, top: `19%`, width: `42%`, height: `54%` },
+      { left: `51%`, top: `19%`, width: `42%`, height: `54%` },
+    ],
+  },
+  'triptych-framed-gallery': {
+    cells: [
+      { left: `9%`, top: `28%`, width: `23%`, height: `36%`, tone: `strong` },
+      { left: `38.5%`, top: `28%`, width: `23%`, height: `36%`, tone: `soft` },
+      { left: `68%`, top: `28%`, width: `23%`, height: `36%`, tone: `muted` },
+    ],
+    bands: [
+      { left: `6%`, top: `23%`, width: `29%`, height: `46%` },
+      { left: `35.5%`, top: `23%`, width: `29%`, height: `46%` },
+      { left: `65%`, top: `23%`, width: `29%`, height: `46%` },
+    ],
+  },
 }
 
 const markdownContent = computed(() => currentPost.value?.content ?? editorStore.getContent() ?? ``)
@@ -325,9 +378,9 @@ const availableImages = computed<MarkdownImageEntry[]>(() => {
 const hasPrimaryTemplateFilters = computed(() => Boolean(templateCountFilter.value && templateModeFilter.value))
 
 const quickPresetOrderMap: Record<string, string[]> = {
-  '1:plain': [`hero-image`, `shadow-card-single`, `frame-single`, `polaroid-single`, `full-bleed-single`, `scroll-window`],
-  '2:plain': [`duo-gallery`, `compare-pair`, `magazine-spread`, `vertical-pair`, `duo-focus`],
-  '3:plain': [`triptych-gallery`, `vertical-strip`, `stack-gallery`, `mosaic-focus`, `filmstrip-gallery`],
+  '1:plain': [`frame-single`, `passepartout-single`, `double-rule-single`, `shadow-card-single`, `accent-band-single`, `polaroid-single`, `dashed-note-single`, `hero-image`, `full-bleed-single`, `scroll-window`],
+  '2:plain': [`duo-framed-gallery`, `duo-gallery`, `compare-pair`, `magazine-spread`, `vertical-pair`, `duo-focus`],
+  '3:plain': [`triptych-framed-gallery`, `triptych-gallery`, `vertical-strip`, `stack-gallery`, `mosaic-focus`, `filmstrip-gallery`],
   '4:plain': [`quad-grid`, `hero-trio`],
   '1:brief': [`gradient-caption`, `numbered-figure`, `quote-figure`, `split-left`, `caption-band`, `spotlight-card`, `split-right`],
   '2:story': [`story-pair`],
@@ -475,6 +528,12 @@ watch(shouldShowTextStage, (visible) => {
 })
 
 watch(detectedImages, (images) => {
+  // 正文里还剩几张没排版的图，就按几张起步，用户一进来就能看到可用的版式和填好的图
+  if (!templateCountFilter.value) {
+    const count = Math.min(MEDIA_LAYOUT_MAX_SLOTS, Math.max(1, images.length))
+    templateCountFilter.value = String(count) as TemplateCountFilter
+  }
+
   const existingIds = new Set(images.map(item => item.id))
   const editingIds = new Set(editingImagePool.value.map(item => item.id))
   normalizeSelectedImageIds(selectedImageIds.value.filter(id => existingIds.has(id) || editingIds.has(id)), false)
@@ -696,6 +755,7 @@ function selectSuggestedImages() {
 
 function clearAllSelectedImages() {
   const slotCount = selectedPreset.value?.slotCount ?? 0
+  // 保留 map 形式：Array.from({ length }).fill() 推断出来是 unknown[]
   selectedImageIds.value = Array.from({ length: slotCount }, () => ``)
   activeSlotIndex.value = 0
 }
@@ -936,7 +996,9 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
         <h2>板块库</h2>
         <p>选样式、填内容，像拼积木一样组合公众号排版。</p>
       </div>
-      <div class="block-library-shell__status">独立配色</div>
+      <div class="block-library-shell__status">
+        独立配色
+      </div>
     </header>
 
     <nav class="block-library-nav" aria-label="板块类别">
@@ -960,261 +1022,70 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
       />
 
       <div v-else-if="activeLibraryCategory === 'image'" class="media-layout-workspace">
-    <div class="media-layout-workspace__header">
-      <div class="media-layout-workspace__eyebrow">
-        <LayoutTemplate class="size-3.5" />
-        Image Layout Studio
-      </div>
-      <div class="media-layout-workspace__headline">
-        <div>
-          <h2>图片排版工作台</h2>
-          <p>面向公众号粘贴重做：先用推荐模板快速成组，只有需要时才展开换图、微调和补文案。</p>
-        </div>
-        <div class="media-layout-workspace__chips">
-          <span class="workspace-chip workspace-chip--accent">{{ filledSlotCount }}/{{ selectedPreset?.slotCount ?? 0 }} 已选</span>
-          <span class="workspace-chip">{{ remainingImageCount }} 张待排版</span>
-          <span class="workspace-chip" :class="{ 'workspace-chip--warning': !mpUploadReady }">{{ mpSafetyLabel }}</span>
-          <span v-if="editingBlock" class="workspace-chip workspace-chip--editing">正在编辑模块</span>
-          <span v-if="detectedLayoutBlocks.length" class="workspace-chip">{{ detectedLayoutBlocks.length }} 组已生成</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="media-layout-workspace__body">
-      <section class="media-layout-section">
-        <div class="media-layout-section__header">
-          <div>
-            <h3>1. 选择版式</h3>
-            <p>先选图片数量和表达方式，默认只给推荐模板；需要时再展开更多风格。</p>
+        <div class="media-layout-workspace__header">
+          <div class="media-layout-workspace__eyebrow">
+            <LayoutTemplate class="size-3.5" />
+            Image Layout Studio
           </div>
-        </div>
-
-        <div class="media-layout-safety-note" :class="{ 'media-layout-safety-note--warning': !mpUploadReady }">
-          <strong>{{ mpSafetyLabel }}</strong>
-          <span>{{ mpSafetyHint }}</span>
-        </div>
-
-        <div class="media-layout-filter-grid">
-          <div class="grid gap-2">
-            <label class="media-layout-filter-label">图片数量</label>
-            <Select v-model="templateCountFilter">
-              <SelectTrigger class="w-full">
-                <SelectValue placeholder="先选图片数量" />
-              </SelectTrigger>
-              <SelectContent @close-auto-focus.prevent>
-                <SelectItem v-for="option in templateCountOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div class="grid gap-2">
-            <label class="media-layout-filter-label">表达方式</label>
-            <Select v-model="templateModeFilter">
-              <SelectTrigger class="w-full">
-                <SelectValue placeholder="再选表达方式" />
-              </SelectTrigger>
-              <SelectContent @close-auto-focus.prevent>
-                <SelectItem v-for="option in templateModeOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div v-if="hasPrimaryTemplateFilters" class="grid gap-2">
-            <label class="media-layout-filter-label">视觉风格</label>
-            <Select v-model="templateFamilyFilter">
-              <SelectTrigger class="w-full">
-                <SelectValue placeholder="可选，默认全部风格" />
-              </SelectTrigger>
-              <SelectContent @close-auto-focus.prevent>
-                <SelectItem v-for="option in templateFamilyOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div v-if="!hasPrimaryTemplateFilters" class="media-layout-empty">
-          默认不展示模板。先选“图片数量”和“表达方式”，再显示对应版式。
-        </div>
-
-        <template v-else-if="rankedActivePresets.length">
-          <div class="media-layout-preset-grid">
-            <button
-              v-for="preset in visiblePresets"
-              :key="preset.id"
-              type="button"
-              class="media-layout-preset"
-              :class="{ 'media-layout-preset--active': preset.id === selectedPresetId }"
-              @click="setPreset(preset)"
-            >
-              <div class="media-layout-preset__preview">
-                <template v-for="(cell, index) in getPresetPreviewBlueprint(preset.id).cells" :key="`${preset.id}-cell-${index}`">
-                  <span
-                    class="media-layout-preset__cell"
-                    :class="`media-layout-preset__cell--${cell.tone}`"
-                    :style="{ left: cell.left, top: cell.top, width: cell.width, height: cell.height }"
-                  />
-                </template>
-                <template v-for="(band, index) in getPresetPreviewBlueprint(preset.id).bands ?? []" :key="`${preset.id}-band-${index}`">
-                  <span
-                    class="media-layout-preset__band"
-                    :style="{ left: band.left, top: band.top, width: band.width, height: band.height }"
-                  />
-                </template>
-              </div>
-
-              <div class="media-layout-preset__body">
-                <div class="media-layout-preset__title-row">
-                  <div class="media-layout-preset__title">
-                    {{ preset.name }}
-                  </div>
-                  <span class="media-layout-preset__cue">{{ preset.cue }}</span>
-                </div>
-                <div class="media-layout-preset__desc">
-                  {{ preset.description }}
-                </div>
-                <div class="media-layout-preset__meta">
-                  <span>{{ preset.slotCount }} 张图</span>
-                  <span>{{ mediaLayoutTextModeLabels[preset.textMode] }}</span>
-                  <span>{{ mediaLayoutFamilyLabels[preset.family] }}</span>
-                </div>
-              </div>
-            </button>
-          </div>
-
-          <div v-if="hiddenPresetCount > 0" class="media-layout-inline-actions">
-            <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="showAllTemplates = !showAllTemplates">
-              {{ showAllTemplates ? '收起更多模板' : `查看更多模板（+${hiddenPresetCount}）` }}
-            </Button>
-          </div>
-        </template>
-
-        <div v-else class="media-layout-empty">
-          当前筛选下没有匹配模板。换一个表达方式或视觉风格即可。
-        </div>
-      </section>
-
-      <section class="media-layout-section">
-        <div class="media-layout-section__header">
-          <div>
-            <h3>2. 选图并微调</h3>
-            <p>{{ editingBlock ? '当前是已生成模块编辑模式。保存后会直接覆盖原模块。' : '当前组只处理正文里还没排版的图片。写入一组后，会自动接到下一组。' }}</p>
-          </div>
-          <div class="flex gap-2">
-            <Button v-if="editingBlock" variant="outline" size="sm" class="h-8 px-3 text-xs" @click="cancelEditingBlock">
-              取消编辑
-            </Button>
-            <Button variant="outline" size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('upload')">
-              <ImagePlus class="mr-2 size-3.5" />
-              加图片
-            </Button>
-            <Button variant="outline" size="sm" class="h-8 px-3 text-xs" :disabled="!selectedPreset" @click="selectSuggestedImages">
-              自动填充
-            </Button>
-            <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" :disabled="!selectedPreset" @click="clearAllSelectedImages">
-              清空本组
-            </Button>
-            <Button size="sm" class="h-8 px-3 text-xs" :disabled="!canApplyLayout" @click="applyLayoutToMarkdown">
-              <Sparkles class="mr-2 size-3.5" />
-              {{ editingBlock ? '保存修改' : '写入正文' }}
-            </Button>
-          </div>
-        </div>
-
-        <div v-if="!selectedPreset" class="media-layout-empty">
-          先选一个版式，这里才会出现对应的图片槽位和微调项。
-        </div>
-
-        <div v-else-if="availableImages.length" class="media-layout-stage">
-          <div class="media-layout-inline-actions">
-            <Button variant="outline" size="sm" class="h-8 px-3 text-xs" :disabled="!selectedPreset" @click="selectSuggestedImages">
-              重抓下一组
-            </Button>
-            <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" :disabled="!selectedPreset" @click="showImageLibrary = !showImageLibrary">
-              {{ showImageLibrary ? '收起换图' : '换图' }}
-            </Button>
-            <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" :disabled="!selectedPreset" @click="showSlotTuning = !showSlotTuning">
-              {{ showSlotTuning ? '收起微调' : '微调当前图' }}
-            </Button>
-          </div>
-
-          <div class="media-layout-slot-dock">
-            <div
-              v-for="(image, index) in selectedImageEntries"
-              :key="`slot-${index}`"
-              class="media-layout-slot-card"
-              :class="{ 'media-layout-slot-card--active': index === activeSlotIndex }"
-              role="button"
-              tabindex="0"
-              @click="setActiveSlot(index)"
-            >
-              <div class="media-layout-slot-card__thumb">
-                <img v-if="image" :src="image.url" :alt="getImageLabel(image, index)">
-                <span v-else>{{ index + 1 }}</span>
-              </div>
-              <div class="media-layout-slot-card__copy">
-                <div class="media-layout-slot-card__title">
-                  {{ index + 1 }} 号位
-                </div>
-                <div class="media-layout-slot-card__meta">
-                  {{ image ? getImageLabel(image, index) : '待选图片' }}
-                </div>
-              </div>
-              <button
-                v-if="image"
-                type="button"
-                class="media-layout-slot-card__clear"
-                @click.stop="clearSlot(index)"
-              >
-                清空
-              </button>
+          <div class="media-layout-workspace__headline">
+            <div>
+              <h2>图片排版工作台</h2>
+              <p>面向公众号粘贴重做：先用推荐模板快速成组，只有需要时才展开换图、微调和补文案。</p>
+            </div>
+            <div class="media-layout-workspace__chips">
+              <span class="workspace-chip workspace-chip--accent">{{ filledSlotCount }}/{{ selectedPreset?.slotCount ?? 0 }} 已选</span>
+              <span class="workspace-chip">{{ remainingImageCount }} 张待排版</span>
+              <span class="workspace-chip" :class="{ 'workspace-chip--warning': !mpUploadReady }">{{ mpSafetyLabel }}</span>
+              <span v-if="editingBlock" class="workspace-chip workspace-chip--editing">正在编辑模块</span>
+              <span v-if="detectedLayoutBlocks.length" class="workspace-chip">{{ detectedLayoutBlocks.length }} 组已生成</span>
             </div>
           </div>
+        </div>
 
-          <div class="media-layout-stage__tip">
-            {{ editingBlock ? '你可以继续替换图片、改宽度、调尺寸，最后点“保存修改”覆盖原模块。' : '默认已经自动抓取下一组图片。大多数情况下，直接点“写入正文”就够了。' }}
-          </div>
-
-          <div v-if="showSlotTuning && activeSlotState" class="media-layout-tuning">
-            <div class="media-layout-tuning__header">
+        <div class="media-layout-workspace__body">
+          <section class="media-layout-section">
+            <div class="media-layout-section__header">
               <div>
-                <h4>当前版式微调</h4>
-                <p>宽度调整个模块，比例和高度调当前图片。</p>
+                <h3>1. 这一组放几张图</h3>
+                <p>已经按正文里还没排版的图片数量替你选好，版式和图片都填上了，不满意再换。</p>
               </div>
-              <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="resetActiveSlotTuning">
-                恢复默认
+            </div>
+
+            <div class="media-layout-safety-note" :class="{ 'media-layout-safety-note--warning': !mpUploadReady }">
+              <strong>{{ mpSafetyLabel }}</strong>
+              <span>{{ mpSafetyHint }}</span>
+            </div>
+
+            <div class="media-layout-count-switch">
+              <Button
+                v-for="option in templateCountOptions"
+                :key="option.value"
+                size="sm"
+                class="h-8 px-3 text-xs"
+                :variant="templateCountFilter === option.value ? 'default' : 'outline'"
+                @click="templateCountFilter = option.value"
+              >
+                {{ option.label }}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="h-8 px-3 text-xs"
+                @click="showMoreTemplateFilters = !showMoreTemplateFilters"
+              >
+                {{ showMoreTemplateFilters ? '收起' : '带文字的版式' }}
               </Button>
             </div>
 
-            <div class="media-layout-tuning__grid">
+            <div v-if="showMoreTemplateFilters" class="media-layout-filter-grid">
               <div class="grid gap-2">
-                <div class="media-layout-range-head">
-                  <label class="media-layout-filter-label">模块宽度</label>
-                  <span>{{ formState.blockWidth }}%</span>
-                </div>
-                <input
-                  v-model.number="formState.blockWidth"
-                  class="media-layout-range"
-                  type="range"
-                  min="52"
-                  max="100"
-                  step="2"
-                >
-              </div>
-
-              <div class="grid gap-2">
-                <label class="media-layout-filter-label">图片比例</label>
-                <Select v-model="activeSlotState.aspectRatio">
+                <label class="media-layout-filter-label">表达方式</label>
+                <Select v-model="templateModeFilter">
                   <SelectTrigger class="w-full">
-                    <SelectValue placeholder="选择图片比例" />
+                    <SelectValue placeholder="纯图片" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="option in mediaAspectRatioOptions" :key="option.value" :value="option.value">
+                  <SelectContent @close-auto-focus.prevent>
+                    <SelectItem v-for="option in templateModeOptions" :key="option.value" :value="option.value">
                       {{ option.label }}
                     </SelectItem>
                   </SelectContent>
@@ -1222,227 +1093,422 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
               </div>
 
               <div class="grid gap-2">
-                <div class="media-layout-range-head">
-                  <label class="media-layout-filter-label">图片高度</label>
-                  <span>{{ activeSlotState.minHeight }}px</span>
-                </div>
-                <input
-                  v-model.number="activeSlotState.minHeight"
-                  class="media-layout-range"
-                  type="range"
-                  min="120"
-                  max="480"
-                  step="10"
+                <label class="media-layout-filter-label">视觉风格</label>
+                <Select v-model="templateFamilyFilter">
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder="可选，默认全部风格" />
+                  </SelectTrigger>
+                  <SelectContent @close-auto-focus.prevent>
+                    <SelectItem v-for="option in templateFamilyOptions" :key="option.value" :value="option.value">
+                      {{ option.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div v-if="!hasPrimaryTemplateFilters" class="media-layout-empty">
+              正文里还没有图片。先用上面的「加图片」插入，再回来选版式。
+            </div>
+
+            <template v-else-if="rankedActivePresets.length">
+              <div class="media-layout-preset-grid">
+                <button
+                  v-for="preset in visiblePresets"
+                  :key="preset.id"
+                  type="button"
+                  class="media-layout-preset"
+                  :class="{ 'media-layout-preset--active': preset.id === selectedPresetId }"
+                  @click="setPreset(preset)"
                 >
+                  <div class="media-layout-preset__preview">
+                    <template v-for="(cell, index) in getPresetPreviewBlueprint(preset.id).cells" :key="`${preset.id}-cell-${index}`">
+                      <span
+                        class="media-layout-preset__cell"
+                        :class="`media-layout-preset__cell--${cell.tone}`"
+                        :style="{ left: cell.left, top: cell.top, width: cell.width, height: cell.height }"
+                      />
+                    </template>
+                    <template v-for="(band, index) in getPresetPreviewBlueprint(preset.id).bands ?? []" :key="`${preset.id}-band-${index}`">
+                      <span
+                        class="media-layout-preset__band"
+                        :style="{ left: band.left, top: band.top, width: band.width, height: band.height }"
+                      />
+                    </template>
+                  </div>
+
+                  <div class="media-layout-preset__body">
+                    <div class="media-layout-preset__title-row">
+                      <div class="media-layout-preset__title">
+                        {{ preset.name }}
+                      </div>
+                      <span class="media-layout-preset__cue">{{ preset.cue }}</span>
+                    </div>
+                    <div class="media-layout-preset__desc">
+                      {{ preset.description }}
+                    </div>
+                    <div class="media-layout-preset__meta">
+                      <span>{{ preset.slotCount }} 张图</span>
+                      <span>{{ mediaLayoutTextModeLabels[preset.textMode] }}</span>
+                      <span>{{ mediaLayoutFamilyLabels[preset.family] }}</span>
+                    </div>
+                  </div>
+                </button>
               </div>
 
-              <div v-if="supportsSlotBadge" class="grid gap-2">
-                <label class="media-layout-filter-label">当前图角标</label>
-                <Input v-model="activeSlotState.title" :placeholder="activeSlotBadgePlaceholder" />
+              <div v-if="hiddenPresetCount > 0" class="media-layout-inline-actions">
+                <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="showAllTemplates = !showAllTemplates">
+                  {{ showAllTemplates ? '收起更多模板' : `查看更多模板（+${hiddenPresetCount}）` }}
+                </Button>
+              </div>
+            </template>
+
+            <div v-else class="media-layout-empty">
+              当前筛选下没有匹配模板。换一个表达方式或视觉风格即可。
+            </div>
+          </section>
+
+          <section class="media-layout-section">
+            <div class="media-layout-section__header">
+              <div>
+                <h3>2. 确认图片</h3>
+                <p>{{ editingBlock ? '当前是已生成模块编辑模式。保存后会直接覆盖原模块。' : '图片已经自动填好。没问题就直接写入正文，想换再动下面的按钮。' }}</p>
+              </div>
+              <div class="flex gap-2">
+                <Button v-if="editingBlock" variant="outline" size="sm" class="h-8 px-3 text-xs" @click="cancelEditingBlock">
+                  取消编辑
+                </Button>
+                <Button variant="outline" size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('upload')">
+                  <ImagePlus class="mr-2 size-3.5" />
+                  加图片
+                </Button>
+                <Button size="sm" class="h-8 px-3 text-xs" :disabled="!canApplyLayout" @click="applyLayoutToMarkdown">
+                  <Sparkles class="mr-2 size-3.5" />
+                  {{ editingBlock ? '保存修改' : '写入正文' }}
+                </Button>
               </div>
             </div>
-          </div>
 
-          <div v-if="remainingGroupCount > 0" class="media-layout-stage__tip">
-            按当前模板，正文里还能继续生成 {{ remainingGroupCount }} 组。
-            <span v-if="remainingImageRemainder > 0">最后还会剩 {{ remainingImageRemainder }} 张，可切到更小模板继续处理。</span>
-          </div>
-
-          <div v-else-if="needsSmallerTemplate" class="media-layout-stage__tip">
-            当前只剩 {{ remainingImageCount }} 张图片，当前模板不匹配。把上面的图片数量切小即可继续。
-          </div>
-
-          <div v-if="showImageLibrary" class="media-layout-source-grid">
-            <button
-              v-for="(image, index) in detectedImages"
-              :key="image.id"
-              type="button"
-              class="media-layout-source-card"
-              :class="{ 'media-layout-source-card--active': getAssignedSlotIndex(image.id) !== -1 }"
-              @click="assignImageToSlot(image.id)"
-            >
-              <div class="media-layout-source-card__thumb">
-                <img :src="image.url" :alt="getImageLabel(image, index)">
-                <span v-if="getAssignedSlotIndex(image.id) !== -1" class="media-layout-source-card__badge">
-                  <Check class="size-3" />
-                  {{ getAssignedSlotIndex(image.id) + 1 }}
-                </span>
-              </div>
-              <div class="media-layout-source-card__copy">
-                <div class="media-layout-source-card__title">
-                  {{ getImageLabel(image, index) }}
-                </div>
-                <div class="media-layout-source-card__meta">
-                  Markdown 图片
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        <div v-else class="media-layout-empty">
-          <p>{{ editingBlock ? '当前模块没有可回填的图片，暂时无法编辑。' : '还没有识别到 Markdown 图片。可以直接从这里批量加图，也可以在左侧 Markdown 中插入 `![](url)`。' }}</p>
-          <div v-if="!editingBlock" class="media-layout-inline-actions">
-            <Button size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('upload')">
-              <ImagePlus class="mr-2 size-3.5" />
-              批量上传图片
-            </Button>
-            <Button variant="outline" size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('link')">
-              按链接插入
-            </Button>
-            <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('recent')">
-              最近使用的图片
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <section v-if="shouldShowTextStage" class="media-layout-section">
-        <div class="media-layout-section__header">
-          <div>
-            <h3>3. 文字微调</h3>
-            <p>默认不展开。只有你确实要补标题、摘要或说明时，再打开这一栏。</p>
-          </div>
-          <div class="flex gap-2">
-            <Button variant="outline" size="sm" class="h-8 px-3 text-xs" @click="showTextEditor = !showTextEditor">
-              {{ showTextEditor ? '收起文字编辑' : '补一点文字' }}
-            </Button>
-            <Button v-if="showTextEditor" variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="clearTextFields">
-              清空文字
-            </Button>
-          </div>
-        </div>
-
-        <div v-if="showTextEditor" class="media-layout-copy-stage">
-          <template v-if="usesBodyCopyPreset">
-            <div class="media-layout-copy-stage__core">
-              <Input v-model="formState.bodyTitle" :placeholder="copyPlaceholders.title" />
-              <Textarea v-model="formState.bodyText" class="min-h-[88px]" :placeholder="copyPlaceholders.body" />
-            </div>
-          </template>
-
-          <template v-else-if="isStoryPreset">
-            <div class="media-layout-copy-stage__core">
-              <Input v-model="formState.sectionTitle" placeholder="这一组的总标题，可不填" />
-              <Textarea v-model="formState.sectionLead" class="min-h-[72px]" placeholder="这一组的导语，可不填" />
+            <div v-if="!selectedPreset" class="media-layout-empty">
+              正文里还没有图片可以排版。
             </div>
 
-            <div class="media-layout-story-grid-edit">
-              <div
-                v-for="(slot, index) in formState.images.slice(0, selectedPreset?.slotCount ?? 0)"
-                :key="`story-slot-${index}`"
-                class="media-layout-story-edit-card"
-              >
-                <div class="media-layout-story-edit-card__head">
-                  <div class="media-layout-story-edit-card__avatar">
-                    <img
-                      v-if="selectedImageEntries[index]"
-                      :src="selectedImageEntries[index]?.url"
-                      :alt="selectedImageEntries[index]?.alt || `图片 ${index + 1}`"
-                    >
+            <div v-else-if="availableImages.length" class="media-layout-stage">
+              <div class="media-layout-inline-actions">
+                <Button variant="outline" size="sm" class="h-8 px-3 text-xs" @click="selectSuggestedImages">
+                  换一组图
+                </Button>
+                <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="showImageLibrary = !showImageLibrary">
+                  {{ showImageLibrary ? '收起挑图' : '自己挑图' }}
+                </Button>
+                <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="showSlotTuning = !showSlotTuning">
+                  {{ showSlotTuning ? '收起微调' : '微调尺寸' }}
+                </Button>
+                <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="clearAllSelectedImages">
+                  清空本组
+                </Button>
+              </div>
+
+              <div class="media-layout-slot-dock">
+                <div
+                  v-for="(image, index) in selectedImageEntries"
+                  :key="`slot-${index}`"
+                  class="media-layout-slot-card"
+                  :class="{ 'media-layout-slot-card--active': index === activeSlotIndex }"
+                  role="button"
+                  tabindex="0"
+                  @click="setActiveSlot(index)"
+                >
+                  <div class="media-layout-slot-card__thumb">
+                    <img v-if="image" :src="image.url" :alt="getImageLabel(image, index)">
                     <span v-else>{{ index + 1 }}</span>
                   </div>
-                  <span>卡片 {{ index + 1 }}</span>
+                  <div class="media-layout-slot-card__copy">
+                    <div class="media-layout-slot-card__title">
+                      {{ index + 1 }} 号位
+                    </div>
+                    <div class="media-layout-slot-card__meta">
+                      {{ image ? getImageLabel(image, index) : '待选图片' }}
+                    </div>
+                  </div>
+                  <button
+                    v-if="image"
+                    type="button"
+                    class="media-layout-slot-card__clear"
+                    @click.stop="clearSlot(index)"
+                  >
+                    清空
+                  </button>
                 </div>
-                <Input v-model="slot.title" placeholder="卡片标题，可不填" />
-                <Textarea v-model="slot.summary" class="min-h-[72px]" placeholder="卡片摘要，可不填" />
+              </div>
+
+              <div class="media-layout-stage__tip">
+                {{ editingBlock ? '你可以继续替换图片、改宽度、调尺寸，最后点“保存修改”覆盖原模块。' : '默认已经自动抓取下一组图片。大多数情况下，直接点“写入正文”就够了。' }}
+              </div>
+
+              <div v-if="showSlotTuning && activeSlotState" class="media-layout-tuning">
+                <div class="media-layout-tuning__header">
+                  <div>
+                    <h4>当前版式微调</h4>
+                    <p>宽度调整个模块，比例和高度调当前图片。</p>
+                  </div>
+                  <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="resetActiveSlotTuning">
+                    恢复默认
+                  </Button>
+                </div>
+
+                <div class="media-layout-tuning__grid">
+                  <div class="grid gap-2">
+                    <div class="media-layout-range-head">
+                      <label class="media-layout-filter-label">模块宽度</label>
+                      <span>{{ formState.blockWidth }}%</span>
+                    </div>
+                    <input
+                      v-model.number="formState.blockWidth"
+                      class="media-layout-range"
+                      type="range"
+                      min="52"
+                      max="100"
+                      step="2"
+                    >
+                  </div>
+
+                  <div class="grid gap-2">
+                    <label class="media-layout-filter-label">图片比例</label>
+                    <Select v-model="activeSlotState.aspectRatio">
+                      <SelectTrigger class="w-full">
+                        <SelectValue placeholder="选择图片比例" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="option in mediaAspectRatioOptions" :key="option.value" :value="option.value">
+                          {{ option.label }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div class="grid gap-2">
+                    <div class="media-layout-range-head">
+                      <label class="media-layout-filter-label">图片高度</label>
+                      <span>{{ activeSlotState.minHeight }}px</span>
+                    </div>
+                    <input
+                      v-model.number="activeSlotState.minHeight"
+                      class="media-layout-range"
+                      type="range"
+                      min="120"
+                      max="480"
+                      step="10"
+                    >
+                  </div>
+
+                  <div v-if="supportsSlotBadge" class="grid gap-2">
+                    <label class="media-layout-filter-label">当前图角标</label>
+                    <Input v-model="activeSlotState.title" :placeholder="activeSlotBadgePlaceholder" />
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="remainingGroupCount > 0" class="media-layout-stage__tip">
+                按当前模板，正文里还能继续生成 {{ remainingGroupCount }} 组。
+                <span v-if="remainingImageRemainder > 0">最后还会剩 {{ remainingImageRemainder }} 张，可切到更小模板继续处理。</span>
+              </div>
+
+              <div v-else-if="needsSmallerTemplate" class="media-layout-stage__tip">
+                当前只剩 {{ remainingImageCount }} 张图片，当前模板不匹配。把上面的图片数量切小即可继续。
+              </div>
+
+              <div v-if="showImageLibrary" class="media-layout-source-grid">
+                <button
+                  v-for="(image, index) in detectedImages"
+                  :key="image.id"
+                  type="button"
+                  class="media-layout-source-card"
+                  :class="{ 'media-layout-source-card--active': getAssignedSlotIndex(image.id) !== -1 }"
+                  @click="assignImageToSlot(image.id)"
+                >
+                  <div class="media-layout-source-card__thumb">
+                    <img :src="image.url" :alt="getImageLabel(image, index)">
+                    <span v-if="getAssignedSlotIndex(image.id) !== -1" class="media-layout-source-card__badge">
+                      <Check class="size-3" />
+                      {{ getAssignedSlotIndex(image.id) + 1 }}
+                    </span>
+                  </div>
+                  <div class="media-layout-source-card__copy">
+                    <div class="media-layout-source-card__title">
+                      {{ getImageLabel(image, index) }}
+                    </div>
+                    <div class="media-layout-source-card__meta">
+                      Markdown 图片
+                    </div>
+                  </div>
+                </button>
               </div>
             </div>
-          </template>
 
-          <div v-if="showAdvancedDetailFields" class="media-layout-advanced-block">
-            <div class="media-layout-advanced-block__title">
-              高级项
+            <div v-else class="media-layout-empty">
+              <p>{{ editingBlock ? '当前模块没有可回填的图片，暂时无法编辑。' : '还没有识别到 Markdown 图片。可以直接从这里批量加图，也可以在左侧 Markdown 中插入 `![](url)`。' }}</p>
+              <div v-if="!editingBlock" class="media-layout-inline-actions">
+                <Button size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('upload')">
+                  <ImagePlus class="mr-2 size-3.5" />
+                  批量上传图片
+                </Button>
+                <Button variant="outline" size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('link')">
+                  按链接插入
+                </Button>
+                <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('recent')">
+                  最近使用的图片
+                </Button>
+              </div>
+            </div>
+          </section>
+
+          <section v-if="shouldShowTextStage" class="media-layout-section">
+            <div class="media-layout-section__header">
+              <div>
+                <h3>3. 文字微调</h3>
+                <p>默认不展开。只有你确实要补标题、摘要或说明时，再打开这一栏。</p>
+              </div>
+              <div class="flex gap-2">
+                <Button variant="outline" size="sm" class="h-8 px-3 text-xs" @click="showTextEditor = !showTextEditor">
+                  {{ showTextEditor ? '收起文字编辑' : '补一点文字' }}
+                </Button>
+                <Button v-if="showTextEditor" variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="clearTextFields">
+                  清空文字
+                </Button>
+              </div>
             </div>
 
-            <div class="grid gap-3">
-              <Input v-model="formState.sectionLabel" placeholder="版块标签，可不填" />
-
+            <div v-if="showTextEditor" class="media-layout-copy-stage">
               <template v-if="usesBodyCopyPreset">
-                <Input v-model="formState.sectionTitle" placeholder="版块标题，可不填" />
-                <Textarea v-model="formState.sectionLead" class="min-h-[72px]" placeholder="版块导语，可不填" />
-                <Textarea v-model="formState.secondaryText" class="min-h-[72px]" placeholder="补充说明，可不填" />
-                <div class="grid gap-3 md:grid-cols-2">
-                  <Input v-model="formState.ctaText" placeholder="链接文案，可不填" />
-                  <Input v-model="formState.ctaUrl" placeholder="链接地址，可不填" />
+                <div class="media-layout-copy-stage__core">
+                  <Input v-model="formState.bodyTitle" :placeholder="copyPlaceholders.title" />
+                  <Textarea v-model="formState.bodyText" class="min-h-[88px]" :placeholder="copyPlaceholders.body" />
                 </div>
               </template>
 
-              <template v-if="selectedPreset?.slotCount">
-                <div class="media-layout-caption-grid">
-                  <Input
-                    v-for="(slot, index) in formState.images.slice(0, selectedPreset.slotCount)"
-                    :key="`caption-slot-${index}`"
-                    v-model="slot.caption"
-                    :placeholder="`图片 ${index + 1} 说明，可不填`"
-                  />
+              <template v-else-if="isStoryPreset">
+                <div class="media-layout-copy-stage__core">
+                  <Input v-model="formState.sectionTitle" placeholder="这一组的总标题，可不填" />
+                  <Textarea v-model="formState.sectionLead" class="min-h-[72px]" placeholder="这一组的导语，可不填" />
+                </div>
+
+                <div class="media-layout-story-grid-edit">
+                  <div
+                    v-for="(slot, index) in formState.images.slice(0, selectedPreset?.slotCount ?? 0)"
+                    :key="`story-slot-${index}`"
+                    class="media-layout-story-edit-card"
+                  >
+                    <div class="media-layout-story-edit-card__head">
+                      <div class="media-layout-story-edit-card__avatar">
+                        <img
+                          v-if="selectedImageEntries[index]"
+                          :src="selectedImageEntries[index]?.url"
+                          :alt="selectedImageEntries[index]?.alt || `图片 ${index + 1}`"
+                        >
+                        <span v-else>{{ index + 1 }}</span>
+                      </div>
+                      <span>卡片 {{ index + 1 }}</span>
+                    </div>
+                    <Input v-model="slot.title" placeholder="卡片标题，可不填" />
+                    <Textarea v-model="slot.summary" class="min-h-[72px]" placeholder="卡片摘要，可不填" />
+                  </div>
                 </div>
               </template>
-            </div>
-          </div>
-        </div>
 
-        <div v-else class="media-layout-empty">
-          默认不补文案，直接写入正文即可。只有需要标题、摘要或说明时，再展开这一栏。
-        </div>
-      </section>
+              <div v-if="showAdvancedDetailFields" class="media-layout-advanced-block">
+                <div class="media-layout-advanced-block__title">
+                  高级项
+                </div>
 
-      <section v-if="detectedLayoutBlocks.length" class="media-layout-section">
-        <div class="media-layout-section__header">
-          <div>
-            <h3>4. 已生成模块</h3>
-            <p>已生成的拼图不再占据主工作流。只有在需要取消时，再从这里恢复原图。</p>
-          </div>
-          <div class="flex gap-2">
-            <Button
-              v-if="latestGeneratedLayoutBlock"
-              variant="outline"
-              size="sm"
-              class="h-8 px-3 text-xs"
-              @click="restoreLayoutBlock(latestGeneratedLayoutBlock)"
-            >
-              <RotateCcw class="mr-2 size-3.5" />
-              恢复最近一组
-            </Button>
-            <Button
-              v-if="detectedLayoutBlocks.length > 1"
-              variant="ghost"
-              size="sm"
-              class="h-8 px-3 text-xs"
-              @click="showAllGeneratedLayouts = !showAllGeneratedLayouts"
-            >
-              {{ showAllGeneratedLayouts ? '收起列表' : `查看全部 ${detectedLayoutBlocks.length} 组` }}
-            </Button>
-          </div>
-        </div>
+                <div class="grid gap-3">
+                  <Input v-model="formState.sectionLabel" placeholder="版块标签，可不填" />
 
-        <div class="media-layout-generated-list">
-          <div
-            v-for="block in visibleGeneratedLayoutBlocks"
-            :key="block.id"
-            class="media-layout-generated-item"
-          >
-            <div class="media-layout-generated-item__content">
-              <div class="media-layout-generated-item__title">
-                {{ block.title }}
-              </div>
-              <div class="media-layout-generated-item__meta">
-                {{ block.layoutType === 'image' ? '图片排版' : '图文排版' }} · {{ block.images.length }} 张图
+                  <template v-if="usesBodyCopyPreset">
+                    <Input v-model="formState.sectionTitle" placeholder="版块标题，可不填" />
+                    <Textarea v-model="formState.sectionLead" class="min-h-[72px]" placeholder="版块导语，可不填" />
+                    <Textarea v-model="formState.secondaryText" class="min-h-[72px]" placeholder="补充说明，可不填" />
+                    <div class="grid gap-3 md:grid-cols-2">
+                      <Input v-model="formState.ctaText" placeholder="链接文案，可不填" />
+                      <Input v-model="formState.ctaUrl" placeholder="链接地址，可不填" />
+                    </div>
+                  </template>
+
+                  <template v-if="selectedPreset?.slotCount">
+                    <div class="media-layout-caption-grid">
+                      <Input
+                        v-for="(slot, index) in formState.images.slice(0, selectedPreset.slotCount)"
+                        :key="`caption-slot-${index}`"
+                        v-model="slot.caption"
+                        :placeholder="`图片 ${index + 1} 说明，可不填`"
+                      />
+                    </div>
+                  </template>
+                </div>
               </div>
             </div>
-            <div class="media-layout-generated-item__actions">
-              <Button variant="outline" size="sm" class="h-9 shrink-0 px-3" @click="startEditingBlock(block)">
-                编辑模块
-              </Button>
-              <Button variant="outline" size="sm" class="h-9 shrink-0 px-3" @click="restoreLayoutBlock(block)">
-                <RotateCcw class="mr-2 size-3.5" />
-                恢复原图
-              </Button>
+
+            <div v-else class="media-layout-empty">
+              默认不补文案，直接写入正文即可。只有需要标题、摘要或说明时，再展开这一栏。
             </div>
-          </div>
+          </section>
+
+          <section v-if="detectedLayoutBlocks.length" class="media-layout-section">
+            <div class="media-layout-section__header">
+              <div>
+                <h3>4. 已生成模块</h3>
+                <p>已生成的拼图不再占据主工作流。只有在需要取消时，再从这里恢复原图。</p>
+              </div>
+              <div class="flex gap-2">
+                <Button
+                  v-if="latestGeneratedLayoutBlock"
+                  variant="outline"
+                  size="sm"
+                  class="h-8 px-3 text-xs"
+                  @click="restoreLayoutBlock(latestGeneratedLayoutBlock)"
+                >
+                  <RotateCcw class="mr-2 size-3.5" />
+                  恢复最近一组
+                </Button>
+                <Button
+                  v-if="detectedLayoutBlocks.length > 1"
+                  variant="ghost"
+                  size="sm"
+                  class="h-8 px-3 text-xs"
+                  @click="showAllGeneratedLayouts = !showAllGeneratedLayouts"
+                >
+                  {{ showAllGeneratedLayouts ? '收起列表' : `查看全部 ${detectedLayoutBlocks.length} 组` }}
+                </Button>
+              </div>
+            </div>
+
+            <div class="media-layout-generated-list">
+              <div
+                v-for="block in visibleGeneratedLayoutBlocks"
+                :key="block.id"
+                class="media-layout-generated-item"
+              >
+                <div class="media-layout-generated-item__content">
+                  <div class="media-layout-generated-item__title">
+                    {{ block.title }}
+                  </div>
+                  <div class="media-layout-generated-item__meta">
+                    {{ block.layoutType === 'image' ? '图片排版' : '图文排版' }} · {{ block.images.length }} 张图
+                  </div>
+                </div>
+                <div class="media-layout-generated-item__actions">
+                  <Button variant="outline" size="sm" class="h-9 shrink-0 px-3" @click="startEditingBlock(block)">
+                    编辑模块
+                  </Button>
+                  <Button variant="outline" size="sm" class="h-9 shrink-0 px-3" @click="restoreLayoutBlock(block)">
+                    <RotateCcw class="mr-2 size-3.5" />
+                    恢复原图
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
-      </section>
-    </div>
       </div>
 
       <div v-else class="block-library-placeholder">
@@ -1714,7 +1780,15 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
 .media-layout-filter-grid {
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0.7rem;
+}
+
+.media-layout-count-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .media-layout-filter-label {

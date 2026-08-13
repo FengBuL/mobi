@@ -6,7 +6,7 @@ import { addPrefix, generatePureHTML, processClipboardContent } from '@/utils'
 import { hasMpUploadConfig } from '@/utils/file'
 import { store } from '@/utils/storage'
 
-type CopyMode = `txt` | `html` | `html-without-style` | `html-and-style` | `md`
+type CopyMode = 'txt' | 'html' | 'html-without-style' | 'html-and-style' | 'md'
 
 interface UseEditorCopyActionsOptions {
   onStart?: () => void
@@ -40,6 +40,7 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
   // 于是「滚动图复制不成功」，而提示语只说「仍是外链或本地地址」。
   const describeClipboardImage = (image: HTMLImageElement, index: number) => {
     const src = image.getAttribute(`src`)?.trim() || ``
+    const isLocal = src.startsWith(`data:`) || src.startsWith(`blob:`)
     const scheme = src.startsWith(`data:`) ? `内嵌图片` : src.startsWith(`blob:`) ? `本地图片` : src.split(`/`)[2] || src.slice(0, 40)
     const width = image.naturalWidth
     const height = image.naturalHeight
@@ -48,6 +49,7 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
 
     return {
       src,
+      isLocal,
       error: image.getAttribute(`data-mp-upload-error`) || ``,
       label: `第 ${index + 1} 张（${scheme}，${shape}${isLong ? `，长图` : ``}）`,
       isLong,
@@ -159,22 +161,33 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
 
         if (copyMode.value === `txt`) {
           const unsafeImages = getUnsafeClipboardImages(clipboardDiv)
-          if (unsafeImages.length > 0) {
-            const hasConfig = await hasMpUploadConfig()
-            const blocker = unsafeImages.find(item => item.error) || unsafeImages[0]
-            const longHint = unsafeImages.some(item => item.isLong)
-              ? `长图容易超过公众号图床的体积上限，可以先压缩或裁短再插入。`
-              : ``
+          // data: / blob: 是浏览器内部地址，公众号那边取不到，只能拦；
+          // http(s) 外链粘进公众号编辑器时它自己会抓下来转存，放行并提示即可，
+          // 否则没配图床的人连一次都复制不了。
+          const localImages = unsafeImages.filter(item => item.isLocal)
+          const remoteImages = unsafeImages.filter(item => !item.isLocal)
+
+          if (localImages.length > 0) {
+            const blocker = localImages[0]
             clipboardDiv.innerHTML = output.value
             window.getSelection()?.removeAllRanges()
             editorRefresh()
-            toast.error(
-              hasConfig
-                ? `仍有 ${unsafeImages.length} 张图片没有转成公众号安全地址，卡在${blocker.label}。${blocker.error ? `失败原因：${blocker.error}。` : ``}${longHint}`
-                : `检测到 ${unsafeImages.length} 张图片仍是外链或本地地址，例如${blocker.label}。先配置公众号图床，再复制到公众号。`,
-            )
+            toast.error(`${localImages.length} 张图片还是本地地址（${blocker.label}），公众号读不到。先配置图床把它们传上去，或者换成网络图片链接。`)
             finish()
             return
+          }
+
+          if (remoteImages.length > 0) {
+            const hasConfig = await hasMpUploadConfig()
+            const blocker = remoteImages.find(item => item.error) || remoteImages[0]
+            const longHint = remoteImages.some(item => item.isLong)
+              ? `长图容易超过公众号图床的体积上限，可以先压缩或裁短。`
+              : ``
+            toast.warning(
+              hasConfig
+                ? `${remoteImages.length} 张图片没能转成公众号地址，卡在${blocker.label}。${blocker.error ? `原因：${blocker.error}。` : ``}已按外链复制，粘贴后请确认图片是否显示。${longHint}`
+                : `${remoteImages.length} 张图片是外链，已按原样复制。粘到公众号后编辑器通常会自动转存，请确认图片是否显示。${longHint}`,
+            )
           }
         }
 

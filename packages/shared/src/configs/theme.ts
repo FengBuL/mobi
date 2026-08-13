@@ -1,5 +1,6 @@
 import type { IConfigOption } from '../types'
-import { themeMap, type ThemeName } from './theme-css'
+import type { ThemeName } from './theme-css'
+import { themeMap } from './theme-css'
 
 // 导出 CSS 主题（新主题系统）
 export { baseCSSContent, skeletonCSSContent, themeMap, type ThemeName } from './theme-css'

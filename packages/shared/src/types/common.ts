@@ -11,10 +11,10 @@ export interface IOpts {
   countStatus?: boolean
   isMacCodeBlock?: boolean
   isShowLineNumber?: boolean
-  themeMode?: 'light' | 'dark'
+  themeMode?: `light` | `dark`
   headingDecorationStatus?: boolean
   headingDecorationUrl?: string
-  headingDecorationPosition?: 'left' | 'above' | 'below'
+  headingDecorationPosition?: `left` | `above` | `below`
 }
 
 export interface IConfigOption<VT = string> {

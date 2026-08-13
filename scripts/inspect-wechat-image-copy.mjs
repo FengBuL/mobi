@@ -5,8 +5,8 @@
  * 运行：node scripts/inspect-wechat-image-copy.mjs [主题名，默认 default]
  */
 
-import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 

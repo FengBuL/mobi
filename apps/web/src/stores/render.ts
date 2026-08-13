@@ -81,7 +81,7 @@ export const useRenderStore = defineStore(`render`, () => {
       countStatus: themeStore.isCountStatus,
       isMacCodeBlock: themeStore.isMacCodeBlock,
       isShowLineNumber: themeStore.isShowLineNumber,
-      themeMode: uiStore.isDark ? 'dark' : 'light',
+      themeMode: uiStore.isDark ? `dark` : `light`,
       headingDecorationStatus: themeStore.isHeadingDecorationStatus,
       headingDecorationUrl: themeStore.headingDecorationUrl,
       headingDecorationPosition: themeStore.headingDecorationPosition,

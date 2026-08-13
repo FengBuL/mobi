@@ -47,17 +47,29 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://192.168.101.1
 http://192.168.101.148:5173
 ```
 
-## 开机自启
+## 开机自启（macOS）
 
-仓库内已提供模板：
-
-- 启动脚本：`apps/mp-proxy/start-launchd.sh`
-- LaunchAgent 模板：`apps/mp-proxy/com.liujunming.md-mp-proxy.plist`
-
-安装时会把运行文件复制到：
-
-```text
-~/Library/Application Support/md-editor-web-private/mp-proxy
+```bash
+zsh apps/mp-proxy/install-launchd.sh
 ```
 
-然后由 macOS 在登录时自动启动代理。
+脚本会按**当前用户**生成 LaunchAgent，仓库里不保留任何人的家目录路径。它做三件事：
+
+1. 把 `server.mjs` 和 `start-launchd.sh` 复制到 `~/Library/Application Support/md-editor-web-private/mp-proxy`
+2. 在 `~/Library/LaunchAgents/com.md-editor.mp-proxy.plist` 生成配置
+3. 立即加载，之后每次登录自动启动
+
+想换端口或收紧来源，安装时带上环境变量：
+
+```bash
+PORT=9000 ALLOWED_ORIGINS=http://localhost:5173 zsh apps/mp-proxy/install-launchd.sh
+```
+
+日志在 `/tmp/md-mp-proxy.out.log` 和 `/tmp/md-mp-proxy.err.log`。
+
+卸载：
+
+```bash
+launchctl bootout gui/$UID/com.md-editor.mp-proxy
+rm ~/Library/LaunchAgents/com.md-editor.mp-proxy.plist
+```

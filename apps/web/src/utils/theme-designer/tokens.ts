@@ -4,7 +4,7 @@
  */
 
 import type { ThemeField, ThemeTokenDiffItem, ThemeTokenGroupValues, ThemeTokens, ThemeTokenValue } from './types'
-import { PRIMARY_COLOR_TOKEN, themeDesignerGroups, themeDesignerGroupMap } from './schema'
+import { PRIMARY_COLOR_TOKEN, themeDesignerGroupMap, themeDesignerGroups } from './schema'
 
 const SAFE_COLOR_PATTERN = /^(?:#[0-9a-f]{3,8}|rgba?\([\d\s.,%/]+\)|hsla?\([\d\s.,%/a-z]+\)|transparent|inherit|currentcolor)$/i
 

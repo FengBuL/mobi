@@ -353,9 +353,9 @@ const linkGroup: ThemeGroup = {
       options: [
         { label: `无下划线`, value: `none` },
         { label: `实线`, value: `underline` },
-      { label: `虚点线`, value: `dotted`, wechatHint: `text-decoration-style 在公众号里支持不稳定` },
-      { label: `波浪线`, value: `wavy`, wechatHint: `text-decoration-style 在公众号里支持不稳定` },
-      { label: `下边框`, value: `border` },
+        { label: `虚点线`, value: `dotted`, wechatHint: `text-decoration-style 在公众号里支持不稳定` },
+        { label: `波浪线`, value: `wavy`, wechatHint: `text-decoration-style 在公众号里支持不稳定` },
+        { label: `下边框`, value: `border` },
       ],
       emit: (value, ctx) => {
         const accent = ctx.color(ctx.get(`underlineColor`))

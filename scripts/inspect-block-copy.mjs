@@ -1,6 +1,5 @@
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
-import { writeFileSync } from 'node:fs'
+import { existsSync, writeFileSync } from 'node:fs'
 
 const port = Number(process.env.MD_DEBUG_PORT || 9231)
 const url = process.env.MD_DEV_URL || `http://localhost:5173/md/`
@@ -204,7 +203,7 @@ try {
 
   console.log(`\n类别 ${result.categories.length}　预设合计 ${total}　失败 ${result.failures.length}`)
   sourceMapping.reports.forEach((report) => {
-    console.log(`${report.ok ? '✓' : '✗'} 源码映射 ${report.kind} #${report.ordinal}`)
+    console.log(`${report.ok ? `✓` : `✗`} 源码映射 ${report.kind} #${report.ordinal}`)
   })
   const thin = result.categories.filter(category => category.count < 20)
   if (thin.length) {

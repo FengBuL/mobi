@@ -1,4 +1,5 @@
 import type { BlockCategoryDefinition, BlockPalette, BlockPreset, BlockState } from '../types'
+import { renderWeChatRow } from '@/utils/wechat-layout'
 import {
   compactBlockMarkup,
   createStateFromFields,
@@ -8,11 +9,11 @@ import {
   parseBlockFieldState,
 } from '../helpers'
 
-type HeadingVariant =
-  | `banner` | `rail` | `double-rule` | `center-rule` | `badge`
-  | `index` | `kicker` | `bracket` | `cut` | `pill`
-  | `underline` | `highlight` | `quote` | `geometry` | `gradient`
-  | `outline` | `split` | `vertical` | `minimal` | `icon`
+type HeadingVariant
+  = | 'banner' | 'rail' | 'double-rule' | 'center-rule' | 'badge'
+    | 'index' | 'kicker' | 'bracket' | 'cut' | 'pill'
+    | 'underline' | 'highlight' | 'quote' | 'geometry' | 'gradient'
+    | 'outline' | 'split' | 'vertical' | 'minimal' | 'icon'
 
 interface HeadingPresetSeed {
   id: string
@@ -138,11 +139,75 @@ function renderHeadingBody(preset: BlockPreset, state: BlockState) {
   }
 }
 
+/**
+ * 编辑态用 `display:flex` + `flex:1` 排「装饰块 + 标题」这一行，公众号一旦剥掉 flex，
+ * 没有宽度兜底的那一列就会掉到下一行——序章印记的序号圆点会跑到标题上方。
+ *
+ * 导出改走 `renderWeChatRow`：父级写 flex，子级同时写 inline-block 和百分比宽度，
+ * 外加秀米那条 `max-width:X% !important`，两条路都能排成一行。
+ */
+function renderHeadingRow(
+  preset: BlockPreset,
+  aside: string,
+  main: string,
+  mainWeight: number,
+  asideStyle = ``,
+  mainStyle = ``,
+) {
+  const row = renderWeChatRow([
+    { html: aside, weight: 1, extraStyle: `align-self:center;${asideStyle}` },
+    { html: main, weight: mainWeight, extraStyle: `align-self:center;${mainStyle}` },
+  ], { gap: 2, valign: `middle` })
+
+  return `<div style="color:${preset.palette.ink};box-sizing:border-box;">${row}</div>`
+}
+
+function renderHeadingBodyForWeChat(preset: BlockPreset, state: BlockState) {
+  const p = preset.palette
+  const title = field(`title`, state.title, `display:block;margin:0;color:inherit;font-size:22px;font-weight:800;line-height:1.38;letter-spacing:0.04em;`, `p`)
+  const subtitle = state.subtitle
+    ? field(`subtitle`, state.subtitle, `display:block;margin:6px 0 0;color:${p.muted};font-size:13px;font-weight:400;line-height:1.65;letter-spacing:0.04em;`, `p`)
+    : ``
+  const number = field(`number`, state.number, `display:inline-block;color:inherit;font-size:14px;font-weight:800;line-height:1;letter-spacing:0.08em;`)
+
+  switch (variants.get(preset.id)) {
+    case `badge`:
+      return renderHeadingRow(
+        preset,
+        `<span style="display:inline-block;width:42px;height:42px;border-radius:999px;background-color:${p.primary};color:#ffffff;line-height:42px;text-align:center;">${number}</span>`,
+        `${title}${subtitle}`,
+        6,
+      )
+    case `split`:
+      return renderHeadingRow(
+        preset,
+        `<span style="display:block;padding:15px 14px;background-color:${p.primary};color:#ffffff;text-align:center;">${number}</span>`,
+        `<span style="display:block;padding:11px 15px;background-color:${p.secondary};color:${p.ink};">${title}${subtitle}</span>`,
+        5,
+        `align-self:stretch;`,
+        `align-self:stretch;`,
+      )
+    case `vertical`:
+      return renderHeadingRow(
+        preset,
+        `<span style="display:inline-block;width:24px;padding:8px 3px;border-radius:3px;background-color:${p.primary};color:#ffffff;font-size:12px;line-height:1.15;text-align:center;">章<br/>节</span>`,
+        `${title}${subtitle}`,
+        7,
+      )
+    // 两个装饰块只有 15px 和 7px，不值得单开一列，直接和标题同处一格靠 vertical-align 对齐
+    case `geometry`:
+      return `<div style="color:${p.ink};box-sizing:border-box;"><span style="display:inline-block;width:15px;height:15px;margin-right:5px;background-color:${p.primary};vertical-align:middle;"></span><span style="display:inline-block;width:7px;height:7px;margin-right:14px;border-radius:999px;background-color:${p.secondary};vertical-align:middle;"></span><span style="display:inline-block;max-width:80%;vertical-align:middle;">${title}${subtitle}</span></div>`
+    default:
+      return renderHeadingBody(preset, state)
+  }
+}
+
 function render(preset: BlockPreset, state: BlockState, withMetadata: boolean) {
   const attrs = withMetadata ? getBlockRootAttrs(preset) : `data-block-export="heading"`
+  const body = withMetadata ? renderHeadingBody(preset, state) : renderHeadingBodyForWeChat(preset, state)
   return compactBlockMarkup(`
     <section ${attrs} style="margin:24px 0;padding:0;box-sizing:border-box;">
-      <div style="box-sizing:border-box;">${renderHeadingBody(preset, state)}</div>
+      <div style="box-sizing:border-box;">${body}</div>
     </section>
   `)
 }

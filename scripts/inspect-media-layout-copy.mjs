@@ -80,7 +80,9 @@ class CdpSession {
 }
 
 const PRESETS = (process.env.MD_PRESETS || `hero-image,duo-gallery,triptych-gallery,split-left,quad-grid,compare-pair,polaroid-single`)
-  .split(`,`).map(item => item.trim()).filter(Boolean)
+  .split(`,`)
+  .map(item => item.trim())
+  .filter(Boolean)
 const THEME = process.env.MD_THEME || `default`
 
 // 没有等价兜底、一旦被剥掉就没救的声明。

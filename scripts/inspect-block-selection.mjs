@@ -119,6 +119,23 @@ try {
     }, 100)
   })`)
 
+  // 板块库不再默认常驻：简洁模式里不出现，专业模式里也是收起的。
+  // 这段只负责按真实入口把工作区摆到板块库可见的状态，下面的断言一条没动。
+  const clickHeaderAction = text => page.evaluate(`(() => {
+    const target = [...document.querySelectorAll('header button')]
+      .filter(item => item.textContent.trim() === ${JSON.stringify(text)})
+      .pop()
+    if (!target) {
+      return false
+    }
+    target.click()
+    return true
+  })()`)
+
+  await waitFor(() => clickHeaderAction(`专业`))
+  await waitFor(() => clickHeaderAction(`板块库`))
+  await waitFor(() => page.evaluate(`!!document.querySelector('.block-library-nav__item')`))
+
   const result = await page.evaluate(`(async () => {
     const [{ useEditorStore }, { usePostStore }, { useRenderStore }, registry] = await Promise.all([
       import('/md/src/stores/editor.ts'),

@@ -165,5 +165,7 @@ declare module 'vue' {
     TooltipProvider: typeof import('./src/components/ui/tooltip/TooltipProvider.vue')['default']
     TooltipTrigger: typeof import('./src/components/ui/tooltip/TooltipTrigger.vue')['default']
     UploadImgDialog: typeof import('./src/components/editor/UploadImgDialog.vue')['default']
+    WorkspaceDrawer: typeof import('./src/components/editor/WorkspaceDrawer.vue')['default']
+    WorkspaceModeGuide: typeof import('./src/components/editor/WorkspaceModeGuide.vue')['default']
   }
 }

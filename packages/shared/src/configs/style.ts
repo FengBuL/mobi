@@ -1,5 +1,6 @@
 import type { IConfigOption } from '../types'
-import { type ThemeName, themeOptions } from './theme'
+import type { ThemeName } from './theme'
+import { themeOptions } from './theme'
 
 /**
  * 字体分类
@@ -283,20 +284,20 @@ export const headingStyleOptions: IConfigOption[] = [
 ]
 
 export type HeadingLevel = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
-export type HeadingStyleType =
-  | 'default'
-  | 'color-only'
-  | 'border-bottom'
-  | 'border-left'
-  | 'solid-banner'
-  | 'soft-banner'
-  | 'capsule-outline'
-  | 'marker'
-  | 'eyebrow-line'
-  | 'double-line'
-  | 'underline-glow'
-  | 'corner-tag'
-  | 'custom'
+export type HeadingStyleType
+  = | 'default'
+    | 'color-only'
+    | 'border-bottom'
+    | 'border-left'
+    | 'solid-banner'
+    | 'soft-banner'
+    | 'capsule-outline'
+    | 'marker'
+    | 'eyebrow-line'
+    | 'double-line'
+    | 'underline-glow'
+    | 'corner-tag'
+    | 'custom'
 
 export type HeadingStyles = {
   [K in HeadingLevel]?: HeadingStyleType

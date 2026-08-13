@@ -1,7 +1,7 @@
 import type { MarkedExtension } from 'marked'
 import { simpleHash } from '../utils/basicHelpers'
 
-let initPromise: Promise<typeof import('mermaid')['default']> | null = null
+let initPromise: Promise<typeof import('mermaid')[`default`]> | null = null
 
 export async function initializeMermaid() {
   return getMermaid()
@@ -9,7 +9,7 @@ export async function initializeMermaid() {
 
 function getMermaid() {
   if (!initPromise) {
-    initPromise = import('mermaid').then((m) => {
+    initPromise = import(`mermaid`).then((m) => {
       m.default.initialize({ startOnLoad: false })
       return m.default
     })
@@ -23,7 +23,7 @@ const svgCache = new Map<string, string>()
 let lastRenderedSvg: string | null = null
 
 function renderMermaid(id: string, code: string, cacheKey: string) {
-  if (typeof window === 'undefined')
+  if (typeof window === `undefined`)
     return
 
   const handleResult = (svg: string) => {
@@ -37,7 +37,7 @@ function renderMermaid(id: string, code: string, cacheKey: string) {
   }
 
   const handleError = (error: unknown) => {
-    console.error('Failed to render Mermaid:', error)
+    console.error(`Failed to render Mermaid:`, error)
     const el = document.getElementById(id)
     if (el) {
       el.innerHTML = `<div style="color: red; padding: 10px; border: 1px solid red;">Mermaid 渲染失败: ${error instanceof Error ? error.message : String(error)}</div>`
@@ -51,13 +51,13 @@ function renderMermaid(id: string, code: string, cacheKey: string) {
 }
 
 export function markedMermaid(): MarkedExtension {
-  const className = 'mermaid-diagram'
+  const className = `mermaid-diagram`
 
   return {
     extensions: [
       {
-        name: 'mermaid',
-        level: 'block',
+        name: `mermaid`,
+        level: `block`,
         start(src: string) {
           return src.match(/^```mermaid/m)?.index
         },
@@ -65,7 +65,7 @@ export function markedMermaid(): MarkedExtension {
           const match = /^```mermaid\r?\n([\s\S]*?)\r?\n```/.exec(src)
           if (match) {
             return {
-              type: 'mermaid',
+              type: `mermaid`,
               raw: match[0],
               text: match[1].trim(),
             }
@@ -95,8 +95,8 @@ export function markedMermaid(): MarkedExtension {
       },
     ],
     walkTokens(token: any) {
-      if (token.type === 'code' && token.lang === 'mermaid') {
-        token.type = 'mermaid'
+      if (token.type === `code` && token.lang === `mermaid`) {
+        token.type = `mermaid`
       }
     },
   }

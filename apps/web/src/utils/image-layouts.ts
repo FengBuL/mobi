@@ -1,7 +1,7 @@
-export type MediaLayoutCategory = `image` | `mixed`
-export type MediaLayoutFamily = `quiet` | `focus` | `contrast` | `editorial`
-export type MediaLayoutTextMode = `plain` | `brief` | `story`
-export type MediaAspectRatio = `auto` | `16:9` | `4:3` | `1:1` | `3:4` | `9:16`
+export type MediaLayoutCategory = 'image' | 'mixed'
+export type MediaLayoutFamily = 'quiet' | 'focus' | 'contrast' | 'editorial'
+export type MediaLayoutTextMode = 'plain' | 'brief' | 'story'
+export type MediaAspectRatio = 'auto' | '16:9' | '4:3' | '1:1' | '3:4' | '9:16'
 
 export const MEDIA_LAYOUT_MAX_SLOTS = 4
 
@@ -27,7 +27,7 @@ export const mediaLayoutTextModeLabels: Record<MediaLayoutTextMode, string> = {
   story: `故事卡片`,
 }
 
-const mediaAspectRatioMap: Record<Exclude<MediaAspectRatio, `auto`>, string> = {
+const mediaAspectRatioMap: Record<Exclude<MediaAspectRatio, 'auto'>, string> = {
   '16:9': `16 / 9`,
   '4:3': `4 / 3`,
   '1:1': `1 / 1`,
@@ -35,7 +35,7 @@ const mediaAspectRatioMap: Record<Exclude<MediaAspectRatio, `auto`>, string> = {
   '9:16': `9 / 16`,
 }
 
-const mediaAspectRatioPercentMap: Record<Exclude<MediaAspectRatio, `auto`>, string> = {
+const mediaAspectRatioPercentMap: Record<Exclude<MediaAspectRatio, 'auto'>, string> = {
   '16:9': `56.25%`,
   '4:3': `75%`,
   '1:1': `100%`,
@@ -382,6 +382,72 @@ export const mediaLayoutPresets: MediaLayoutPreset[] = [
     slotCount: 1,
     requiredImageCount: 1,
   },
+  {
+    id: `double-rule-single`,
+    category: `image`,
+    family: `editorial`,
+    textMode: `plain`,
+    name: `双线画框`,
+    description: `外细内粗两道墨线夹住图片，直角硬边，像画册的装帧`,
+    cue: `双线`,
+    slotCount: 1,
+    requiredImageCount: 1,
+  },
+  {
+    id: `passepartout-single`,
+    category: `image`,
+    family: `quiet`,
+    textMode: `plain`,
+    name: `装裱白边`,
+    description: `一圈厚白衬边配细外框，图注落在衬边上，像美术馆的卡纸装裱`,
+    cue: `装裱`,
+    slotCount: 1,
+    requiredImageCount: 1,
+  },
+  {
+    id: `dashed-note-single`,
+    category: `image`,
+    family: `quiet`,
+    textMode: `plain`,
+    name: `虚线便签`,
+    description: `虚线框加米色底，图注左对齐，适合随手记录和补充说明`,
+    cue: `便签`,
+    slotCount: 1,
+    requiredImageCount: 1,
+  },
+  {
+    id: `accent-band-single`,
+    category: `image`,
+    family: `focus`,
+    textMode: `plain`,
+    name: `主色包边`,
+    description: `上下两道主色粗线夹住图片，左右不封口，强调但不笨重`,
+    cue: `包边`,
+    slotCount: 1,
+    requiredImageCount: 1,
+  },
+  {
+    id: `duo-framed-gallery`,
+    category: `image`,
+    family: `quiet`,
+    textMode: `plain`,
+    name: `双图描边`,
+    description: `两张并排各带细描边和小圆角，适合成对的截图与对照`,
+    cue: `描边`,
+    slotCount: 2,
+    requiredImageCount: 2,
+  },
+  {
+    id: `triptych-framed-gallery`,
+    category: `image`,
+    family: `quiet`,
+    textMode: `plain`,
+    name: `三图描边`,
+    description: `三张并排各带细描边，边界清楚，适合流程和多角度实拍`,
+    cue: `描边`,
+    slotCount: 3,
+    requiredImageCount: 3,
+  },
 ]
 
 const extendedMediaLayoutPresetIds = new Set([
@@ -395,6 +461,12 @@ const extendedMediaLayoutPresetIds = new Set([
   `numbered-figure`,
   `gradient-caption`,
   `quote-figure`,
+  `double-rule-single`,
+  `passepartout-single`,
+  `dashed-note-single`,
+  `accent-band-single`,
+  `duo-framed-gallery`,
+  `triptych-framed-gallery`,
 ])
 
 const badgeMediaLayoutPresetIds = new Set([`compare-pair`, `numbered-figure`])
@@ -901,6 +973,81 @@ function buildExtendedMediaLayoutMarkup(
     `)
   }
 
+  if (preset.id === `double-rule-single`) {
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        <div class="md-media-x-double-rule" style="padding:7px;border:1px solid #1f2328;background:#ffffff;">
+          ${renderImageFigure(slots[0], 0, preview, ``, {
+            frameStyle: `border:3px solid #1f2328;border-radius:0;`,
+            imageStyle: `border-radius:0;`,
+            captionStyle: `margin-top:0.6rem;font-size:0.8em;line-height:1.6;text-align:center;color:#6b7280;`,
+          })}
+        </div>
+      </section>
+    `)
+  }
+
+  if (preset.id === `passepartout-single`) {
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        <div class="md-media-x-passepartout" style="padding:1.25rem;border:1px solid #e5e7eb;background:#ffffff;box-shadow:0 10px 30px rgba(15,23,42,0.1);">
+          ${renderImageFigure(slots[0], 0, preview, ``, {
+            frameStyle: `border-radius:0;`,
+            imageStyle: `border-radius:0;`,
+            captionStyle: `margin-top:0.9rem;font-size:0.8em;line-height:1.6;text-align:center;color:#6b7280;letter-spacing:0.04em;`,
+          })}
+        </div>
+      </section>
+    `)
+  }
+
+  if (preset.id === `dashed-note-single`) {
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        <div class="md-media-x-dashed" style="padding:0.75rem;border:2px dashed #d6cfc0;border-radius:8px;background:#fbf8f1;">
+          ${renderImageFigure(slots[0], 0, preview, ``, {
+            frameStyle: `border-radius:4px;`,
+            imageStyle: `border-radius:4px;`,
+            captionStyle: `margin-top:0.6rem;font-size:0.8em;line-height:1.6;text-align:left;color:#8a7f6a;`,
+          })}
+        </div>
+      </section>
+    `)
+  }
+
+  if (preset.id === `accent-band-single`) {
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--focus`)}>
+        ${sectionHeader}
+        <div class="md-media-x-band" style="padding:0.6rem 0;border-top:4px solid var(--md-primary-color);border-bottom:4px solid var(--md-primary-color);">
+          ${renderImageFigure(slots[0], 0, preview, ``, {
+            frameStyle: `border-radius:0;`,
+            imageStyle: `border-radius:0;`,
+            captionStyle: extendedCaptionCenterStyle,
+          })}
+        </div>
+      </section>
+    `)
+  }
+
+  if (preset.id === `duo-framed-gallery` || preset.id === `triptych-framed-gallery`) {
+    const columns = preset.id === `duo-framed-gallery` ? 2 : 3
+    const cells = slots.slice(0, columns).map((slot, index) => renderImageFigure(slot, index, preview, ``, {
+      frameStyle: `border:1px solid #e2e5ea;border-radius:6px;`,
+      imageStyle: `border-radius:5px;`,
+      captionStyle: extendedCaptionCenterStyle,
+    }))
+    return stripMarkupIndent(`
+      <section ${renderSectionAttrs(form, preset.id, `md-media-block--quiet`)}>
+        ${sectionHeader}
+        ${renderExtendedGrid(`repeat(${columns}, minmax(0, 1fr))`, `0.6rem`, cells)}
+      </section>
+    `)
+  }
+
   return ``
 }
 
@@ -1125,6 +1272,28 @@ export function getMediaLayoutPresetSlotDefaults(presetId: string) {
   if (presetId === `quote-figure`) {
     return [{ aspectRatio: `16:9` as MediaAspectRatio, minHeight: 280 }]
   }
+  if (presetId === `double-rule-single` || presetId === `passepartout-single`) {
+    return [{ aspectRatio: `4:3` as MediaAspectRatio, minHeight: 280 }]
+  }
+  if (presetId === `dashed-note-single`) {
+    return [{ aspectRatio: `4:3` as MediaAspectRatio, minHeight: 260 }]
+  }
+  if (presetId === `accent-band-single`) {
+    return [{ aspectRatio: `16:9` as MediaAspectRatio, minHeight: 280 }]
+  }
+  if (presetId === `duo-framed-gallery`) {
+    return [
+      { aspectRatio: `4:3` as MediaAspectRatio, minHeight: 230 },
+      { aspectRatio: `4:3` as MediaAspectRatio, minHeight: 230 },
+    ]
+  }
+  if (presetId === `triptych-framed-gallery`) {
+    return [
+      { aspectRatio: `4:3` as MediaAspectRatio, minHeight: 200 },
+      { aspectRatio: `4:3` as MediaAspectRatio, minHeight: 200 },
+      { aspectRatio: `4:3` as MediaAspectRatio, minHeight: 200 },
+    ]
+  }
 
   return [
     { aspectRatio: `4:3` as MediaAspectRatio, minHeight: 260 },
@@ -1177,7 +1346,7 @@ export function parseMediaLayoutBlocks(content: string): MediaLayoutBlockEntry[]
     const raw = match[0]
     const from = match.index ?? 0
     const images = Array.from(
-      raw.matchAll(/<img\b[^>]*\bsrc="([^"]*)"[^>]*\balt="([^"]*)"[^>]*\/?>/g),
+      raw.matchAll(/<img\b[^>]*\bsrc="([^"]*)"[^>]*\balt="([^"]*)"[^>]*>/g),
       imageMatch => ({
         url: decodeHtml((imageMatch[1] || ``).trim()),
         alt: decodeHtml((imageMatch[2] || ``).trim()),

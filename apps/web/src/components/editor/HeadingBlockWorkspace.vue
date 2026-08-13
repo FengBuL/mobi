@@ -170,8 +170,7 @@ function writeBlock(preset: BlockPreset, message: string) {
     return
   }
 
-  const payload = `\n${markup}\n`
-  editorStore.insertAtCursor(payload)
+  editorStore.insertBlockAtCursor(markup)
   const nextContent = editorStore.getContent()
   if (postStore.currentPost) {
     postStore.updatePostContent(postStore.currentPost.id, nextContent)

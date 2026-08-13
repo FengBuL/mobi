@@ -22,7 +22,7 @@ const props = withDefaults(defineProps<{
   asSub: false,
 })
 
-const emit = defineEmits(['copy'])
+const emit = defineEmits([`copy`])
 
 const { asSub } = toRefs(props)
 
@@ -67,7 +67,7 @@ function undo() {
     editorView.focus()
   }
   catch (error) {
-    console.error('Undo failed:', error)
+    console.error(`Undo failed:`, error)
   }
 }
 
@@ -81,7 +81,7 @@ function redo() {
     editorView.focus()
   }
   catch (error) {
-    console.error('Redo failed:', error)
+    console.error(`Redo failed:`, error)
   }
 }
 

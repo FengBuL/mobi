@@ -378,5 +378,72 @@ export function buildExtendedWeChatMediaBody(
     `
   }
 
+  if (presetId === `double-rule-single`) {
+    const body = figure(0, { radius: `0` })
+    if (!body) {
+      return ``
+    }
+    return `
+      <section style="padding:7px; border:1px solid #1f2328; background:#ffffff; box-sizing:border-box;">
+        <section style="margin:0; padding:0; border:3px solid #1f2328; font-size:0; line-height:0; box-sizing:border-box;">
+          ${body}
+        </section>
+        ${renderCenterCaption(captionOf(0))}
+      </section>
+    `
+  }
+
+  if (presetId === `passepartout-single`) {
+    const body = figure(0, { radius: `0` })
+    if (!body) {
+      return ``
+    }
+    const caption = hasText(captionOf(0))
+      ? `<p style="margin:14px 0 0; font-size:13px; line-height:1.6; letter-spacing:0.04em; color:#6b7280; text-align:center;">${formatText(captionOf(0))}</p>`
+      : ``
+    return `
+      <section style="padding:20px; border:1px solid #e5e7eb; background:#ffffff; box-shadow:0 10px 30px rgba(15,23,42,0.1); box-sizing:border-box;">
+        ${body}
+        ${caption}
+      </section>
+    `
+  }
+
+  if (presetId === `dashed-note-single`) {
+    const body = figure(0, { radius: `4px` })
+    if (!body) {
+      return ``
+    }
+    const caption = hasText(captionOf(0))
+      ? `<p style="margin:10px 0 0; font-size:13px; line-height:1.6; color:#8a7f6a; text-align:left;">${formatText(captionOf(0))}</p>`
+      : ``
+    return `
+      <section style="padding:12px; border:2px dashed #d6cfc0; border-radius:8px; background:#fbf8f1; box-sizing:border-box;">
+        ${body}
+        ${caption}
+      </section>
+    `
+  }
+
+  if (presetId === `accent-band-single`) {
+    const body = figure(0, { radius: `0` })
+    if (!body) {
+      return ``
+    }
+    return `
+      <section style="padding:10px 0; border-top:4px solid ${primaryColor}; border-bottom:4px solid ${primaryColor}; box-sizing:border-box;">
+        ${body}
+        ${renderCenterCaption(captionOf(0))}
+      </section>
+    `
+  }
+
+  if (presetId === `duo-framed-gallery` || presetId === `triptych-framed-gallery`) {
+    const columnCount = presetId === `duo-framed-gallery` ? 2 : 3
+    const framed = { radius: `6px`, border: `1px solid #e2e5ea` }
+    const cells = Array.from({ length: columnCount }, (_, index) => plainCell(index, framed))
+    return renderWeChatRow(cells.map(html => ({ html })), { gap: columnCount === 2 ? 4 : 3 })
+  }
+
   return ``
 }

@@ -292,7 +292,9 @@ async function cloudinarySubmit(formValues: any) {
 const options = [
   {
     value: `default`,
-    label: `默认`,
+    // 保留这一项只是为了让老用户存量的 imgHost=default 还能在下拉里显示出来，
+    // 它本身不是一个可用的图床。
+    label: `未选择（请先选一个图床）`,
   },
   {
     value: `github`,
@@ -364,9 +366,13 @@ async function beforeImageUpload(file: File) {
   // check image host
   const imgHostValue = imgHost.value || `default`
 
+  if (imgHostValue === `default`) {
+    toast.error(`还没有选择图床。在下面的「图床」里选一个（推荐阿里云 OSS 或 Cloudflare R2），填好配置后再上传。`)
+    return false
+  }
+
   const config = await store.get(`${imgHostValue}Config`)
-  const isValidHost = imgHostValue === `default` || config
-  if (!isValidHost) {
+  if (!config) {
     toast.error(`请先配置 ${imgHostValue} 图床参数`)
     return false
   }

@@ -63,7 +63,7 @@ export const useMpAccountsStore = defineStore(`mpAccounts`, () => {
   })
 
   // ── 操作 ─────────────────────────────────────────────────────────────────
-  function addAccount(data?: Partial<Omit<MpAccount, 'id'>>): MpAccount {
+  function addAccount(data?: Partial<Omit<MpAccount, `id`>>): MpAccount {
     const newAccount: MpAccount = {
       id: uuidv4(),
       mpId: data?.mpId ?? ``,
@@ -78,7 +78,7 @@ export const useMpAccountsStore = defineStore(`mpAccounts`, () => {
     return newAccount
   }
 
-  function updateAccount(id: string, data: Partial<Omit<MpAccount, 'id'>>) {
+  function updateAccount(id: string, data: Partial<Omit<MpAccount, `id`>>) {
     const index = accounts.value.findIndex(a => a.id === id)
     if (index !== -1) {
       accounts.value[index] = { ...accounts.value[index], ...data }

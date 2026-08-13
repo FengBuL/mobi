@@ -14,12 +14,12 @@ export function mathjaxLocalPlugin(): Plugin {
   const require = createRequire(import.meta.url)
 
   function resolveMathjaxDir() {
-    const pkg = require.resolve('mathjax/package.json')
+    const pkg = require.resolve(`mathjax/package.json`)
     return path.dirname(pkg)
   }
 
   function resolveFontDir() {
-    const pkg = require.resolve('@mathjax/mathjax-newcm-font/package.json')
+    const pkg = require.resolve(`@mathjax/mathjax-newcm-font/package.json`)
     return path.dirname(pkg)
   }
 
@@ -29,7 +29,7 @@ export function mathjaxLocalPlugin(): Plugin {
   let base: string
 
   return {
-    name: 'vite-plugin-mathjax-local',
+    name: `vite-plugin-mathjax-local`,
     configResolved(config) {
       outDir = config.build.outDir
       base = config.base
@@ -41,21 +41,21 @@ export function mathjaxLocalPlugin(): Plugin {
     configureServer(server) {
       const serveStatic = (prefix: string, root: string) => {
         server.middlewares.use((req, res, next) => {
-          const url = req.url || ''
+          const url = req.url || ``
           const decodedUrl = decodeURIComponent(url)
-          const fullPrefix = `${base}static/${prefix}/`.replace(/\/\//g, '/')
+          const fullPrefix = `${base}static/${prefix}/`.replace(/\/\//g, `/`)
           if (!decodedUrl.startsWith(fullPrefix)) {
             return next()
           }
           const filePath = path.join(root, decodedUrl.slice(fullPrefix.length))
           if (!filePath.startsWith(root)) {
             res.statusCode = 403
-            return res.end('Forbidden')
+            return res.end(`Forbidden`)
           }
           if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
             const ext = path.extname(filePath)
-            const contentType = ext === '.js' ? 'application/javascript' : 'application/octet-stream'
-            res.setHeader('Content-Type', contentType)
+            const contentType = ext === `.js` ? `application/javascript` : `application/octet-stream`
+            res.setHeader(`Content-Type`, contentType)
             fs.createReadStream(filePath).pipe(res)
           }
           else {
@@ -64,14 +64,14 @@ export function mathjaxLocalPlugin(): Plugin {
         })
       }
 
-      serveStatic('mathjax', mathjaxDir)
-      serveStatic('mathjax-newcm-font', fontDir)
+      serveStatic(`mathjax`, mathjaxDir)
+      serveStatic(`mathjax-newcm-font`, fontDir)
     },
 
     // Build: copy mathjax and font directories to the output
     closeBundle() {
-      const destMathjax = path.resolve(outDir, 'static/mathjax')
-      const destFont = path.resolve(outDir, 'static/mathjax-newcm-font')
+      const destMathjax = path.resolve(outDir, `static/mathjax`)
+      const destFont = path.resolve(outDir, `static/mathjax-newcm-font`)
 
       // Only copy directories that are needed for SVG output (skip chtml, cjs, mjs, examples, etc.)
       fs.cpSync(mathjaxDir, destMathjax, {
@@ -84,11 +84,11 @@ export function mathjaxLocalPlugin(): Plugin {
           const rel = path.relative(mathjaxDir, src)
           const topLevel = rel.split(path.sep)[0]
           // Skip node-only files and unnecessary files
-          if (['node_modules', '.github', 'CONTRIBUTING.md', 'README.md', 'node-main.cjs', 'node-main.js', 'node-main.mjs', 'node-main-setup.cjs', 'require.mjs', 'package.json'].includes(topLevel)) {
+          if ([`node_modules`, `.github`, `CONTRIBUTING.md`, `README.md`, `node-main.cjs`, `node-main.js`, `node-main.mjs`, `node-main-setup.cjs`, `require.mjs`, `package.json`].includes(topLevel)) {
             return false
           }
           // Skip mml-* and tex-mml-* combined components (we only need tex-svg)
-          if (rel === topLevel && name.endsWith('.js') && !['tex-svg.js', 'startup.js', 'core.js', 'loader.js'].includes(name) && !['input', 'output', 'a11y', 'adaptors', 'sre', 'ui'].includes(topLevel)) {
+          if (rel === topLevel && name.endsWith(`.js`) && ![`tex-svg.js`, `startup.js`, `core.js`, `loader.js`].includes(name) && ![`input`, `output`, `a11y`, `adaptors`, `sre`, `ui`].includes(topLevel)) {
             return false
           }
           return true
@@ -103,7 +103,7 @@ export function mathjaxLocalPlugin(): Plugin {
             return true
           const rel = path.relative(fontDir, src)
           const topLevel = rel.split(path.sep)[0]
-          if (['svg', 'svg.js', 'package.json'].includes(topLevel)) {
+          if ([`svg`, `svg.js`, `package.json`].includes(topLevel)) {
             return true
           }
           return false

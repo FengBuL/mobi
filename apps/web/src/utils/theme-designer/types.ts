@@ -84,7 +84,7 @@ export interface CustomTheme {
 }
 
 export interface CustomThemeFilePayload {
-  format: 'md-visual-theme'
+  format: `md-visual-theme`
   version: 1
   name: string
   baseTheme: string

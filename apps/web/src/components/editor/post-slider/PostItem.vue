@@ -109,7 +109,7 @@ function saveAsTemplate(postId: string) {
   templateStore.createTemplate({
     name: post.title,
     content: post.content,
-    description: `从「${post.title}」创建于 ${new Date().toLocaleString('zh-CN')}`,
+    description: `从「${post.title}」创建于 ${new Date().toLocaleString(`zh-CN`)}`,
   })
 }
 

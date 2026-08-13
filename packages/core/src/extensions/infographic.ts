@@ -2,7 +2,7 @@ import type { MarkedExtension } from 'marked'
 import { simpleHash } from '../utils/basicHelpers'
 
 interface InfographicOptions {
-  themeMode?: 'dark' | 'light'
+  themeMode?: `dark` | `light`
 }
 
 // key -> svg
@@ -14,54 +14,54 @@ const RE_INFOGRAPHIC_START = /^```infographic/m
 const RE_INFOGRAPHIC_BLOCK = /^```infographic\r?\n([\s\S]*?)\r?\n```/
 
 async function renderInfographic(containerId: string, code: string, cacheKey: string, options?: InfographicOptions) {
-  if (typeof window === 'undefined')
+  if (typeof window === `undefined`)
     return
 
   try {
-    const { Infographic, setDefaultFont, setFontExtendFactor, exportToSVG } = await import('@antv/infographic')
+    const { Infographic, setDefaultFont, setFontExtendFactor, exportToSVG } = await import(`@antv/infographic`)
 
     setFontExtendFactor(1.1)
-    setDefaultFont('-apple-system-font, "system-ui", "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif')
+    setDefaultFont(`-apple-system-font, "system-ui", "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif`)
 
     const findContainer = (retries = 5, delay = 100) => {
       const container = document.getElementById(containerId)
       if (container) {
-        const isDark = options?.themeMode === 'dark'
+        const isDark = options?.themeMode === `dark`
 
         // 从 CSS 变量中读取主题颜色
         const root = document.documentElement
         const computedStyle = getComputedStyle(root)
-        const primaryColor = computedStyle.getPropertyValue('--md-primary-color').trim()
-        const backgroundColor = computedStyle.getPropertyValue('--background').trim()
+        const primaryColor = computedStyle.getPropertyValue(`--md-primary-color`).trim()
+        const backgroundColor = computedStyle.getPropertyValue(`--background`).trim()
 
         // 转换 HSL 格式
         const toHSLString = (variant: string) => {
-          const vars = variant.split(' ')
+          const vars = variant.split(` `)
           if (vars.length === 3)
-            return `hsl(${vars.join(', ')})`
+            return `hsl(${vars.join(`, `)})`
           if (vars.length === 4)
-            return `hsla(${vars.join(', ')})`
-          return ''
+            return `hsla(${vars.join(`, `)})`
+          return ``
         }
 
         const instance = new Infographic({
           container,
           svg: {
             style: {
-              width: '100%',
-              height: '100%',
-              background: isDark ? '#000' : 'transparent',
+              width: `100%`,
+              height: `100%`,
+              background: isDark ? `#000` : `transparent`,
             },
             background: false,
           },
-          theme: isDark ? 'dark' : 'default',
+          theme: isDark ? `dark` : `default`,
           themeConfig: {
             colorPrimary: primaryColor || undefined,
             colorBg: toHSLString(backgroundColor) || undefined,
           },
         })
 
-        instance.on('loaded', ({ node }) => {
+        instance.on(`loaded`, ({ node }) => {
           exportToSVG(node, { removeIds: true }).then((svg) => {
             container.replaceChildren(svg)
             svgCache.set(cacheKey, container.innerHTML)
@@ -82,7 +82,7 @@ async function renderInfographic(containerId: string, code: string, cacheKey: st
     findContainer()
   }
   catch (error) {
-    console.error('Failed to render Infographic:', error)
+    console.error(`Failed to render Infographic:`, error)
     const container = document.getElementById(containerId)
     if (container) {
       container.innerHTML = `<div style="color: red; padding: 10px; border: 1px solid red;">Infographic 渲染失败: ${error instanceof Error ? error.message : String(error)}</div>`
@@ -91,13 +91,13 @@ async function renderInfographic(containerId: string, code: string, cacheKey: st
 }
 
 export function markedInfographic(options?: InfographicOptions): MarkedExtension {
-  const className = 'infographic-diagram'
+  const className = `infographic-diagram`
 
   return {
     extensions: [
       {
-        name: 'infographic',
-        level: 'block',
+        name: `infographic`,
+        level: `block`,
         start(src: string) {
           return src.match(RE_INFOGRAPHIC_START)?.index
         },
@@ -105,7 +105,7 @@ export function markedInfographic(options?: InfographicOptions): MarkedExtension
           const match = RE_INFOGRAPHIC_BLOCK.exec(src)
           if (match) {
             return {
-              type: 'infographic',
+              type: `infographic`,
               raw: match[0],
               text: match[1].trim(),
             }
@@ -113,7 +113,7 @@ export function markedInfographic(options?: InfographicOptions): MarkedExtension
         },
         renderer(token: any) {
           const code = token.text
-          const cacheKey = simpleHash(`${code}-${options?.themeMode || 'light'}`)
+          const cacheKey = simpleHash(`${code}-${options?.themeMode || `light`}`)
 
           // 有缓存直接返回
           const cached = svgCache.get(cacheKey)
@@ -135,8 +135,8 @@ export function markedInfographic(options?: InfographicOptions): MarkedExtension
       },
     ],
     walkTokens(token: any) {
-      if (token.type === 'code' && token.lang === 'infographic') {
-        token.type = 'infographic'
+      if (token.type === `code` && token.lang === `infographic`) {
+        token.type = `infographic`
       }
     },
   }

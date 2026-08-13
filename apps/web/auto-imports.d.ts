@@ -345,6 +345,9 @@ declare global {
   export type { Post } from './src/stores/post'
   import('./src/stores/post')
   // @ts-ignore
+  export type { WorkspaceMode, AuxPanel } from './src/stores/ui'
+  import('./src/stores/ui')
+  // @ts-ignore
   export type { ImageQuickInsertTab } from './src/composables/useImageQuickInsert'
   import('./src/composables/useImageQuickInsert')
 }

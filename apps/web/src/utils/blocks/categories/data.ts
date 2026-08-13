@@ -14,16 +14,16 @@ import {
   parseBlockFieldState,
 } from '../helpers'
 
-type DataVariant =
-  | `hero` | `unit` | `percentage` | `progress` | `stars`
-  | `compare` | `trend` | `kpi` | `ranking` | `triple`
-  | `ring` | `bars` | `data-list` | `milestone` | `countdown`
-  | `stacked` | `yoy` | `cards` | `grade` | `timeline`
+type DataVariant
+  = | 'hero' | 'unit' | 'percentage' | 'progress' | 'stars'
+    | 'compare' | 'trend' | 'kpi' | 'ranking' | 'triple'
+    | 'ring' | 'bars' | 'data-list' | 'milestone' | 'countdown'
+    | 'stacked' | 'yoy' | 'cards' | 'grade' | 'timeline'
 
-type FieldSetName =
-  | `metric` | `percentage` | `rating` | `compare` | `trend`
-  | `ranking` | `triple` | `bars` | `dataList` | `countdown`
-  | `stacked` | `timeline` | `grade`
+type FieldSetName
+  = | 'metric' | 'percentage' | 'rating' | 'compare' | 'trend'
+    | 'ranking' | 'triple' | 'bars' | 'dataList' | 'countdown'
+    | 'stacked' | 'timeline' | 'grade'
 
 interface DataPresetSeed {
   id: string
@@ -301,7 +301,8 @@ function renderBody(preset: BlockPreset, state: BlockState) {
       const rows = [1, 2, 3].map((index) => {
         const labelKey = `item${index}Label`
         const valueKey = `item${index}Value`
-        if (!valueOf(state, labelKey) && !valueOf(state, valueKey)) return ``
+        if (!valueOf(state, labelKey) && !valueOf(state, valueKey))
+          return ``
         return `<span style="display:flex;align-items:center;padding:10px 0;border-bottom:1px solid ${p.border};"><span style="display:inline-block;width:30px;height:30px;margin-right:10px;border-radius:999px;background-color:${index === 1 ? p.primary : p.secondary};color:${index === 1 ? `#ffffff` : p.primary};font-size:13px;font-weight:850;line-height:30px;text-align:center;">${index}</span><span ${getBlockFieldAttrs(labelKey, valueOf(state, labelKey))} style="display:block;flex:1;color:${p.ink};font-size:13px;line-height:1.4;">${formatBlockText(valueOf(state, labelKey))}</span><span ${getBlockFieldAttrs(valueKey, valueOf(state, valueKey))} style="display:inline-block;margin-left:8px;color:${p.primary};font-size:16px;font-weight:850;line-height:1.2;">${formatBlockText(valueOf(state, valueKey))}</span></span>`
       }).join(``)
       return `<div style="padding:17px 19px;border-top:4px solid ${p.primary};background-color:${p.surface};box-shadow:0 8px 22px rgba(60,45,20,0.08);">${label}${rows}</div>`
@@ -317,7 +318,8 @@ function renderBody(preset: BlockPreset, state: BlockState) {
         const labelKey = `item${index}Label`
         const valueKey = `item${index}Value`
         const width = percentOf(state, valueKey)
-        if (!valueOf(state, labelKey) && !valueOf(state, valueKey)) return ``
+        if (!valueOf(state, labelKey) && !valueOf(state, valueKey))
+          return ``
         return `<span style="display:block;margin-top:12px;"><span style="display:flex;align-items:center;"><span ${getBlockFieldAttrs(labelKey, valueOf(state, labelKey))} style="display:block;flex:1;color:${p.ink};font-size:12px;line-height:1.4;">${formatBlockText(valueOf(state, labelKey))}</span><span style="display:inline-block;color:${p.primary};font-size:12px;font-weight:800;">${width}%</span></span><span style="display:block;margin-top:5px;height:9px;overflow:hidden;border-radius:999px;background-color:${p.secondary};transform:rotate(0deg);"><span ${getBlockFieldAttrs(valueKey, width)} style="display:block;width:${width}%;height:9px;background-color:${p.primary};"></span></span></span>`
       }).join(``)
       return `<div style="padding:18px;border:1px solid ${p.border};background-color:${p.surface};">${label}${rows}</div>`
@@ -326,7 +328,8 @@ function renderBody(preset: BlockPreset, state: BlockState) {
       const rows = [1, 2, 3].map((index) => {
         const labelKey = `item${index}Label`
         const valueKey = `item${index}Value`
-        if (!valueOf(state, labelKey) && !valueOf(state, valueKey)) return ``
+        if (!valueOf(state, labelKey) && !valueOf(state, valueKey))
+          return ``
         return `<span style="display:flex;align-items:center;padding:10px 4px;border-bottom:1px solid ${p.border};"><span ${getBlockFieldAttrs(labelKey, valueOf(state, labelKey))} style="display:block;width:65%;max-width:65% !important;color:${p.muted};font-size:13px;line-height:1.4;">${formatBlockText(valueOf(state, labelKey))}</span><span ${getBlockFieldAttrs(valueKey, valueOf(state, valueKey))} style="display:inline-block;width:31%;max-width:31% !important;color:${p.ink};font-size:14px;font-weight:800;line-height:1.4;text-align:right;">${formatBlockText(valueOf(state, valueKey))}</span></span>`
       }).join(``)
       return `<div style="padding:16px 18px;border-top:2px solid ${p.ink};border-bottom:2px solid ${p.ink};background-color:${p.surface};">${label}<span style="display:block;margin-top:8px;">${rows}</span></div>`
@@ -337,7 +340,8 @@ function renderBody(preset: BlockPreset, state: BlockState) {
       return `<div style="padding:20px 12px;border-radius:12px;background-color:${p.surface};color:${p.ink};text-align:center;">${label}<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-top:15px;">${[1, 2, 3].map((index) => {
         const labelKey = `item${index}Label`
         const valueKey = `item${index}Value`
-        if (!valueOf(state, labelKey) && !valueOf(state, valueKey)) return ``
+        if (!valueOf(state, labelKey) && !valueOf(state, valueKey))
+          return ``
         return `<span style="display:inline-block;width:31%;max-width:31% !important;box-sizing:border-box;"><span ${getBlockFieldAttrs(valueKey, valueOf(state, valueKey))} style="display:block;padding:12px 4px;border:1px solid ${p.border};border-radius:8px;background-color:${p.secondary};color:#ffffff;font-size:31px;font-weight:850;line-height:1;word-break:break-all;">${formatBlockText(valueOf(state, valueKey))}</span><span ${getBlockFieldAttrs(labelKey, valueOf(state, labelKey))} style="display:block;margin-top:7px;color:${p.muted};font-size:11px;line-height:1.3;">${formatBlockText(valueOf(state, labelKey))}</span></span>`
       }).join(``)}</div></div>`
     case `stacked`: {
@@ -348,7 +352,8 @@ function renderBody(preset: BlockPreset, state: BlockState) {
       const segments = widths.map((width, index) => `<span ${getBlockFieldAttrs(`item${index + 1}Value`, values[index])} style="display:inline-block;width:${width}%;height:18px;background-color:${colors[index]};"></span>`).join(``)
       const legends = [1, 2, 3].map((index) => {
         const labelKey = `item${index}Label`
-        if (!valueOf(state, labelKey) && values[index - 1] === 0) return ``
+        if (!valueOf(state, labelKey) && values[index - 1] === 0)
+          return ``
         return `<span style="display:inline-block;width:31%;max-width:31% !important;box-sizing:border-box;color:${p.muted};font-size:11px;line-height:1.4;"><span style="display:inline-block;width:7px;height:7px;margin-right:5px;border-radius:999px;background-color:${colors[index - 1]};"></span><span ${getBlockFieldAttrs(labelKey, valueOf(state, labelKey))}>${formatBlockText(valueOf(state, labelKey))}</span><span style="display:block;margin-top:3px;color:${p.ink};font-weight:750;">${total > 0 ? Math.round(widths[index - 1]) : 0}%</span></span>`
       }).join(``)
       return `<div style="padding:18px;border:1px solid ${p.border};background-color:${p.surface};">${label}<span style="display:block;margin-top:13px;height:18px;overflow:hidden;border-radius:999px;background-color:${p.border};transform:rotate(0deg);white-space:nowrap;">${segments}</span><span style="display:flex;align-items:flex-start;justify-content:space-between;margin-top:12px;">${legends}</span></div>`
@@ -362,7 +367,8 @@ function renderBody(preset: BlockPreset, state: BlockState) {
       return `<div style="padding:14px 10px;background-color:${p.secondary};"><div style="display:flex;align-items:stretch;justify-content:space-between;">${[1, 2, 3].map((index) => {
         const labelKey = `item${index}Label`
         const valueKey = `item${index}Value`
-        if (!valueOf(state, labelKey) && !valueOf(state, valueKey)) return ``
+        if (!valueOf(state, labelKey) && !valueOf(state, valueKey))
+          return ``
         return `<span style="display:inline-block;width:31%;max-width:31% !important;padding:13px 7px;box-sizing:border-box;background-color:${p.surface};text-align:center;box-shadow:0 4px 12px rgba(30,70,45,0.08);"><span ${getBlockFieldAttrs(valueKey, valueOf(state, valueKey))} style="display:block;color:${p.primary};font-size:21px;font-weight:880;line-height:1.15;word-break:break-all;">${formatBlockText(valueOf(state, valueKey))}</span><span ${getBlockFieldAttrs(labelKey, valueOf(state, labelKey))} style="display:block;margin-top:7px;color:${p.muted};font-size:10px;line-height:1.4;">${formatBlockText(valueOf(state, labelKey))}</span></span>`
       }).join(``)}</div>${field(state, `note`, `display:block;margin-top:10px;color:${p.muted};font-size:11px;line-height:1.4;text-align:center;`)}</div>`
     case `grade`:
@@ -371,7 +377,8 @@ function renderBody(preset: BlockPreset, state: BlockState) {
       const items = [1, 2, 3].map((index) => {
         const labelKey = `item${index}Label`
         const valueKey = `item${index}Value`
-        if (!valueOf(state, labelKey) && !valueOf(state, valueKey)) return ``
+        if (!valueOf(state, labelKey) && !valueOf(state, valueKey))
+          return ``
         return `<span style="display:inline-block;width:31%;max-width:31% !important;box-sizing:border-box;vertical-align:top;text-align:center;"><span ${getBlockFieldAttrs(valueKey, valueOf(state, valueKey))} style="display:inline-block;min-width:40px;padding:8px 5px;border:2px solid ${p.primary};border-radius:999px;background-color:${p.surface};color:${p.primary};font-size:15px;font-weight:850;line-height:1.2;">${formatBlockText(valueOf(state, valueKey))}</span><span ${getBlockFieldAttrs(labelKey, valueOf(state, labelKey))} style="display:block;margin-top:9px;color:${p.muted};font-size:11px;line-height:1.4;">${formatBlockText(valueOf(state, labelKey))}</span></span>`
       }).join(``)
       return `<div style="padding:17px 12px;background-color:${p.surface};">${label}<span style="display:block;height:2px;margin:30px 8% -22px;background-color:${p.border};"></span><div style="display:flex;align-items:flex-start;justify-content:space-between;">${items}</div></div>`

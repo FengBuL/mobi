@@ -6,16 +6,13 @@ import type {
   IStylePreset,
   ThemeName,
 } from '@md/shared/configs'
-import type { Format } from 'vue-pick-colors'
 import type { CustomTheme } from '@/utils/theme-designer'
 import {
   codeBlockThemeOptions,
-  colorCategoryOptions,
   colorOptions,
   defaultStyleConfig,
   fontCategoryOptions,
   fontFamilyOptions,
-  fontSizeOptions,
   headingLevelOptions,
   headingStyleOptions,
   legendOptions,
@@ -27,11 +24,10 @@ import {
 } from '@md/shared/configs'
 import { SlidersHorizontal, X } from 'lucide-vue-next'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
-import PickColors from 'vue-pick-colors'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
-import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useThemeStore } from '@/stores/theme'
+import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useUIStore } from '@/stores/ui'
 import { exportCustomThemeAsCSS, exportCustomThemeAsJSON } from '@/utils/theme-designer'
 
@@ -54,18 +50,8 @@ const {
   headingStyles,
   favoriteThemes,
   hiddenThemes,
-  favoriteColors,
-  hiddenColors,
   savedCustomColors,
-  isPrimaryColorFollowingTheme,
 } = storeToRefs(themeStore)
-
-function restoreThemePrimaryColor() {
-  themeStore.followThemePrimaryColor()
-  selectColorCategoryByColor(primaryColor.value as string)
-  themeStore.applyCurrentTheme()
-  editorRefresh()
-}
 
 // 主题分类筛选
 const selectedThemeCategory = ref(`全部`)
@@ -80,29 +66,6 @@ const filteredThemeOptions = computed(() => {
   }
   const cat = themeCategoryOptions.find(c => c.category === selectedThemeCategory.value)
   return cat ? cat.themes.filter(t => !hiddenThemes.value.includes(t.value as string)) : allFilteredThemes
-})
-
-// 字体分类筛选
-const selectedFontCategory = ref(`公众号常用`)
-const fontCategoryNames = computed(() => fontCategoryOptions.map(c => c.category))
-const filteredFontOptions = computed(() => {
-  const cat = fontCategoryOptions.find(c => c.category === selectedFontCategory.value)
-  return cat ? cat.fonts : fontFamilyOptions
-})
-
-// 主题色分类筛选
-const selectedColorCategory = ref(`品牌`)
-const colorCategoryNames = computed(() => [`常用`, ...colorCategoryOptions.map(c => c.category), `已保存`])
-const filteredColorOptions = computed(() => {
-  const allFilteredColors = colorOptions.filter(c => !hiddenColors.value.includes(c.value as string))
-  if (selectedColorCategory.value === `常用`) {
-    return colorOptions.filter(c => favoriteColors.value.includes(c.value as string) && !hiddenColors.value.includes(c.value as string))
-  }
-  if (selectedColorCategory.value === `已保存`) {
-    return savedCustomColors.value.map(val => ({ label: val, value: val, desc: `` }))
-  }
-  const cat = colorCategoryOptions.find(c => c.category === selectedColorCategory.value)
-  return cat ? cat.colors.filter(c => !hiddenColors.value.includes(c.value as string)) : allFilteredColors
 })
 
 const allFontOptions = fontCategoryOptions.flatMap(category => category.fonts)
@@ -184,11 +147,13 @@ const codeStatusSummary = computed(() => {
 const publishStatusSummary = computed(() => {
   return isCiteStatus.value ? `外链转底部引用已开启` : `外链保持原样`
 })
-const headingStylesSignature = (styles: HeadingStyles = {}) => JSON.stringify(
-  Object.entries(styles)
-    .filter(([, value]) => Boolean(value))
-    .sort(([left], [right]) => left.localeCompare(right)),
-)
+function headingStylesSignature(styles: HeadingStyles = {}) {
+  return JSON.stringify(
+    Object.entries(styles)
+      .filter(([, value]) => Boolean(value))
+      .sort(([left], [right]) => left.localeCompare(right)),
+  )
+}
 const currentHeadingStylesSignature = computed(() => headingStylesSignature(headingStyles.value))
 const allStylePresets = computed(() => [...customStylePresets.value, ...stylePresetOptions])
 const activeMatchedPreset = computed(() => {
@@ -216,9 +181,7 @@ const displayedStylePreset = computed<IStylePreset>(() => {
   })
 })
 
-
-
-const { isMobile, isOpenRightSlider, isDark } = storeToRefs(uiStore)
+const { isMobile, isOpenRightSlider } = storeToRefs(uiStore)
 
 const editorStore = useEditorStore()
 const renderStore = useRenderStore()
@@ -281,23 +244,6 @@ function selectThemeCategoryByTheme(themeValue: string) {
   )?.category || `全部`
 }
 
-function selectFontCategoryByFont(fontValue: string) {
-  selectedFontCategory.value = fontCategoryOptions.find(category =>
-    category.fonts.some(option => option.value === fontValue),
-  )?.category || fontCategoryOptions[0].category
-}
-
-function selectColorCategoryByColor(colorValue: string) {
-  if (savedCustomColors.value.includes(colorValue)) {
-    selectedColorCategory.value = `已保存`
-    return
-  }
-
-  selectedColorCategory.value = colorCategoryOptions.find(category =>
-    category.colors.some(option => option.value === colorValue),
-  )?.category || colorCategoryOptions[0].category
-}
-
 function isPresetActive(preset: IStylePreset) {
   return theme.value === preset.theme
     && fontFamily.value === preset.fontFamily
@@ -329,8 +275,6 @@ function applyStylePreset(preset: IStylePreset) {
   headingStyles.value = { ...preset.headingStyles }
   selectedHeadingLevel.value = `h2`
   selectThemeCategoryByTheme(preset.theme)
-  selectFontCategoryByFont(preset.fontFamily)
-  selectColorCategoryByColor(preset.primaryColor)
   themeStore.applyCurrentTheme()
   editorRefresh()
 }
@@ -383,8 +327,6 @@ function resetTextGroup() {
   themeStore.primaryColor = defaultStyleConfig.primaryColor
   themeStore.isUseIndent = false
   themeStore.isUseJustify = false
-  selectFontCategoryByFont(defaultStyleConfig.fontFamily)
-  selectColorCategoryByColor(defaultStyleConfig.primaryColor)
   themeStore.applyCurrentTheme()
   editorRefresh()
 }
@@ -467,27 +409,6 @@ function clearVisualOverrides() {
   toast.success(`已清除可视化调整`)
 }
 
-function fontChanged(fonts: string) {
-  themeStore.fontFamily = fonts
-  // 使用新主题系统
-  themeStore.applyCurrentTheme()
-  editorRefresh()
-}
-
-function sizeChanged(size: string) {
-  themeStore.fontSize = size
-  // 使用新主题系统
-  themeStore.applyCurrentTheme()
-  editorRefresh()
-}
-
-function colorChanged(newColor: string) {
-  themeStore.primaryColor = newColor
-  // 使用新主题系统
-  themeStore.applyCurrentTheme()
-  editorRefresh()
-}
-
 function codeBlockThemeChanged(newTheme: string) {
   themeStore.codeBlockTheme = newTheme
   editorRefresh()
@@ -531,13 +452,6 @@ function resetStyleConfirm() {
   uiStore.isOpenConfirmDialog = true
 }
 
-function saveCustomColor() {
-  const col = primaryColor.value as string
-  if (col && !savedCustomColors.value.includes(col)) {
-    savedCustomColors.value.push(col)
-  }
-}
-
 function toggleFavoriteTheme(val: string) {
   if (favoriteThemes.value.includes(val)) {
     favoriteThemes.value = favoriteThemes.value.filter(v => v !== val)
@@ -551,25 +465,6 @@ function deleteThemeOption(val: string) {
   if (!hiddenThemes.value.includes(val)) {
     hiddenThemes.value.push(val)
   }
-}
-
-function toggleFavoriteColor(val: string) {
-  if (favoriteColors.value.includes(val)) {
-    favoriteColors.value = favoriteColors.value.filter(v => v !== val)
-  }
-  else {
-    favoriteColors.value.push(val)
-  }
-}
-
-function deleteColorOption(val: string) {
-  if (!hiddenColors.value.includes(val)) {
-    hiddenColors.value.push(val)
-  }
-}
-
-function deleteCustomColorOption(val: string) {
-  savedCustomColors.value = savedCustomColors.value.filter(c => c !== val)
 }
 
 function applyHeadingStyleToAll(style: HeadingStyleType) {
@@ -664,10 +559,6 @@ watch(isOpen, () => {
     addPostInputVal.value = ``
   }
 })
-
-const pickColorsContainer = useTemplateRef<HTMLElement | undefined>(`pickColorsContainer`)
-const format = ref<Format>(`rgb`)
-const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
 </script>
 
 <template>
@@ -1023,128 +914,7 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
             </Button>
           </div>
 
-          <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
-            <div class="space-y-1">
-              <h2 class="text-sm font-semibold">
-                1. 选择字体与字号
-              </h2>
-              <p class="text-xs leading-5 text-muted-foreground">
-                先确定整体阅读气质，再用字号控制版面密度。
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-1">
-              <Button
-                v-for="cat in fontCategoryNames"
-                :key="cat"
-                size="sm"
-                :variant="selectedFontCategory === cat ? 'default' : 'ghost'"
-                class="h-7 px-2 text-xs"
-                @click="selectedFontCategory = cat"
-              >
-                {{ cat }}
-              </Button>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <Button
-                v-for="{ label, value } in filteredFontOptions" :key="value" variant="outline"
-                class="w-full justify-start"
-                :class="{ 'border-black dark:border-white border-2': fontFamily === value }" @click="fontChanged(value)"
-              >
-                {{ label }}
-              </Button>
-            </div>
-            <div class="space-y-2">
-              <div class="text-xs text-muted-foreground">
-                正文字号
-              </div>
-              <Select v-model="fontSize" @update:model-value="sizeChanged">
-                <SelectTrigger class="w-full">
-                  <SelectValue placeholder="选择字号" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="{ label, value, desc } in fontSizeOptions" :key="value" :value="value">
-                    {{ label }} <span class="ml-2 text-muted-foreground">{{ desc }}</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
-            <div class="space-y-1">
-              <div class="flex items-center justify-between gap-2">
-                <h2 class="text-sm font-semibold">
-                  2. 选择主题色
-                </h2>
-                <Button
-                  v-if="!isPrimaryColorFollowingTheme"
-                  variant="ghost"
-                  size="sm"
-                  class="h-6 shrink-0 px-2 text-xs"
-                  @click="restoreThemePrimaryColor"
-                >
-                  跟随主题
-                </Button>
-              </div>
-              <p class="text-xs leading-5 text-muted-foreground">
-                {{ isPrimaryColorFollowingTheme ? `当前跟随主题的出厂配色，换主题会一起换。` : `已自定义，换主题不会覆盖。` }}主题色会影响标题强调、引用块和部分模块高光。
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-1">
-              <Button
-                v-for="cat in colorCategoryNames"
-                :key="cat"
-                size="sm"
-                :variant="selectedColorCategory === cat ? 'default' : 'ghost'"
-                class="h-7 px-2 text-xs"
-                @click="selectedColorCategory = cat"
-              >
-                {{ cat }}
-              </Button>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <ContextMenu v-for="{ label, value } in filteredColorOptions" :key="value">
-                <ContextMenuTrigger as-child>
-                  <Button
-                    class="w-full justify-start" variant="outline" :class="{
-                      'border-black dark:border-white border-2': primaryColor === value,
-                    }" @click="colorChanged(value)"
-                  >
-                    <span class="mr-2 inline-block h-4 w-4 rounded-full" :style="{ background: value as string }" />
-                    {{ label }}
-                  </Button>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <ContextMenuItem v-if="selectedColorCategory !== '已保存'" @click="toggleFavoriteColor(value as string)">
-                    {{ favoriteColors.includes(value as string) ? '取消常用' : '设为常用' }}
-                  </ContextMenuItem>
-                  <ContextMenuItem v-if="selectedColorCategory === '已保存'" @click="deleteCustomColorOption(value as string)">
-                    删除
-                  </ContextMenuItem>
-                  <ContextMenuItem v-else @click="deleteColorOption(value as string)">
-                    删除
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
-            </div>
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <div class="text-xs text-muted-foreground">
-                  自定义取色
-                </div>
-                <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" @click="saveCustomColor">
-                  保存颜色
-                </Button>
-              </div>
-              <div ref="pickColorsContainer">
-                <PickColors
-                  v-if="pickColorsContainer" v-model:value="primaryColor" show-alpha :format="format"
-                  :format-options="formatOptions" :theme="isDark ? 'dark' : 'light'"
-                  :popup-container="pickColorsContainer" @change="colorChanged"
-                />
-              </div>
-            </div>
-          </div>
+          <StyleQuickControls variant="full" />
 
           <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
             <div class="space-y-1">

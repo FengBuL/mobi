@@ -9,7 +9,7 @@ const { toggleShowInsertMpCardDialog } = uiStore
 const mpAccountsStore = useMpAccountsStore()
 
 // 搜索关键词
-const searchKeyword = ref('')
+const searchKeyword = ref(``)
 
 // 搜索结果
 const filteredAccounts = computed(() => {
@@ -38,28 +38,28 @@ function openConfigForEdit(id: string) {
 }
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
-  1: '公众号',
-  2: '服务号',
+  1: `公众号`,
+  2: `服务号`,
 }
 
 const VERIFY_LABELS: Record<string, string> = {
-  0: '无',
-  1: '个人认证',
-  2: '企业认证',
+  0: `无`,
+  1: `个人认证`,
+  2: `企业认证`,
 }
 
 /** 组装 HTML 片段 */
 function buildMpHtml(account: MpAccount) {
-  const logo = account.logo || 'https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/md/images/mp-logo.png'
+  const logo = account.logo || `https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/md/images/mp-logo.png`
   const attrs = [
     `data-pluginname="mpprofile"`,
     `data-id="${account.mpId}"`,
     `data-nickname="${account.name}"`,
     `data-headimg="${logo}"`,
     account.desc && `data-signature="${account.desc}"`,
-    `data-service_type="${account.serviceType || '1'}"`,
-    `data-verify_status="${account.verify || '0'}"`,
-  ].filter(Boolean).join(' ')
+    `data-service_type="${account.serviceType || `1`}"`,
+    `data-verify_status="${account.verify || `0`}"`,
+  ].filter(Boolean).join(` `)
 
   return `<section class="mp_profile_iframe_wrp custom_select_card_wrp" nodeleaf="">
   <mp-common-profile class="mpprofile js_uneditable custom_select_card mp_profile_iframe" ${attrs}></mp-common-profile>
@@ -74,7 +74,7 @@ function insertAccount(account: MpAccount) {
   editor.dispatch({
     changes: { from: selection.from, to: selection.to, insert: `\n${html}\n` },
   })
-  toast.success('公众号名片插入成功')
+  toast.success(`公众号名片插入成功`)
   toggleShowInsertMpCardDialog(false)
 }
 
@@ -90,7 +90,7 @@ function openDeleteConfirm(account: MpAccount) {
 function confirmDelete() {
   if (accountToDelete.value) {
     mpAccountsStore.deleteAccount(accountToDelete.value.id)
-    toast.success('已删除')
+    toast.success(`已删除`)
     accountToDelete.value = null
   }
   deleteConfirmDialog.value = false
@@ -100,7 +100,7 @@ function confirmDelete() {
 function onUpdate(val: boolean) {
   if (!val) {
     toggleShowInsertMpCardDialog(false)
-    searchKeyword.value = ''
+    searchKeyword.value = ``
   }
 }
 </script>

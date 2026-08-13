@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { Copy, Images, Menu, Palette } from 'lucide-vue-next'
+import type { WorkspaceMode } from '@/stores/ui'
+import { ChevronDown, Copy, Images, Menu, Palette } from 'lucide-vue-next'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useEditorCopyActions } from '@/composables/useEditorCopyActions'
 import { useUIStore } from '@/stores/ui'
 import EditDropdown from './EditDropdown.vue'
@@ -12,8 +21,20 @@ import StyleDropdown from './StyleDropdown.vue'
 const emit = defineEmits([`startCopy`, `endCopy`])
 
 const uiStore = useUIStore()
-const { isMobile, isOpenRightSlider } = storeToRefs(uiStore)
+const { isMobile, isOpenRightSlider, isOpenBlockWorkspace, workspaceMode } = storeToRefs(uiStore)
 const { toggleShowImageLayoutDialog } = uiStore
+
+const workspaceModes: Array<{ value: WorkspaceMode, label: string, hint: string }> = [
+  { value: `simple`, label: `简洁`, hint: `只留编辑器和预览` },
+  { value: `professional`, label: `专业`, hint: `解锁全部面板` },
+]
+
+const copyFormats = [
+  { mode: `html`, label: `HTML 源码` },
+  { mode: `html-without-style`, label: `纯 HTML` },
+  { mode: `html-and-style`, label: `带样式 HTML` },
+  { mode: `md`, label: `Markdown 源码` },
+] as const
 
 // 对话框状态
 const aboutDialogVisible = ref(false)
@@ -39,16 +60,11 @@ function handleOpenMediaLayout() {
     return
   }
 
-  toast.success(`图文排版工作台已经固定在第二栏`)
+  isOpenBlockWorkspace.value = !isOpenBlockWorkspace.value
 }
 
 function handleOpenStyleWorkspace() {
-  if (isMobile.value) {
-    isOpenRightSlider.value = !isOpenRightSlider.value
-    return
-  }
-
-  toast.success(`样式工作台已经固定在第四栏`)
+  isOpenRightSlider.value = !isOpenRightSlider.value
 }
 
 const { handleCopy, copyToWeChat } = useEditorCopyActions({
@@ -96,24 +112,55 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
 
     <!-- 右侧操作区 -->
     <div class="flex flex-wrap items-center gap-2">
-      <!-- 复制按钮 -->
-      <Button
-        variant="outline"
-        class="h-9"
-        @click="copyToWeChat"
-      >
-        <Copy class="mr-2 h-4 w-4" />
-        <span>复制</span>
-      </Button>
+      <!-- 工作区模式 -->
+      <div class="mode-switch hidden items-center rounded-lg border bg-muted/50 p-0.5 md:flex">
+        <button
+          v-for="item in workspaceModes"
+          :key="item.value"
+          type="button"
+          class="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+          :class="workspaceMode === item.value
+            ? 'bg-background text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'"
+          :title="item.hint"
+          @click="uiStore.setWorkspaceMode(item.value)"
+        >
+          {{ item.label }}
+        </button>
+      </div>
 
-      <!-- 图片/图文排版 -->
+      <!-- 复制：主按钮走公众号，其余格式收在下拉里 -->
+      <div class="flex overflow-hidden rounded-md shadow-sm">
+        <Button class="h-9 rounded-r-none pl-3 pr-3.5" @click="copyToWeChat">
+          <Copy class="mr-2 h-4 w-4" />
+          <span>复制到公众号</span>
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button class="h-9 rounded-l-none border-l border-primary-foreground/25 px-2" aria-label="其他复制格式">
+              <ChevronDown class="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="w-48">
+            <DropdownMenuLabel>其他格式</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem v-for="item in copyFormats" :key="item.mode" @click="handleCopy(item.mode)">
+              {{ item.label }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <!-- 板块库，只在专业模式常驻 -->
       <Button
+        v-if="workspaceMode === 'professional' && !isMobile"
         variant="outline"
         class="h-9"
+        :class="{ 'bg-accent text-accent-foreground': isOpenBlockWorkspace }"
         @click="handleOpenMediaLayout"
       >
         <Images class="mr-2 h-4 w-4" />
-        <span>图文排版</span>
+        <span>板块库</span>
       </Button>
 
       <!-- 文章信息（移动端隐藏） -->
@@ -123,7 +170,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
       <Button
         variant="outline"
         class="h-9"
-        :class="{ 'bg-accent text-accent-foreground': isMobile ? isOpenRightSlider : true }"
+        :class="{ 'bg-accent text-accent-foreground': isOpenRightSlider }"
         @click="handleOpenStyleWorkspace"
       >
         <Palette class="mr-2 h-4 w-4" />

@@ -14,7 +14,7 @@ const uiStore = useUIStore()
 const { toggleShowTemplateDialog } = uiStore
 
 // 搜索关键词
-const searchKeyword = ref('')
+const searchKeyword = ref(``)
 
 // 搜索结果
 const filteredTemplates = computed(() => {
@@ -23,53 +23,53 @@ const filteredTemplates = computed(() => {
 
 // 是否显示新建/编辑模板表单
 const isShowForm = ref(false)
-const formMode = ref<'create' | 'edit'>('create')
-const editingTemplateId = ref<string>('')
+const formMode = ref<'create' | 'edit'>(`create`)
+const editingTemplateId = ref<string>(``)
 
 // 表单数据
 const formData = reactive({
-  name: '',
-  description: '',
-  content: '',
+  name: ``,
+  description: ``,
+  content: ``,
 })
 
 // 表单验证错误
 const formErrors = reactive({
-  name: '',
+  name: ``,
 })
 
 // 打开创建模板表单
 function openCreateForm() {
-  formMode.value = 'create'
-  formData.name = ''
-  formData.description = ''
+  formMode.value = `create`
+  formData.name = ``
+  formData.description = ``
   formData.content = editorStore.getContent()
-  formErrors.name = ''
+  formErrors.name = ``
   isShowForm.value = true
 }
 
 // 打开编辑模板表单
 function openEditForm(template: Template) {
-  formMode.value = 'edit'
+  formMode.value = `edit`
   editingTemplateId.value = template.id
   formData.name = template.name
-  formData.description = template.description || ''
+  formData.description = template.description || ``
   formData.content = template.content
-  formErrors.name = ''
+  formErrors.name = ``
   isShowForm.value = true
 }
 
 // 验证表单
 function validateForm(): boolean {
-  formErrors.name = ''
+  formErrors.name = ``
 
   if (!formData.name.trim()) {
-    formErrors.name = '模板名称不能为空'
+    formErrors.name = `模板名称不能为空`
     return false
   }
 
   if (formData.name.trim().length > 50) {
-    formErrors.name = '模板名称不能超过 50 个字符'
+    formErrors.name = `模板名称不能超过 50 个字符`
     return false
   }
 
@@ -81,7 +81,7 @@ function saveTemplate() {
   if (!validateForm())
     return
 
-  if (formMode.value === 'create') {
+  if (formMode.value === `create`) {
     templateStore.createTemplate({
       name: formData.name.trim(),
       description: formData.description.trim() || undefined,
@@ -154,12 +154,12 @@ function confirmDelete() {
 // 格式化日期
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
+  return date.toLocaleString(`zh-CN`, {
+    year: `numeric`,
+    month: `2-digit`,
+    day: `2-digit`,
+    hour: `2-digit`,
+    minute: `2-digit`,
   })
 }
 

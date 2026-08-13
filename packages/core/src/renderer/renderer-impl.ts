@@ -83,19 +83,19 @@ function buildFootnoteArray(footnotes: [number, string, string][]): string {
 function extractFileName(href: string): string {
   try {
     // 移除查询参数和哈希
-    const urlPath = href.split('?')[0].split('#')[0]
+    const urlPath = href.split(`?`)[0].split(`#`)[0]
     // 获取最后一个 / 之后的部分
-    const fileName = urlPath.split('/').pop() || ''
+    const fileName = urlPath.split(`/`).pop() || ``
     // 移除文件扩展名
-    const nameWithoutExt = fileName.replace(/\.[^.]*$/, '')
+    const nameWithoutExt = fileName.replace(/\.[^.]*$/, ``)
     return nameWithoutExt
   }
   catch {
-    return ''
+    return ``
   }
 }
 
-function transform(legend: string, text: string | null, title: string | null, href: string = ''): string {
+function transform(legend: string, text: string | null, title: string | null, href: string = ``): string {
   const options = legend.split(`-`)
   for (const option of options) {
     if (option === `alt` && text) {

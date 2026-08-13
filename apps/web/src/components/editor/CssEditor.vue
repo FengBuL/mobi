@@ -6,8 +6,8 @@ import { Download, Edit3, Ellipsis, Eye, Plus, SlidersHorizontal, X } from 'luci
 import { useCssEditorStore } from '@/stores/cssEditor'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
-import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useThemeStore } from '@/stores/theme'
+import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useUIStore } from '@/stores/ui'
 import { copyPlain } from '@/utils/clipboard'
 
@@ -44,9 +44,9 @@ const editInputVal = ref(``)
 // 滚动到活跃的 tab
 async function scrollToActiveTab() {
   await nextTick()
-  const activeTab = document.querySelector('.cssEditor-wrapper .css-tab-active')
+  const activeTab = document.querySelector(`.cssEditor-wrapper .css-tab-active`)
   if (activeTab) {
-    activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    activeTab.scrollIntoView({ behavior: `smooth`, block: `nearest`, inline: `center` })
   }
 }
 
@@ -88,9 +88,9 @@ async function addTab() {
   }
 
   // 根据选择的基础主题来初始化内容
-  let initialContent = ''
-  if (baseThemeForNew.value === 'blank') {
-    initialContent = '' // 空白方案
+  let initialContent = ``
+  if (baseThemeForNew.value === `blank`) {
+    initialContent = `` // 空白方案
   }
   else {
     // 基于内置主题
@@ -106,7 +106,7 @@ async function addTab() {
   toast.success(`新建成功`)
 
   // 重置为空白
-  baseThemeForNew.value = 'blank'
+  baseThemeForNew.value = `blank`
 
   // 滚动到新创建的 tab
   scrollToActiveTab()
@@ -147,7 +147,7 @@ function delTab() {
 
 function addHandler() {
   addInputVal.value = `方案${cssContentConfig.value.tabs.length + 1}`
-  baseThemeForNew.value = 'blank' // 重置选择
+  baseThemeForNew.value = `blank` // 重置选择
   isOpenAddDialog.value = true
 }
 
@@ -165,7 +165,7 @@ function openViewThemeDialog() {
 async function copyThemeCSS() {
   const css = themeMap[selectedViewTheme.value]
   await copyPlain(css)
-  toast.success('已复制到剪贴板')
+  toast.success(`已复制到剪贴板`)
 }
 
 // 基于当前查看的主题新建方案

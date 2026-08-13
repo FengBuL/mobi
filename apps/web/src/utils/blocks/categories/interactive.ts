@@ -9,11 +9,11 @@ import {
   parseBlockFieldState,
 } from '../helpers'
 
-type InteractiveVariant =
-  | `follow` | `qr-card` | `profile` | `like` | `wow`
-  | `share` | `comment` | `poll` | `signup` | `link`
-  | `download` | `contact` | `community` | `reward` | `subscribe`
-  | `directory` | `related` | `archive` | `copyright` | `disclaimer`
+type InteractiveVariant
+  = | 'follow' | 'qr-card' | 'profile' | 'like' | 'wow'
+    | 'share' | 'comment' | 'poll' | 'signup' | 'link'
+    | 'download' | 'contact' | 'community' | 'reward' | 'subscribe'
+    | 'directory' | 'related' | 'archive' | 'copyright' | 'disclaimer'
 
 interface InteractivePresetSeed {
   id: string

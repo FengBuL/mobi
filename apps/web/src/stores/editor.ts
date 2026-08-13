@@ -77,6 +77,43 @@ export const useEditorStore = defineStore(`editor`, () => {
     editor.value.focus()
   }
 
+  /**
+   * 插入独立成段的内容，前后补足空行。
+   *
+   * CommonMark 的 HTML 块要遇到空行才结束。只垫一个换行的话，紧跟在板块后面的
+   * 那一行 Markdown 会被吞进 HTML 块当原文输出，正文里就会冒出一行 `## 标题`。
+   */
+  const insertBlockAtCursor = (markup: string) => {
+    if (!editor.value)
+      return
+
+    const { state } = editor.value
+    const { from, to } = state.selection.main
+    const before = state.doc.sliceString(Math.max(0, from - 2), from)
+    const after = state.doc.sliceString(to, Math.min(state.doc.length, to + 2))
+
+    const countEdgeNewlines = (value: string, fromEnd: boolean) => {
+      let count = 0
+      while (count < 2 && count < value.length) {
+        const char = fromEnd ? value[value.length - 1 - count] : value[count]
+        if (char !== `\n`)
+          break
+        count += 1
+      }
+      return count
+    }
+
+    const leading = from === 0 ? `` : `\n`.repeat(2 - countEdgeNewlines(before, true))
+    const trailing = `\n`.repeat(2 - countEdgeNewlines(after, false))
+    const text = `${leading}${markup}${trailing}`
+
+    editor.value.dispatch({
+      changes: { from, to, insert: text },
+      selection: { anchor: from + text.length },
+    })
+    editor.value.focus()
+  }
+
   return {
     editor,
     formatContent,
@@ -86,5 +123,6 @@ export const useEditorStore = defineStore(`editor`, () => {
     getSelection,
     replaceSelection,
     insertAtCursor,
+    insertBlockAtCursor,
   }
 })

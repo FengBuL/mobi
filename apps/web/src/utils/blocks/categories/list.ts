@@ -8,11 +8,11 @@ import {
   parseBlockFieldState,
 } from '../helpers'
 
-type ListVariant =
-  | `number-circle` | `number-square` | `timeline` | `step-line` | `check`
-  | `icon` | `cards` | `two-column` | `description` | `roman`
-  | `alpha` | `progress` | `compare` | `nested` | `arrow`
-  | `dot` | `dash` | `todo` | `star` | `number-rule`
+type ListVariant
+  = | 'number-circle' | 'number-square' | 'timeline' | 'step-line' | 'check'
+    | 'icon' | 'cards' | 'two-column' | 'description' | 'roman'
+    | 'alpha' | 'progress' | 'compare' | 'nested' | 'arrow'
+    | 'dot' | 'dash' | 'todo' | 'star' | 'number-rule'
 
 interface ListPresetSeed {
   id: string

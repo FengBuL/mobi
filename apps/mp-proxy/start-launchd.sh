@@ -1,18 +1,21 @@
 #!/bin/zsh
 set -euo pipefail
 
-export HOME="${HOME:-/Users/liujunming}"
+# 由 install-launchd.sh 复制到 ~/Library/Application Support/md-editor-web-private/mp-proxy 下运行。
+# 这里不写死任何用户目录：launchd 会带上 HOME，手动执行时也能从当前环境拿到。
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-export HOST="0.0.0.0"
-export PORT="8788"
-export ALLOWED_ORIGINS="*"
+export HOST="${HOST:-0.0.0.0}"
+export PORT="${PORT:-8788}"
+export ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-*}"
 
-APP_DIR="$HOME/Library/Application Support/md-editor-web-private/mp-proxy"
-NODE_BIN="/opt/homebrew/bin/node"
+APP_DIR="${MP_PROXY_DIR:-$HOME/Library/Application Support/md-editor-web-private/mp-proxy}"
 
-if [[ ! -x "$NODE_BIN" ]]; then
-  NODE_BIN="/usr/local/bin/node"
+NODE_BIN="$(command -v node || true)"
+if [[ -z "$NODE_BIN" ]]; then
+  echo "找不到 node，请确认它在 PATH 里（或用 MP_PROXY_NODE 指定）" >&2
+  exit 1
 fi
+NODE_BIN="${MP_PROXY_NODE:-$NODE_BIN}"
 
 cd "$APP_DIR"
 exec "$NODE_BIN" "$APP_DIR/server.mjs"

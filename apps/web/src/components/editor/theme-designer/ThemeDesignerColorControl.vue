@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import PickColors from 'vue-pick-colors'
-import { PRIMARY_COLOR_TOKEN } from '@/utils/theme-designer'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
+import { PRIMARY_COLOR_TOKEN } from '@/utils/theme-designer'
 
 const props = withDefaults(defineProps<{
   modelValue: string

@@ -222,7 +222,7 @@ function reportSimilarity(report, cssByName) {
 
   console.log(`\n=== 结构同质化 Top 25（只比「谁声明了什么属性」，不比色值）===`)
   pairs.slice(0, 25).forEach((pair) => {
-    console.log(`${(pair.a + ` ↔ ` + pair.b).padEnd(28)} ${(pair.score * 100).toFixed(1)}%`)
+    console.log(`${(`${pair.a} ↔ ${pair.b}`).padEnd(28)} ${(pair.score * 100).toFixed(1)}%`)
   })
 
   // 每套主题「和它最像的那一套」，用来找可以合并的双胞胎

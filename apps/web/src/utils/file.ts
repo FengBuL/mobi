@@ -1,7 +1,5 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { giteeConfig, githubConfig } from '@md/shared/configs'
-
 import fetch from '@md/shared/utils/fetch'
 import * as tokenTools from '@md/shared/utils/tokenTools'
 import { base64encode, safe64, utf16to8 } from '@md/shared/utils/tokenTools'
@@ -11,23 +9,7 @@ import * as qiniu from 'qiniu-js'
 import { v4 as uuidv4 } from 'uuid'
 import { store } from './storage'
 
-async function getConfig(useDefault: boolean, platform: string) {
-  if (useDefault) {
-    // load default config file
-    const config = platform === `github` ? githubConfig : giteeConfig
-    const { username, repoList, branch, accessTokenList } = config
-
-    // choose random token from access_token list
-    const tokenIndex = Math.floor(Math.random() * accessTokenList.length)
-    const accessToken = accessTokenList[tokenIndex].replace(`doocsmd`, ``)
-
-    // choose random repo from repo list
-    const repoIndex = Math.floor(Math.random() * repoList.length)
-    const repo = repoList[repoIndex]
-
-    return { username, repo, branch, accessToken }
-  }
-
+async function getConfig(platform: string) {
   // load configuration from storage
   const customConfig = await store.getJSON<any>(`${platform}Config`, {}) || {}
 
@@ -75,15 +57,11 @@ function getDateFilename(filename: string) {
 // -----------------------------------------------------------------------
 
 async function ghFileUpload(content: string, filename: string) {
-  const useDefault = await store.get(`imgHost`) === `default`
-  const { username, repo, branch, accessToken, useCDN } = await getConfig(
-    useDefault,
-    `github`,
-  )
+  const { username, repo, branch, accessToken, useCDN } = await getConfig(`github`)
   const dir = getDir()
   const url = `https://api.github.com/repos/${username}/${repo}/contents/${dir}/`
   const dateFilename = getDateFilename(filename)
-  const res = await fetch<{ content: {
+  const request = () => fetch<{ content: {
     download_url: string
   } }, {
     content: {
@@ -106,11 +84,23 @@ async function ghFileUpload(content: string, filename: string) {
       message: `Upload by ${window.location.href}`,
     },
   })
+
+  let res: Awaited<ReturnType<typeof request>>
+  try {
+    res = await request()
+  }
+  catch (error) {
+    // axios 那句「Request failed with status code 401」对用户没有任何指导意义
+    const status = (error as { response?: { status?: number } })?.response?.status
+    if (status === 401 || status === 403) {
+      throw new Error(`GitHub 拒绝了这次上传（${status}）。请检查「插入 → 插入图片 → GitHub」里的 Token 是否有效、是否有该仓库的写权限。`)
+    }
+    throw error
+  }
   const githubResourceUrl = `raw.githubusercontent.com/${username}/${repo}/${branch}/`
   const cdnResourceUrl = `fastly.jsdelivr.net/gh/${username}/${repo}@${branch}/`
   res.content = res.data?.content || res.content
-  const shouldUseCDN = useDefault || useCDN
-  return shouldUseCDN
+  return useCDN
     ? res.content.download_url.replace(githubResourceUrl, cdnResourceUrl)
     : res.content.download_url
 }
@@ -120,8 +110,7 @@ async function ghFileUpload(content: string, filename: string) {
 // -----------------------------------------------------------------------
 
 async function giteeUpload(content: any, filename: string) {
-  const useDefault = await store.get(`imgHost`) === `default`
-  const { username, repo, branch, accessToken } = await getConfig(useDefault, `gitee`)
+  const { username, repo, branch, accessToken } = await getConfig(`gitee`)
   const dir = getDir()
   const dateFilename = getDateFilename(filename)
   const url = `https://gitee.com/api/v5/repos/${username}/${repo}/contents/${dir}/${dateFilename}`
@@ -242,7 +231,7 @@ async function aliOSSFileUpload(file: File) {
     }
 
     if (cdnHost) {
-      const host = cdnHost.endsWith('/') ? cdnHost.slice(0, -1) : cdnHost
+      const host = cdnHost.endsWith(`/`) ? cdnHost.slice(0, -1) : cdnHost
       return `${host}/${key}`
     }
 
@@ -383,7 +372,7 @@ async function s3Upload(file: File) {
   }
 
   if (endpoint) {
-    clientConfig.endpoint = endpoint.startsWith('http') ? endpoint : `https://${endpoint}`
+    clientConfig.endpoint = endpoint.startsWith(`http`) ? endpoint : `https://${endpoint}`
   }
 
   const s3Client = new S3Client(clientConfig)
@@ -412,13 +401,13 @@ async function s3Upload(file: File) {
     }
 
     if (cdnHost) {
-      const host = cdnHost.endsWith('/') ? cdnHost.slice(0, -1) : cdnHost
+      const host = cdnHost.endsWith(`/`) ? cdnHost.slice(0, -1) : cdnHost
       return `${host}/${key}`
     }
 
     if (endpoint) {
-      const proto = clientConfig.endpoint.startsWith('https') ? 'https' : 'http'
-      const host = clientConfig.endpoint.replace(PROTOCOL_REGEX, '')
+      const proto = clientConfig.endpoint.startsWith(`https`) ? `https` : `http`
+      const host = clientConfig.endpoint.replace(PROTOCOL_REGEX, ``)
       if (pathStyle) {
         return `${proto}://${host}/${bucket}/${key}`
       }
@@ -816,9 +805,6 @@ async function formCustomUpload(content: string, file: File) {
 
 export async function fileUpload(content: string, file: File) {
   const imgHost = await store.get(`imgHost`)
-  if (!imgHost) {
-    await store.set(`imgHost`, `default`)
-  }
   switch (imgHost) {
     case `aliOSS`:
       return aliOSSFileUpload(file)
@@ -847,9 +833,9 @@ export async function fileUpload(content: string, file: File) {
     case `formCustom`:
       return formCustomUpload(content, file)
     default:
-      // return file.size / 1024 < 1024
-      //     ? giteeUpload(content, file.name)
-      //     : ghFileUpload(content, file.name);
-      return ghFileUpload(content, file.name)
+      // 曾经这里有一个「默认图床」，走的是内置在仓库里的公共 GitHub 令牌。
+      // 公开仓库里的令牌会被 GitHub 的密钥扫描吊销，那批令牌已经全部 401，
+      // 与其让用户撞一个看不懂的错误码，不如直接要求先选一个图床。
+      throw new Error(`还没有选择图床。请在「插入 → 插入图片」里选一个（推荐阿里云 OSS 或 Cloudflare R2），填好配置后再上传。`)
   }
 }

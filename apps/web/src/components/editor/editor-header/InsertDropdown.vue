@@ -11,7 +11,7 @@ const props = withDefaults(defineProps<{
 
 const { asSub } = toRefs(props)
 const uiStore = useUIStore()
-const { isMobile } = storeToRefs(uiStore)
+const { isMobile, isOpenBlockWorkspace } = storeToRefs(uiStore)
 const { open: openQuickInsert } = useImageQuickInsert()
 
 const {
@@ -27,7 +27,7 @@ function openMediaLayout() {
     return
   }
 
-  toast.success(`板块库已经固定在第二栏`)
+  isOpenBlockWorkspace.value = !isOpenBlockWorkspace.value
 }
 </script>
 

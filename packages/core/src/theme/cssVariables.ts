@@ -30,8 +30,8 @@ export function generateCSSVariables(config: CSSVariableConfig): string {
 
 /* 段落缩进和对齐 */
 #output p {
-  ${config.isUseIndent ? 'text-indent: 2em;' : ''}
-  ${config.isUseJustify ? 'text-align: justify;' : ''}
+  ${config.isUseIndent ? `text-indent: 2em;` : ``}
+  ${config.isUseJustify ? `text-align: justify;` : ``}
 }
   `.trim()
 }

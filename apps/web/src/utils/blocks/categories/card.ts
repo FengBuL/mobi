@@ -9,11 +9,11 @@ import {
   parseBlockFieldState,
 } from '../helpers'
 
-type CardVariant =
-  | `basic` | `compare` | `profile` | `product` | `quote`
-  | `points` | `steps` | `warning` | `tip` | `note`
-  | `ticket` | `business` | `book` | `event` | `review`
-  | `tab` | `outline` | `shadow` | `gradient` | `image-top`
+type CardVariant
+  = | 'basic' | 'compare' | 'profile' | 'product' | 'quote'
+    | 'points' | 'steps' | 'warning' | 'tip' | 'note'
+    | 'ticket' | 'business' | 'book' | 'event' | 'review'
+    | 'tab' | 'outline' | 'shadow' | 'gradient' | 'image-top'
 
 interface CardPresetSeed {
   id: string

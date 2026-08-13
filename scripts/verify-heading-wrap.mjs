@@ -155,7 +155,7 @@ async function main() {
       const hit = sweep.find(r => r.lines[t.chars] > 1)
       firstWrap[t.chars] = hit ? hit.scale : null
     }
-    console.log(`\n开始折行的倍率：` + TITLES.map(t => `${t.chars}字 → ${firstWrap[t.chars] ?? `扫到 2.02 都不折`}`).join(`，`))
+    console.log(`\n开始折行的倍率：${TITLES.map(t => `${t.chars}字 → ${firstWrap[t.chars] ?? `扫到 2.02 都不折`}`).join(`，`)}`)
 
     // ── 第二部分：逐套主题在真实样式下的行数 ──
     const rows = []

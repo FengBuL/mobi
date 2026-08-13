@@ -38,7 +38,7 @@ export const useExportStore = defineStore(`export`, () => {
       return null
 
     // 导出图片前临时关闭代码块横向滚动，避免长代码被截断。
-    const style = document.createElement('style')
+    const style = document.createElement(`style`)
     style.textContent = `
       .preview pre.code__pre,
       .preview .hljs.code__pre,

@@ -3,8 +3,8 @@ import { widthOptions } from '@md/shared/configs'
 import { Moon, SlidersHorizontal, Sun } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
-import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useThemeStore } from '@/stores/theme'
+import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useUIStore } from '@/stores/ui'
 
 const themeStore = useThemeStore()

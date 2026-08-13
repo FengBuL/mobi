@@ -1,16 +1,7 @@
+import type { MediaLayoutFormState, MediaLayoutImageSlot, MediaLayoutPreset } from '@/utils/image-layouts'
+import type { WeChatMediaPalette } from '@/utils/wechat-media'
 import { markedAlert, MDKatex } from '@md/core'
 import { prefix } from '@md/shared/configs'
-import {
-  type MediaLayoutFormState,
-  type MediaLayoutImageSlot,
-  type MediaLayoutPreset,
-  mediaLayoutPresets,
-  parseMediaLayoutBlocks,
-} from '@/utils/image-layouts'
-import type { WeChatMediaPalette } from '@/utils/wechat-media'
-import { buildExtendedWeChatMediaBody, defaultWeChatMediaPalette } from '@/utils/wechat-media'
-import { compactWeChatMarkup, renderWeChatRow, renderWeChatStack, renderWeChatVerticalScroller } from '@/utils/wechat-layout'
-import { convertBlocksForWeChat } from '@/utils/blocks/registry'
 // 直接导入供本文件内部使用
 import {
   checkImage,
@@ -21,10 +12,18 @@ import {
   sanitizeTitle,
   toBase64,
 } from '@md/shared/utils'
-
+import imageCompression from 'browser-image-compression'
 import juice from 'juice'
 import { Marked } from 'marked'
-import imageCompression from 'browser-image-compression'
+
+import { convertBlocksForWeChat } from '@/utils/blocks/registry'
+import {
+
+  mediaLayoutPresets,
+  parseMediaLayoutBlocks,
+} from '@/utils/image-layouts'
+import { compactWeChatMarkup, renderWeChatRow, renderWeChatStack, renderWeChatVerticalScroller } from '@/utils/wechat-layout'
+import { buildExtendedWeChatMediaBody, defaultWeChatMediaPalette } from '@/utils/wechat-media'
 import { getMpUploadConfig, hasMpUploadConfig, uploadFileToMp } from './file'
 import { store } from './storage'
 
@@ -315,7 +314,7 @@ function getThemeStyles(): string {
   const themeStyle = document.querySelector(`#md-theme`) as HTMLStyleElement
 
   if (!themeStyle || !themeStyle.textContent) {
-    console.warn('[getThemeStyles] 未找到主题样式')
+    console.warn(`[getThemeStyles] 未找到主题样式`)
     return ``
   }
 
@@ -323,13 +322,13 @@ function getThemeStyles(): string {
   let cssContent = themeStyle.textContent
 
   // 处理 #output {} 为 body {}，避免出现 {} 无效样式
-  cssContent = cssContent.replace(/#output\s*\{/g, 'body {')
+  cssContent = cssContent.replace(/#output\s*\{/g, `body {`)
 
   // 将 "#output h1" 替换为 "h1"，"#output .class" 替换为 ".class" 等
   // 同时处理换行和多个空格的情况
-  cssContent = cssContent.replace(/#output\s+/g, '')
+  cssContent = cssContent.replace(/#output\s+/g, ``)
   // 处理选择器开头的 #output（如果没有后续内容）
-  cssContent = cssContent.replace(/^#output\s*/gm, '')
+  cssContent = cssContent.replace(/^#output\s*/gm, ``)
   cssContent = resolveThemeTokenReferences(cssContent)
 
   const styleContent = `<style>${cssContent}</style>`
@@ -1951,24 +1950,24 @@ export async function processClipboardContent(primaryColor: string) {
     )
 
   // fix: antv infographic 复制到微信公众平台时 <text></text> 被自动转为 <text><tspan></tspan></text> 导致在 Safari 浏览器中文字异常的问题
-  clipboardDiv.querySelectorAll('.infographic-diagram').forEach((diagram) => {
-    diagram.querySelectorAll('text').forEach((textElem) => {
+  clipboardDiv.querySelectorAll(`.infographic-diagram`).forEach((diagram) => {
+    diagram.querySelectorAll(`text`).forEach((textElem) => {
       // 如果有 dominant-baseline 属性，替换为 dy
-      const dominantBaseline = textElem.getAttribute('dominant-baseline')
+      const dominantBaseline = textElem.getAttribute(`dominant-baseline`)
       const variantMap = {
-        'alphabetic': '',
-        'central': '0.35em',
-        'middle': '0.35em',
-        'hanging': '-0.55em',
-        'ideographic': '0.18em',
-        'text-before-edge': '-0.85em',
-        'text-after-edge': '0.15em',
+        'alphabetic': ``,
+        'central': `0.35em`,
+        'middle': `0.35em`,
+        'hanging': `-0.55em`,
+        'ideographic': `0.18em`,
+        'text-before-edge': `-0.85em`,
+        'text-after-edge': `0.15em`,
       }
       if (dominantBaseline) {
-        textElem.removeAttribute('dominant-baseline')
+        textElem.removeAttribute(`dominant-baseline`)
         const dy = variantMap[dominantBaseline as keyof typeof variantMap]
         if (dy) {
-          textElem.setAttribute('dy', dy)
+          textElem.setAttribute(`dy`, dy)
         }
       }
     })

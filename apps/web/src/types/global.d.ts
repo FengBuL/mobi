@@ -10,15 +10,15 @@ interface Window {
 
   // File System Access API
   showDirectoryPicker: (options?: {
-    mode?: 'read' | 'readwrite'
-    startIn?: 'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos'
+    mode?: `read` | `readwrite`
+    startIn?: `desktop` | `documents` | `downloads` | `music` | `pictures` | `videos`
   }) => Promise<FileSystemDirectoryHandle>
 }
 
 // Extend FileSystemDirectoryHandle with full File System Access API methods
 interface FileSystemDirectoryHandle {
   // Permission management
-  requestPermission: (descriptor?: { mode?: 'read' | 'readwrite' }) => Promise<PermissionState>
+  requestPermission: (descriptor?: { mode?: `read` | `readwrite` }) => Promise<PermissionState>
 
   // Directory operations
   getDirectoryHandle: (name: string, options?: { create?: boolean }) => Promise<FileSystemDirectoryHandle>

@@ -520,8 +520,10 @@ async function main() {
           exemptions.push(`${item.value}：${label} ${actual.toFixed(2)}（豁免｜${SCALE_EXEMPT[item.value].why}）`)
           return
         }
-        if (actual < min) failures.push(`${item.value}：${label} ${actual.toFixed(2)} < 下限 ${min}`)
-        else if (actual > max) failures.push(`${item.value}：${label} ${actual.toFixed(2)} > 上限 ${max}（375px 会折行）`)
+        if (actual < min)
+          failures.push(`${item.value}：${label} ${actual.toFixed(2)} < 下限 ${min}`)
+        else if (actual > max)
+          failures.push(`${item.value}：${label} ${actual.toFixed(2)} > 上限 ${max}（375px 会折行）`)
       }
       range(`h1`, `h1 字号比`, item.scales.h1, THRESHOLD.h1Scale)
       range(`h2`, `h2 字号比`, item.scales.h2, THRESHOLD.h2Scale)
@@ -530,8 +532,10 @@ async function main() {
       // 相邻两级挨太近的话，压缩幅度就变成了「层级消失」
       const steps = [[`h1`, `h2`, `h1-h2`, item.scales.h1, item.scales.h2], [`h2`, `h3`, `h2-h3`, item.scales.h2, item.scales.h3], [`h3`, null, `h3-正文`, item.scales.h3, 1]]
       steps.forEach(([hiLevel, loLevel, label, hi, lo]) => {
-        if (hi === null || lo === null) return
-        if (isScaleExempt(item.value, hiLevel) || (loLevel && isScaleExempt(item.value, loLevel))) return
+        if (hi === null || lo === null)
+          return
+        if (isScaleExempt(item.value, hiLevel) || (loLevel && isScaleExempt(item.value, loLevel)))
+          return
         if (hi - lo < THRESHOLD.minStep) {
           failures.push(`${item.value}：${label} 只差 ${(hi - lo).toFixed(2)} < ${THRESHOLD.minStep}，层级挤在一起`)
         }

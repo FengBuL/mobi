@@ -81,9 +81,9 @@ const SAMPLE_MD = [
   ``,
   `> 引用块，靠投影或底色跟纸面分层。`,
   ``,
-  '```js',
+  `\`\`\`js`,
   `const answer = 42`,
-  '```',
+  `\`\`\``,
   ``,
   `| 列一 | 列二 |`,
   `| --- | --- |`,
@@ -102,13 +102,18 @@ const SAMPLE_MD = [
  */
 function boundaryFlags(row, base) {
   const flags = []
-  if (row.p && row.p.contrast < 4.5) flags.push(`正文对比 ${row.p.contrast}<4.5`)
-  if (row.h2 && row.h2.contrast < 3) flags.push(`h2 对比 ${row.h2.contrast}<3`)
-  if (row.paperEffective === null) flags.push(`纸面测不到`)
+  if (row.p && row.p.contrast < 4.5)
+    flags.push(`正文对比 ${row.p.contrast}<4.5`)
+  if (row.h2 && row.h2.contrast < 3)
+    flags.push(`h2 对比 ${row.h2.contrast}<3`)
+  if (row.paperEffective === null)
+    flags.push(`纸面测不到`)
   for (const key of [`blockquote`, `pre`, `table`]) {
     const v = row[key]
-    if (!v) continue
-    if (!v.distinctBg && v.maxBorder < 1 && !v.shadow && !v.pseudoMark) flags.push(`${key} 无任何边界`)
+    if (!v)
+      continue
+    if (!v.distinctBg && v.maxBorder < 1 && !v.shadow && !v.pseudoMark)
+      flags.push(`${key} 无任何边界`)
   }
   if (base && row.totalHeight && base.totalHeight
     && Math.abs(row.totalHeight - base.totalHeight) > base.totalHeight * 0.06) {
@@ -332,7 +337,8 @@ async function main() {
         )
         for (const key of [`h1`, `h2`, `blockquote`, `pre`, `table`]) {
           const v = r[key]
-          if (!v) continue
+          if (!v)
+            continue
           console.log(
             `      ${key.padEnd(11)} 底色=${String(v.bg).padEnd(22)}`
             + ` 边框=${v.maxBorder}px 投影=${v.shadow ? `有` : `无`}`
@@ -351,9 +357,11 @@ async function main() {
       const base = item.rows[0]
       const baseFlags = new Set(boundaryFlags(base, base))
       for (const r of item.rows) {
-        if (r.key === `baseline`) continue
+        if (r.key === `baseline`)
+          continue
         for (const flag of boundaryFlags(r, base)) {
-          if (!baseFlags.has(flag)) failures.push(`${item.theme}/${r.label} ${flag}`)
+          if (!baseFlags.has(flag))
+            failures.push(`${item.theme}/${r.label} ${flag}`)
         }
       }
     }

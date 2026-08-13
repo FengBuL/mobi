@@ -8,11 +8,11 @@ import {
   parseBlockFieldState,
 } from '../helpers'
 
-type QuoteVariant =
-  | `opening` | `rail` | `card` | `centered` | `bubble`
-  | `interview` | `note` | `excerpt` | `poster` | `enclosed`
-  | `italic` | `signature` | `source` | `hanging` | `wash`
-  | `frame` | `rules` | `vertical-marks` | `seal` | `commentary`
+type QuoteVariant
+  = | 'opening' | 'rail' | 'card' | 'centered' | 'bubble'
+    | 'interview' | 'note' | 'excerpt' | 'poster' | 'enclosed'
+    | 'italic' | 'signature' | 'source' | 'hanging' | 'wash'
+    | 'frame' | 'rules' | 'vertical-marks' | 'seal' | 'commentary'
 
 interface QuotePresetSeed {
   id: string

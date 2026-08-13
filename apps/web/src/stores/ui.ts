@@ -1,6 +1,13 @@
 import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'
 
+export type WorkspaceMode = 'simple' | 'professional'
+
+/** 简洁模式下共用一个抽屉位置的辅助面板 */
+export type AuxPanel = 'posts' | 'folder' | 'blocks' | 'css' | 'style'
+
+const WORKSPACE_MODE_KEY = addPrefix(`workspace_mode`)
+
 /**
  * UI 状态 Store
  * 负责管理全局 UI 状态，包括深色模式、侧边栏、对话框等
@@ -35,14 +42,14 @@ export const useUIStore = defineStore(`ui`, () => {
   // 视图模式：edit（纯编辑）| split（双屏）| preview（纯预览）
   const viewMode = store.reactive<'edit' | 'split' | 'preview'>(`viewMode`, `split`)
 
-  function setViewMode(mode: 'edit' | 'split' | 'preview') {
+  function setViewMode(mode: `edit` | `split` | `preview`) {
     viewMode.value = mode
   }
 
   // 预览设备：desktop（电脑端）| mobile（移动端模拟）
   const previewDevice = store.reactive<'desktop' | 'mobile'>(`previewDevice`, `mobile`)
 
-  function setPreviewDevice(device: 'desktop' | 'mobile') {
+  function setPreviewDevice(device: `desktop` | `mobile`) {
     previewDevice.value = device
   }
 
@@ -96,10 +103,81 @@ export const useUIStore = defineStore(`ui`, () => {
   // 是否打开重置样式确认对话框
   const isOpenConfirmDialog = ref(false)
 
+  // ==================== 工作区模式 ====================
+  // simple 只留写作和预览，professional 解锁全部侧栏
+  const workspaceMode = store.reactive<WorkspaceMode>(WORKSPACE_MODE_KEY, `simple`)
+  const hasChosenWorkspaceMode = store.reactive(addPrefix(`workspace_mode_chosen`), false)
+
+  // 板块库，专业模式下占编辑器与预览之间的一栏
+  const isOpenBlockWorkspace = ref(false)
+
+  // 移动端只有一栏，专业模式的多栏布局在这里没有落脚点
+  const isSimpleWorkspace = computed(() => isMobile.value || workspaceMode.value === `simple`)
+
+  const auxPanelFlags = {
+    posts: isOpenPostSlider,
+    folder: isOpenFolderPanel,
+    blocks: isOpenBlockWorkspace,
+    css: isShowCssEditor,
+    style: isOpenRightSlider,
+  }
+
+  function closeAuxPanels(except?: AuxPanel) {
+    for (const [name, flag] of Object.entries(auxPanelFlags)) {
+      if (name !== except)
+        flag.value = false
+    }
+  }
+
+  // 专业模式下同时开三栏，编辑器和预览会被压到不到 200px，预览一行放不下几个字。
+  // 分栏仍然可拖拽，这里只挡住「越开越窄直到不能用」这条路。
+  const MAX_OPEN_RAILS = 2
+  const railOpenOrder = ref<AuxPanel[]>([])
+
+  for (const [key, flag] of Object.entries(auxPanelFlags)) {
+    const name = key as AuxPanel
+    watch(flag, (open) => {
+      if (!open) {
+        railOpenOrder.value = railOpenOrder.value.filter(item => item !== name)
+        return
+      }
+
+      // 简洁模式下这些面板共用同一个抽屉位置，同时开会叠在一起
+      if (isSimpleWorkspace.value) {
+        closeAuxPanels(name)
+        railOpenOrder.value = [name]
+        return
+      }
+
+      const next = [...railOpenOrder.value.filter(item => item !== name), name]
+      const overflow = next.splice(0, Math.max(0, next.length - MAX_OPEN_RAILS))
+      railOpenOrder.value = next
+      overflow.forEach((item) => {
+        auxPanelFlags[item].value = false
+      })
+    })
+  }
+
+  const activeAuxPanel = computed(() => {
+    const names = Object.keys(auxPanelFlags) as AuxPanel[]
+    return names.find(name => auxPanelFlags[name].value) ?? null
+  })
+
+  function setWorkspaceMode(mode: WorkspaceMode, remember = true) {
+    workspaceMode.value = mode
+    // 选中的正好是当前值时持久化 watch 不会触发，本地存储里会一直缺这条记录
+    void store.set(WORKSPACE_MODE_KEY, mode)
+
+    if (remember)
+      hasChosenWorkspaceMode.value = true
+
+    closeAuxPanels()
+  }
+
   // 搜索面板状态
   const searchTabRequest = ref<{ word: string, showReplace: boolean } | null>(null)
 
-  function openSearchTab(searchWord: string = '', showReplace: boolean = false) {
+  function openSearchTab(searchWord: string = ``, showReplace: boolean = false) {
     searchTabRequest.value = { word: searchWord, showReplace }
   }
 
@@ -203,6 +281,15 @@ export const useUIStore = defineStore(`ui`, () => {
     isShowFloatingToc,
     isOpenFolderPanel,
     enableImageReupload,
+
+    // ==================== 工作区模式 ====================
+    workspaceMode,
+    hasChosenWorkspaceMode,
+    isOpenBlockWorkspace,
+    isSimpleWorkspace,
+    activeAuxPanel,
+    closeAuxPanels,
+    setWorkspaceMode,
 
     // ==================== 对话框状态 ====================
     isShowCssEditor,

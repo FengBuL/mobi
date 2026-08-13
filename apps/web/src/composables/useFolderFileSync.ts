@@ -37,7 +37,7 @@ export function useFolderFileSync() {
       await folderStore.writeFile(filePath, content)
     }
     catch (error: any) {
-      console.error('文件同步失败:', error)
+      console.error(`文件同步失败:`, error)
     }
   }
 
@@ -56,7 +56,7 @@ export function useFolderFileSync() {
 
     // 设置新的定时器
     syncTimeoutId = setTimeout(() => {
-      const content = postStore.currentPost?.content || ''
+      const content = postStore.currentPost?.content || ``
       performSync(currentFilePath.value!, content)
     }, SYNC_DELAY)
   }

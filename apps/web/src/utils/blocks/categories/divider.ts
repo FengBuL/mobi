@@ -8,11 +8,11 @@ import {
   parseBlockFieldState,
 } from '../helpers'
 
-type DividerVariant =
-  | `hairline` | `bold` | `dashed` | `dotted` | `double`
-  | `fade` | `flourish` | `triple-dot` | `diamond` | `asterisk`
-  | `wave` | `zigzag` | `chapter` | `compass` | `caption`
-  | `gradient-band` | `ornament-band` | `down-arrow` | `asymmetric` | `stitch`
+type DividerVariant
+  = | 'hairline' | 'bold' | 'dashed' | 'dotted' | 'double'
+    | 'fade' | 'flourish' | 'triple-dot' | 'diamond' | 'asterisk'
+    | 'wave' | 'zigzag' | 'chapter' | 'compass' | 'caption'
+    | 'gradient-band' | 'ornament-band' | 'down-arrow' | 'asymmetric' | 'stitch'
 
 interface DividerPresetSeed {
   id: string
