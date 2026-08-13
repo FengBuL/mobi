@@ -32,10 +32,14 @@
     /* 墨：偏暖的黑，避免和纸底形成生硬对比 */
     --foreground: 24 9% 13%;
 
-    --card: 42 40% 99%;
+    /*
+     * 卡片比纸底亮一档就够，色相跟着纸走。
+     * 之前是 42 40% 99%，落到屏幕上几乎是中性白，在暖白纸上像换了一种材质。
+     */
+    --card: 40 34% 98.4%;
     --card-foreground: 24 9% 13%;
 
-    --popover: 42 40% 99%;
+    --popover: 40 34% 98.4%;
     --popover-foreground: 24 9% 13%;
 
     /* 朱砂：主按钮与聚焦环，全局只此一处高饱和 */
@@ -65,9 +69,6 @@
      * 跟圆角没关系。
      */
     --radius: 0.5rem;
-
-    /* 编辑器外壳里的分隔线。比 --border 更淡，用来划分区域而不是圈出边框 */
-    --rule: 36 14% 84%;
 
     --blockquote-background: #f7f7f7;
   }
@@ -103,8 +104,6 @@
     --input: 26 7% 20%;
     --ring: 9 62% 53%;
 
-    --rule: 26 7% 22%;
-
     --blockquote-background: #212121;
   }
 }
@@ -131,7 +130,7 @@
 
   .style-card {
     padding: 1rem;
-    border: 1px solid hsl(var(--rule));
+    border: 1px solid hsl(var(--border));
     border-radius: 1rem;
     background: hsl(var(--card));
     box-shadow: none;
@@ -140,7 +139,7 @@
   /* 标题压一道通栏细线，像版面上的栏目分隔，而不是给每块加一枚圆头色标 */
   .style-card h2 {
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid hsl(var(--rule));
+    border-bottom: 1px solid hsl(var(--border));
   }
 
   /* 深色下反过来：面板保持最暗，卡片提亮才浮得起来 */

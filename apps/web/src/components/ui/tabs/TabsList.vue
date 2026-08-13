@@ -18,7 +18,7 @@ const delegatedProps = computed(() => {
     v-bind="delegatedProps"
     :class="cn(
       // 页签靠一道底线分区，不靠灰胶囊。胶囊是组件库的通用手势，也白白吃掉一圈空间
-      'inline-flex items-center justify-start gap-5 border-b border-[hsl(var(--rule))] text-muted-foreground',
+      'inline-flex items-center justify-start gap-5 border-b border-border text-muted-foreground',
       props.class,
     )"
   >

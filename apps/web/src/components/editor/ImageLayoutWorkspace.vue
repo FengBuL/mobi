@@ -1597,7 +1597,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   min-width: 4.5rem;
   gap: 0.12rem;
   padding: 0.5rem 0.58rem;
-  border: 1px solid hsl(var(--rule));
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   background: transparent;
   text-align: left;

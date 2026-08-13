@@ -1896,7 +1896,7 @@ onUnmounted(() => {
   align-items: center;
   max-width: 100%;
   padding: 0.4rem 0.72rem;
-  border: 1px solid hsl(var(--rule));
+  border: 1px solid hsl(var(--border));
   border-radius: 999px;
   background: transparent;
   font-size: 0.74rem;
@@ -1907,9 +1907,10 @@ onUnmounted(() => {
 }
 
 /* 状态标签只是标注当前视图，朱砂留给「复制到公众号」，一屏里只该有一处高饱和 */
+/* 强调态只比普通胶囊重一档，线色仍走同一个 token，不另起一套中性墨色 */
 .workspace-chip--accent {
-  border-color: hsl(var(--foreground) / 0.14);
-  background: hsl(var(--foreground) / 0.06);
+  border-color: hsl(var(--border));
+  background: hsl(var(--secondary) / 0.7);
   font-weight: 500;
   color: hsl(var(--foreground) / 0.78);
 }
