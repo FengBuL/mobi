@@ -11,7 +11,7 @@ const panel = computed(() => {
   }
 
   const active = activeAuxPanel.value
-  // 文章列表、CSS 和样式面板在移动端自带全屏抽屉，再套一层会出现两层遮罩
+  // 文章列表和样式面板在移动端自带全屏抽屉，再套一层会出现两层遮罩
   if (isMobile.value && active !== `folder` && active !== `blocks`) {
     return null
   }
@@ -23,7 +23,6 @@ const titles = {
   posts: `文章列表`,
   folder: `本地文件夹`,
   blocks: `板块库`,
-  css: `自定义 CSS`,
   style: `样式面板`,
 }
 
@@ -69,7 +68,6 @@ onBeforeUnmount(() => document.removeEventListener(`keydown`, handleKeydown))
           <div v-else-if="panel === 'blocks'" class="h-full p-3">
             <ImageLayoutWorkspace />
           </div>
-          <CssEditor v-else-if="panel === 'css'" />
           <RightSlider v-else />
         </div>
       </aside>

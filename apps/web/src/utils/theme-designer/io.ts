@@ -40,7 +40,6 @@ export function buildCustomThemeCSS(theme: CustomTheme, baseThemeCSS: string, ba
     ` * ${theme.name}`,
     ` * 基于内置主题：${baseThemeLabel}`,
     ` * 由主题可视化编辑器导出于 ${new Date().toLocaleString()}`,
-    ` * 选择器不带 #output 前缀，可直接粘贴回自定义 CSS 面板`,
     ` */`,
     ``,
     `/* ===== 基础主题 ===== */`,

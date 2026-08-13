@@ -16,7 +16,6 @@ import {
 import { SearchTab } from '@/components/ui/search-tab'
 import { useImageUploader } from '@/composables/useImageUploader'
 import { useBlockSelectionStore } from '@/stores/blockSelection'
-import { useCssEditorStore } from '@/stores/cssEditor'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
@@ -35,7 +34,6 @@ const postStore = usePostStore()
 const renderStore = useRenderStore()
 const themeStore = useThemeStore()
 const uiStore = useUIStore()
-const cssEditorStore = useCssEditorStore()
 const { selection: blockSelection } = storeToRefs(blockSelectionStore)
 const { upload } = useImageUploader()
 
@@ -69,7 +67,6 @@ function editorRefresh() {
 // Reset style function
 function resetStyle() {
   themeStore.resetStyle()
-  cssEditorStore.resetCssConfig()
   // 使用新主题系统
   themeStore.applyCurrentTheme()
   editorRefresh()
@@ -110,18 +107,16 @@ function endCopy() {
 const showPostRail = computed(() => !isSimpleWorkspace.value && isOpenPostSlider.value)
 const showFolderRail = computed(() => !isSimpleWorkspace.value && isOpenFolderPanel.value)
 const showBlockRail = computed(() => !isSimpleWorkspace.value && isOpenBlockWorkspace.value)
-const showCssRail = computed(() => !isSimpleWorkspace.value && uiStore.isShowCssEditor)
 const showStyleRail = computed(() => !isSimpleWorkspace.value && isOpenRightSlider.value)
 
 // 是否有侧面板挤占编辑器与预览
-const hasSidePanel = computed(() => showBlockRail.value || showCssRail.value || showStyleRail.value)
+const hasSidePanel = computed(() => showBlockRail.value || showStyleRail.value)
 
 // 三条侧栏全开也要给编辑器和预览留够 34%，否则它们会被压到 min-size 以下
 const blockPanelDefaultSize = computed(() => (showBlockRail.value ? 22 : 0))
-const cssPanelDefaultSize = computed(() => (showCssRail.value ? 20 : 0))
 const rightPanelDefaultSize = computed(() => (showStyleRail.value ? 24 : 0))
 const mainAreaDefaultSize = computed(() => (
-  100 - blockPanelDefaultSize.value - cssPanelDefaultSize.value - rightPanelDefaultSize.value
+  100 - blockPanelDefaultSize.value - rightPanelDefaultSize.value
 ))
 const editorPreviewDefaultSizes = computed(() => {
   const mainAreaSize = mainAreaDefaultSize.value
@@ -1658,18 +1653,6 @@ onUnmounted(() => {
                 </div>
               </ResizablePanel>
 
-              <ResizableHandle v-if="showCssRail" class="hidden md:block" />
-              <ResizablePanel
-                v-if="showCssRail"
-                id="css-rail"
-                :order="4"
-                :default-size="cssPanelDefaultSize"
-                :min-size="10"
-                :max-size="50"
-              >
-                <CssEditor />
-              </ResizablePanel>
-
               <ResizableHandle v-if="showStyleRail" class="hidden md:block" />
               <ResizablePanel
                 v-if="showStyleRail"
@@ -1689,7 +1672,6 @@ onUnmounted(() => {
       <!-- 移动端这几个面板自带全屏抽屉，不参与分栏 -->
       <template v-if="isMobile">
         <PostSlider />
-        <CssEditor v-if="uiStore.isShowCssEditor" />
         <RightSlider v-if="isOpenRightSlider" />
       </template>
 

@@ -1,7 +1,6 @@
 import type { HeadingLevel, HeadingStyles, HeadingStyleType, ThemeName } from '@md/shared/configs'
 import { applyTheme } from '@md/core'
 import { defaultStyleConfig, getThemeDefaultPrimaryColor, resolveCodeBlockThemeUrl, resolveThemeName, widthOptions } from '@md/shared/configs'
-import { useCssEditorStore } from '@/stores/cssEditor'
 import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'
@@ -314,12 +313,8 @@ export const useThemeStore = defineStore(`theme`, () => {
    */
   const applyCurrentTheme = async () => {
     try {
-      const cssEditorStore = useCssEditorStore()
-      const customCSS = cssEditorStore.getCurrentTabContent()
-
       await applyTheme({
         themeName: theme.value,
-        customCSS,
         overridesCSS: themeDesignerStore.overrideCSS,
         variables: {
           primaryColor: primaryColor.value,

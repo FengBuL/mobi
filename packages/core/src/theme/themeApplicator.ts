@@ -13,7 +13,6 @@ import { getThemeInjector } from './themeInjector'
 
 export interface ThemeConfig {
   themeName: string // 主题名称
-  customCSS?: string // 用户自定义 CSS
   overridesCSS?: string // 主题可视化编辑器生成的覆盖层
   variables: CSSVariableConfig
 }
@@ -42,12 +41,7 @@ export async function applyTheme(config: ThemeConfig): Promise<void> {
     ? wrapCSSWithScope(config.overridesCSS, `#output`)
     : ``
 
-  // 6. 处理用户自定义 CSS（添加作用域）
-  const scopedCustomCSS = config.customCSS
-    ? wrapCSSWithScope(config.customCSS, `#output`)
-    : ``
-
-  // 7. 拼接完整 CSS（用户自定义 CSS 在最后，优先级最高）
+  // 6. 拼接完整 CSS（覆盖层排在最后，优先级最高）
   let mergedCSS = [
     variablesCSS, // CSS 变量（全局）
     baseCSSContent, // 基础样式（全局）
@@ -55,13 +49,12 @@ export async function applyTheme(config: ThemeConfig): Promise<void> {
     scopedThemeCSS, // 主题样式（限制在 #output）
     headingStylesCSS, // 标题样式
     scopedOverridesCSS, // 可视化编辑器覆盖层（覆盖主题和标题预设）
-    scopedCustomCSS, // 用户自定义 CSS（最后应用，可覆盖预设样式）
   ].filter(Boolean).join(`\n\n`)
 
-  // 8. 使用 PostCSS 处理 CSS（简化 calc() 表达式等）
+  // 7. 使用 PostCSS 处理 CSS（简化 calc() 表达式等）
   mergedCSS = await processCSS(mergedCSS)
 
-  // 9. 注入到页面
+  // 8. 注入到页面
   const injector = getThemeInjector()
   injector.inject(mergedCSS)
 }

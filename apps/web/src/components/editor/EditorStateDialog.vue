@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { storeLabels } from '@md/shared/configs'
 import { Expand, UploadCloud } from 'lucide-vue-next'
-import { useCssEditorStore } from '@/stores/cssEditor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
@@ -19,7 +18,6 @@ const emit = defineEmits([`close`])
 const themeStore = useThemeStore()
 const uiStore = useUIStore()
 const postStore = usePostStore()
-const cssEditorStore = useCssEditorStore()
 const renderStore = useRenderStore()
 
 watch(
@@ -84,15 +82,11 @@ function getAllStoreStates() {
     currentPostIndex: postStore.currentPostIndex,
     posts: postStore.posts,
 
-    // CSS Editor store 的状态
-    cssContentConfig: cssEditorStore.cssContentConfig,
-
     // Render store 的状态
     titleList: renderStore.titleList,
     readingTime: renderStore.readingTime,
 
     // Display store 的状态
-    isShowCssEditor: uiStore.isShowCssEditor,
     isShowInsertFormDialog: uiStore.isShowInsertFormDialog,
     isShowUploadImgDialog: uiStore.isShowUploadImgDialog,
     isShowInsertMpCardDialog: uiStore.isShowInsertMpCardDialog,
@@ -288,10 +282,6 @@ function applyImportedConfig() {
       else if (key === `posts`)
         postStore.posts = value
 
-      // CSS Editor store 的状态
-      else if (key === `cssContentConfig`)
-        cssEditorStore.cssContentConfig = value
-
       // Render store 的状态
       else if (key === `titleList`)
         renderStore.titleList = value
@@ -299,8 +289,6 @@ function applyImportedConfig() {
         renderStore.readingTime = value
 
       // Display store 的状态
-      else if (key === `isShowCssEditor`)
-        uiStore.isShowCssEditor = value
       else if (key === `isShowInsertFormDialog`)
         uiStore.isShowInsertFormDialog = value
       else if (key === `isShowUploadImgDialog`)

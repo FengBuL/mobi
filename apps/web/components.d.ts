@@ -41,7 +41,6 @@ declare module 'vue' {
     ContextMenuSubContent: typeof import('./src/components/ui/context-menu/ContextMenuSubContent.vue')['default']
     ContextMenuSubTrigger: typeof import('./src/components/ui/context-menu/ContextMenuSubTrigger.vue')['default']
     ContextMenuTrigger: typeof import('./src/components/ui/context-menu/ContextMenuTrigger.vue')['default']
-    CssEditor: typeof import('./src/components/editor/CssEditor.vue')['default']
     CustomUploadForm: typeof import('./src/components/editor/CustomUploadForm.vue')['default']
     Dialog: typeof import('./src/components/ui/dialog/Dialog.vue')['default']
     DialogClose: typeof import('./src/components/ui/dialog/DialogClose.vue')['default']

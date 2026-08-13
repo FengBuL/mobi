@@ -333,9 +333,6 @@ declare global {
   export type { PreviewBlockSelection } from './src/stores/blockSelection'
   import('./src/stores/blockSelection')
   // @ts-ignore
-  export type { CssContentConfig } from './src/stores/cssEditor'
-  import('./src/stores/cssEditor')
-  // @ts-ignore
   export type { FileSystemNode } from './src/stores/folderSource'
   import('./src/stores/folderSource')
   // @ts-ignore

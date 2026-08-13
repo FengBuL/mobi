@@ -4,7 +4,7 @@ import { store } from '@/utils/storage'
 export type WorkspaceMode = 'simple' | 'professional'
 
 /** 简洁模式下共用一个抽屉位置的辅助面板 */
-export type AuxPanel = 'posts' | 'folder' | 'blocks' | 'css' | 'style'
+export type AuxPanel = 'posts' | 'folder' | 'blocks' | 'style'
 
 const WORKSPACE_MODE_KEY = addPrefix(`workspace_mode`)
 
@@ -70,10 +70,6 @@ export const useUIStore = defineStore(`ui`, () => {
   const toggleImageReupload = useToggle(enableImageReupload)
 
   // ==================== 对话框状态 ====================
-  // 是否展示 CSS 编辑器
-  const isShowCssEditor = store.reactive(`isShowCssEditor`, false)
-  const toggleShowCssEditor = useToggle(isShowCssEditor)
-
   // 是否展示插入表格对话框
   const isShowInsertFormDialog = ref(false)
   const toggleShowInsertFormDialog = useToggle(isShowInsertFormDialog)
@@ -118,7 +114,6 @@ export const useUIStore = defineStore(`ui`, () => {
     posts: isOpenPostSlider,
     folder: isOpenFolderPanel,
     blocks: isOpenBlockWorkspace,
-    css: isShowCssEditor,
     style: isOpenRightSlider,
   }
 
@@ -339,8 +334,6 @@ export const useUIStore = defineStore(`ui`, () => {
     setWorkspaceMode,
 
     // ==================== 对话框状态 ====================
-    isShowCssEditor,
-    toggleShowCssEditor,
     isShowInsertFormDialog,
     toggleShowInsertFormDialog,
     isShowInsertMpCardDialog,

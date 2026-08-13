@@ -20,7 +20,6 @@ export const storeLabels: Record<string, string> = {
   currentPostId: `当前文章 ID`,
   currentPostIndex: `当前文章索引`,
   posts: `内容列表`,
-  cssContentConfig: `自定义 CSS`,
   titleList: `文章标题列表`,
   readingTime: `阅读时间`,
   headingDecorationStatus: `开启标题装饰`,
@@ -28,7 +27,6 @@ export const storeLabels: Record<string, string> = {
   headingDecorationPosition: `装饰位置`,
 
   // Display store states
-  isShowCssEditor: `显示 CSS 编辑器`,
   isShowInsertFormDialog: `显示插入表单对话框`,
   isShowInsertMpCardDialog: `显示插入公众号名片对话框`,
   isShowUploadImgDialog: `显示上传图片对话框`,

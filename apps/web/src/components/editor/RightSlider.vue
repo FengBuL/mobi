@@ -15,14 +15,13 @@ import {
   fontFamilyOptions,
   headingLevelOptions,
   headingStyleOptions,
-  legendOptions,
   stylePresetOptions,
   themeCategoryOptions,
   themeMap,
   themeOptions,
   themeOptionsMap,
 } from '@md/shared/configs'
-import { FileCode, X } from 'lucide-vue-next'
+import { X } from 'lucide-vue-next'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
@@ -181,9 +180,6 @@ const codeStatusSummary = computed(() => {
   ]
 
   return parts.join(` / `)
-})
-const publishStatusSummary = computed(() => {
-  return isCiteStatus.value ? `外链转底部引用已开启` : `外链保持原样`
 })
 function headingStylesSignature(styles: HeadingStyles = {}) {
   return JSON.stringify(
@@ -451,11 +447,6 @@ function codeBlockThemeChanged(newTheme: string) {
   editorRefresh()
 }
 
-function legendChanged(newVal: string) {
-  themeStore.legend = newVal
-  editorRefresh()
-}
-
 function macCodeBlockChanged() {
   themeStore.isShowCodeLanguage = !themeStore.isShowCodeLanguage
   editorRefresh()
@@ -463,11 +454,6 @@ function macCodeBlockChanged() {
 
 function showLineNumberChanged() {
   themeStore.isShowLineNumber = !themeStore.isShowLineNumber
-  editorRefresh()
-}
-
-function citeStatusChanged() {
-  themeStore.isCiteStatus = !themeStore.isCiteStatus
   editorRefresh()
 }
 
@@ -541,11 +527,6 @@ function setShowCodeLanguage(enabled: boolean) {
 function setShowLineNumber(enabled: boolean) {
   if (isShowLineNumber.value !== enabled)
     showLineNumberChanged()
-}
-
-function setCiteStatus(enabled: boolean) {
-  if (isCiteStatus.value !== enabled)
-    citeStatusChanged()
 }
 
 function setUseIndent(enabled: boolean) {
@@ -1057,73 +1038,6 @@ watch(isOpen, () => {
             </div>
             <ThemeDesignerGroupCard :group="getDesignerGroup('codeBlock')" />
             <ThemeDesignerGroupCard :group="getDesignerGroup('inlineCode')" />
-          </div>
-
-          <div class="style-card space-y-3">
-            <div class="space-y-1">
-              <h2 class="text-sm font-semibold">
-                发布与注释
-              </h2>
-              <p class="text-xs leading-5 text-muted-foreground">
-                当前状态：{{ publishStatusSummary }}
-              </p>
-            </div>
-            <div class="space-y-2">
-              <div class="text-xs text-muted-foreground">
-                图注格式
-              </div>
-              <Select v-model="legend" @update:model-value="legendChanged">
-                <SelectTrigger class="w-full">
-                  <SelectValue placeholder="选择图注格式" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="{ label, value } in legendOptions" :key="value" :value="value">
-                    {{ label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="rounded-xl border p-3">
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <div class="text-sm font-medium">
-                    微信外链转底部引用
-                  </div>
-                  <div class="text-xs text-muted-foreground">
-                    便于发布到公众号时统一整理引用来源
-                  </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                  <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isCiteStatus }" @click="setCiteStatus(true)">
-                    开
-                  </Button>
-                  <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isCiteStatus }" @click="setCiteStatus(false)">
-                    关
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <div class="rounded-xl border p-3">
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <div class="text-sm font-medium">
-                    自定义 CSS
-                  </div>
-                  <div class="text-xs text-muted-foreground">
-                    上面调不到的，直接写样式表覆盖
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  class="h-8 shrink-0 px-3 text-xs"
-                  :class="{ 'border-black dark:border-white border-2': uiStore.isShowCssEditor }"
-                  @click="uiStore.toggleShowCssEditor()"
-                >
-                  <FileCode class="mr-1.5 size-3.5" />
-                  {{ uiStore.isShowCssEditor ? '已打开' : '打开' }}
-                </Button>
-              </div>
-            </div>
           </div>
         </TabsContent>
       </Tabs>
