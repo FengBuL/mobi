@@ -58,3 +58,6 @@ dev-dist
 # uTools build artifacts
 apps/utools/dist
 apps/utools/release
+
+# 桌面版安装包
+apps/desktop/release

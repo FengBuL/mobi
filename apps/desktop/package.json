@@ -13,6 +13,10 @@
     "dev": "node scripts/dev.mjs",
     "build": "node scripts/build.mjs",
     "build:shell": "vite build --mode main && vite build --mode preload",
+    "package": "pnpm run build && electron-builder --publish never",
+    "package:mac": "pnpm run build && electron-builder --mac --publish never",
+    "package:win": "pnpm run build && electron-builder --win --publish never",
+    "package:linux": "pnpm run build && electron-builder --linux --publish never",
     "start": "electron .",
     "type-check": "tsc --noEmit"
   },
@@ -21,6 +25,7 @@
     "@md/shared": "workspace:*",
     "@types/node": "^25.5.0",
     "electron": "^43.4.0",
+    "electron-builder": "^26.15.3",
     "vite": "^8.0.3"
   }
 }

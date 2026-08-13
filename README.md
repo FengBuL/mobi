@@ -101,9 +101,18 @@ http://127.0.0.1:8788
 桌面版是同一套前端套了个 Electron 壳，页面代码和网页版完全共用。
 
 ```bash
-pnpm desktop        # 开发模式，会复用已经起着的 dev server
-pnpm build:desktop  # 出产物到 apps/desktop/dist
+pnpm desktop         # 开发模式，会复用已经起着的 dev server
+pnpm build:desktop   # 出产物到 apps/desktop/dist
+pnpm package:desktop # 打当前系统的安装包到 apps/desktop/release
 ```
+
+打包只能在目标系统上进行，macOS 出 dmg、Windows 出 exe、Linux 出 AppImage。
+三个平台一起要靠 CI：打 `v*` 开头的 tag，或者在 Actions 里手动触发
+`Build Desktop App`，产物挂在 workflow 的 artifact 里。
+
+**安装包还没有签名**，所以 macOS 首次打开会提示「无法验证开发者」，需要右键选「打开」，
+Windows 会弹 SmartScreen 警告。要去掉这两个提示得买苹果开发者账号和 Windows 代码签名证书，
+都是每年固定支出，还没做。
 
 它和网页版最主要的区别是：调微信接口这件事交给主进程做了。浏览器不能跨域访问
 `api.weixin.qq.com`，所以网页版必须绕 `mp-proxy`；主进程本身就是 Node，没有这层限制。

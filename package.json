@@ -11,6 +11,7 @@
     "start": "pnpm web dev",
     "build:web": "pnpm --filter @md/web build",
     "build:desktop": "pnpm --filter @md/desktop build",
+    "package:desktop": "pnpm --filter @md/desktop package",
     "desktop": "pnpm --filter @md/desktop dev",
     "proxy": "pnpm --filter @md/mp-proxy start",
     "web": "pnpm --filter @md/web",

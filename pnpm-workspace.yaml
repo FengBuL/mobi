@@ -34,6 +34,9 @@ overrides:
   prettier: 2.8.8
   qs: ^6.14.2
   querystring: npm:qs@^6.14.2
+  # electron-builder 的依赖链上挂着好几个 semver 5/6，都没有 provenance，会被 no-downgrade 拦下。
+  # 统一抬到 7.x：常用的 satisfies/gte/coerce 这些接口是兼容的，和上面 minimatch、glob 的处理方式一致
+  semver@<7: ^7.8.5
   serialize-javascript@<7.0.3: ^7.0.4
   source-map@0.8.0-beta.0: 0.7.4
   underscore@<1.13.8: 1.13.8

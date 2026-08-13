@@ -1,0 +1,74 @@
+name: Build Desktop App
+
+# 三个平台各跑一次完整打包，产物挂成 artifact。
+# 不挂在每次 push 上：一次要下三份 Electron 运行时，太贵，需要时手动触发或者打 tag。
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      # 一个平台挂了，另外两个的产物照样要拿到，好判断是平台相关还是代码本身的问题
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: mac
+            artifact: mobi-macos
+          - os: windows-latest
+            target: win
+            artifact: mobi-windows
+          - os: ubuntu-latest
+            target: linux
+            artifact: mobi-linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          # 仓库的 .npmrc 把 Electron 二进制指到了国内镜像，GitHub 的机器上直接回官方源更快
+          ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/v
+
+      - name: Package
+        run: pnpm --filter @md/desktop package:${{ matrix.target }}
+        env:
+          ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/v
+          # 还没有证书，别让 electron-builder 去钥匙串里翻
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.AppImage

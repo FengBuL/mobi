@@ -1,0 +1,48 @@
+appId: com.fengbul.mobi
+productName: 墨笔
+copyright: Copyright © 2026 墨笔
+
+directories:
+  output: release
+  buildResources: build
+
+# 主进程、preload、渲染产物都已经打进 dist，运行时不依赖 node_modules 里的任何东西
+files:
+  - dist/**
+asar: true
+npmRebuild: false
+
+# 产物名走 ASCII：productName 是中文，直接进文件名会给下载和 CI 制品带来一堆转义问题
+artifactName: mobi-${version}-${arch}.${ext}
+
+mac:
+  category: public.app-category.productivity
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+  # 还没有开发者证书，先明确关掉签名，免得本地构建去钥匙串里乱找
+  identity: null
+
+dmg:
+  title: 墨笔 ${version}
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: 墨笔
+
+linux:
+  category: Office
+  target:
+    - target: AppImage
+      arch:
+        - x64
