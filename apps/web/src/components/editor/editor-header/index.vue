@@ -155,9 +155,6 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
         <span>板块库</span>
       </Button>
 
-      <!-- 文章信息（移动端隐藏） -->
-      <PostInfo class="hidden md:inline-flex" />
-
       <!-- 样式面板 -->
       <Button
         variant="outline"

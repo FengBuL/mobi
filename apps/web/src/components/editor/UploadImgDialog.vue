@@ -666,7 +666,7 @@ function onTabScroll(e: WheelEvent) {
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    placeholder="如：https://imagecdn.alidaodao.com，可不填"
+                    placeholder="如：https://cdn.example.com，可不填"
                   />
                 </FormItem>
               </Field>
@@ -751,7 +751,7 @@ function onTabScroll(e: WheelEvent) {
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    placeholder="如：https://imagecdn.alidaodao.com，可不填"
+                    placeholder="如：https://cdn.example.com，可不填"
                   />
                 </FormItem>
               </Field>
@@ -816,7 +816,7 @@ function onTabScroll(e: WheelEvent) {
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    placeholder="如：md"
+                    placeholder="如：my-images"
                   />
                 </FormItem>
               </Field>
@@ -826,7 +826,7 @@ function onTabScroll(e: WheelEvent) {
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    placeholder="如：https://images.123ylb.cn"
+                    placeholder="如：https://images.example.com"
                   />
                 </FormItem>
               </Field>

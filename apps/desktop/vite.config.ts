@@ -39,8 +39,9 @@ export default defineConfig(({ mode }) => {
       // main 先构建负责清空，preload 和渲染产物跟在后面往里加
       emptyOutDir: bundle === `main`,
       target: `node22`,
-      minify: false,
-      sourcemap: true,
+      // 分发产物不留可读源码：压缩且不带 sourcemap，asar 之外再加一层还原成本
+      minify: true,
+      sourcemap: false,
       lib: {
         entry: { [`${bundle}/index`]: path.resolve(rootDir, entry) },
         formats: [`cjs`],

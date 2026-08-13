@@ -58,28 +58,3 @@ export interface Alert {
   text: string
   tokens: Token[]
 }
-
-export interface PostAccount {
-  avatar?: string
-  displayName: string
-  home: string
-  icon: string
-  supportTypes?: string[]
-  title: string
-  type: string
-  uid: string
-  checked: boolean
-  loggedIn?: boolean
-  isChecking?: boolean
-  status?: string
-  error?: string
-}
-
-export interface Post {
-  title: string
-  desc: string
-  thumb: string
-  content: string
-  markdown: string
-  accounts: PostAccount[]
-}

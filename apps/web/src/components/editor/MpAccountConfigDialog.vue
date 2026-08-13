@@ -110,7 +110,7 @@ function submit(formValues: any) {
               <Input
                 v-bind="field"
                 v-model.trim="field.value"
-                placeholder="例：Doocs"
+                placeholder="例：墨笔"
               />
             </FormItem>
           </Field>
@@ -132,7 +132,7 @@ function submit(formValues: any) {
                 v-model.trim="field.value"
                 rows="3"
                 class="resize-none"
-                placeholder="例：GitHub 开源组织 @Doocs 旗下唯一公众号，专注分享技术领域相关知识及行业最新资讯。"
+                placeholder="例：专注分享写作方法与效率工具的公众号。"
               />
             </FormItem>
           </Field>
