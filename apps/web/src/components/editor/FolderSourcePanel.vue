@@ -5,16 +5,18 @@ import {
   FolderPlus,
   FolderTree as FolderTreeIcon,
   Loader2,
+  PanelLeftClose,
   RefreshCw,
-  X,
 } from 'lucide-vue-next'
 import { useFolderFileSync } from '@/composables/useFolderFileSync'
 import { useFolderSourceStore } from '@/stores/folderSource'
 import { usePostStore } from '@/stores/post'
+import { useUIStore } from '@/stores/ui'
 import FolderTree from './FolderTree.vue'
 
 const folderSourceStore = useFolderSourceStore()
 const postStore = usePostStore()
+const uiStore = useUIStore()
 const { setCurrentFilePath } = useFolderFileSync()
 
 const {
@@ -63,10 +65,9 @@ async function handleRefreshFolder() {
   }
 }
 
-function handleCloseFolder() {
-  folderSourceStore.closeFolder()
-  expandedPaths.value.clear()
-  setCurrentFilePath(null)
+// 只收起面板，不卸载文件夹：再打开时树还在，不用重新授权也不用重新翻目录
+function handleCollapsePanel() {
+  uiStore.isOpenFolderPanel = false
 }
 
 async function handleOpenFile(node: any) {
@@ -100,13 +101,13 @@ async function handleOpenFile(node: any) {
           本地文件夹
         </h3>
         <Button
-          v-if="currentFolderHandle"
           variant="ghost"
           size="sm"
           class="h-7 w-7 p-0"
-          @click="handleCloseFolder"
+          title="收起面板，之后从「文件 → 本地文件夹」打开"
+          @click="handleCollapsePanel"
         >
-          <X class="h-3 w-3" />
+          <PanelLeftClose class="h-3.5 w-3.5" />
         </Button>
       </div>
 
