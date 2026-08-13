@@ -112,8 +112,11 @@ docs              板块系统、主题、公众号排版的设计与验收文�
 
 ### 发布
 
-网页版推 `main` 自动部署到 GitHub Pages。
+代码在私有仓库 `mobi-src`，对外分发走公开仓库 [`mobi`](https://github.com/FengBuL/mobi)——
+那边只有下载说明、Release 安装包和网页版构建产物，没有源码。
 
-桌面版打 `v*` 开头的 tag，CI 会在三个平台各构建一次，产物汇总成一个草稿 Release；
-也可以在 Actions 里手动触发 `Build Desktop App` 只拿构建产物。
-打包只能在目标系统上做，所以本机 `pnpm package:desktop` 只出当前系统的包。
+网页版：`pnpm deploy:web`，本地构建后把纯产物推到公开仓库的 `gh-pages` 分支。
+
+桌面版：打 `v*` 开头的 tag，本仓库的 CI 在三个平台各构建一次，汇总成一个草稿 Release；
+下载这些安装包后在公开仓库发正式 Release（`gh release create vX.Y.Z --repo FengBuL/mobi 安装包...`）。
+打包只能在目标系统上做，本机 `pnpm package:desktop` 只出当前系统的包。

@@ -1,7 +1,7 @@
 {
   "name": "mobi",
   "type": "module",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "private": true,
   "description": "墨笔 · 写完就能贴进公众号的 Markdown 排版编辑器",
   "engines": {
@@ -14,6 +14,7 @@
     "package:desktop": "pnpm --filter @mobi/desktop package",
     "desktop": "pnpm --filter @mobi/desktop dev",
     "proxy": "pnpm --filter @mobi/mp-proxy start",
+    "deploy:web": "bash scripts/deploy-web.sh",
     "web": "pnpm --filter @mobi/web",
     "type-check": "pnpm --filter @mobi/web type-check && pnpm --filter @mobi/desktop type-check",
     "lint": "eslint .",

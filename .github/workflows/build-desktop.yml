@@ -56,7 +56,7 @@ jobs:
           ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/v
 
       - name: Package
-        run: pnpm --filter @md/desktop package:${{ matrix.target }}
+        run: pnpm --filter @mobi/desktop package:${{ matrix.target }}
         env:
           ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/v
 
