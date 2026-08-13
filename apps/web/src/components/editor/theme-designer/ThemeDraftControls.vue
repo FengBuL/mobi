@@ -160,7 +160,7 @@ watch(theme, (value) => {
       @update:model-value="value => designerStore.setDraftName(String(value))"
     />
 
-    <div class="rounded-xl border bg-muted/25 p-3">
+    <div class="rounded-xl border p-3">
       <div class="flex items-center gap-2">
         <Palette class="size-4 shrink-0 text-muted-foreground" />
         <span class="text-sm font-medium">按主色一键换肤</span>

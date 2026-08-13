@@ -627,7 +627,7 @@ watch(isOpen, () => {
           <X class="h-4 w-4" />
         </Button>
       </div>
-      <div class="space-y-2 rounded-2xl border bg-muted/20 px-3 py-2.5">
+      <div class="space-y-2 rounded-2xl border bg-card px-3 py-2.5">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
             <span class="font-medium">{{ selectedThemeMeta?.label || '未选择' }}</span>
@@ -894,7 +894,7 @@ watch(isOpen, () => {
                 全部恢复默认
               </Button>
             </div>
-            <div class="rounded-xl border border-dashed border-border bg-muted/35 px-3 py-2 text-xs leading-5 text-muted-foreground">
+            <div class="rounded-xl border border-dashed border-border px-3 py-2 text-xs leading-5 text-muted-foreground">
               当前正在编辑 {{ selectedHeadingLevelLabel }}，{{ selectedHeadingStyleMeta.desc }}。
               <span v-if="hasVisualHeadingOverride">可视化编辑器里的标题调整会覆盖这里的预设。</span>
             </div>
@@ -910,7 +910,7 @@ watch(isOpen, () => {
               </p>
             </div>
             <div class="grid gap-3">
-              <div class="rounded-xl border bg-muted/25 p-3">
+              <div class="rounded-xl border p-3">
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <div class="text-sm font-medium">
@@ -930,7 +930,7 @@ watch(isOpen, () => {
                   </div>
                 </div>
               </div>
-              <div class="rounded-xl border bg-muted/25 p-3">
+              <div class="rounded-xl border p-3">
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <div class="text-sm font-medium">
@@ -1008,7 +1008,7 @@ watch(isOpen, () => {
               </Select>
             </div>
             <div class="grid gap-3">
-              <div class="rounded-xl border bg-muted/25 p-3">
+              <div class="rounded-xl border p-3">
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <div class="text-sm font-medium">
@@ -1028,7 +1028,7 @@ watch(isOpen, () => {
                   </div>
                 </div>
               </div>
-              <div class="rounded-xl border bg-muted/25 p-3">
+              <div class="rounded-xl border p-3">
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <div class="text-sm font-medium">
@@ -1083,7 +1083,7 @@ watch(isOpen, () => {
                 </SelectContent>
               </Select>
             </div>
-            <div class="rounded-xl border bg-muted/25 p-3">
+            <div class="rounded-xl border p-3">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <div class="text-sm font-medium">
@@ -1103,7 +1103,7 @@ watch(isOpen, () => {
                 </div>
               </div>
             </div>
-            <div class="rounded-xl border bg-muted/25 p-3">
+            <div class="rounded-xl border p-3">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <div class="text-sm font-medium">
