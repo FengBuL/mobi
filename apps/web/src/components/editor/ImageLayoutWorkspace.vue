@@ -13,6 +13,7 @@ import { useBlockSelectionStore } from '@/stores/blockSelection'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
+import { useUIStore } from '@/stores/ui'
 import { blockCategories } from '@/utils/blocks/registry'
 import { hasMpUploadConfig } from '@/utils/file'
 import {
@@ -68,6 +69,7 @@ const blockSelectionStore = useBlockSelectionStore()
 const editorStore = useEditorStore()
 const postStore = usePostStore()
 const renderStore = useRenderStore()
+const uiStore = useUIStore()
 const { currentPost } = storeToRefs(postStore)
 const { selection: blockSelection } = storeToRefs(blockSelectionStore)
 
@@ -91,11 +93,13 @@ const mpUploadReady = ref(false)
 const formState = reactive(createWorkspaceLayoutFormState())
 const activeLibraryCategory = ref<BlockCategoryId>(`heading`)
 
+// immediate：面板常常是被这次点击顺带打开的，组件挂载时信号已经发过了，
+// 不补一次就只能停在默认类别上
 watch(blockSelection, (selection) => {
   if (selection) {
     activeLibraryCategory.value = selection.category
   }
-})
+}, { immediate: true })
 
 function selectLibraryCategory(category: BlockCategoryId) {
   if (blockSelection.value?.category !== category) {
@@ -800,6 +804,29 @@ function startEditingBlock(block: MediaLayoutBlockEntry) {
   })
 }
 
+// 从预览点图片过来：图片不在 blockSelection 的类型里，只能靠这条信号切过去。
+// 同样要 immediate，并按 seq 去重，免得每次挂载都把上一次的请求再执行一遍。
+let handledBlockLibrarySeq = 0
+
+watch(() => uiStore.blockLibraryCategoryRequest, (request) => {
+  if (!request || request.seq === handledBlockLibrarySeq) {
+    return
+  }
+
+  handledBlockLibrarySeq = request.seq
+  activeLibraryCategory.value = request.category as BlockCategoryId
+
+  // 点的是已经排好版的图文块，直接回填成编辑态，省得用户再从列表里找一遍
+  if (typeof request.mediaBlockIndex === `number`) {
+    nextTick(() => {
+      const block = detectedLayoutBlocks.value[request.mediaBlockIndex!]
+      if (block) {
+        startEditingBlock(block)
+      }
+    })
+  }
+}, { immediate: true })
+
 function cancelEditingBlock() {
   editingBlockId.value = ``
   editingImagePool.value = []
@@ -1119,6 +1146,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
                   type="button"
                   class="media-layout-preset"
                   :class="{ 'media-layout-preset--active': preset.id === selectedPresetId }"
+                  :title="`${preset.name} · ${preset.cue}\n${preset.description}\n${preset.slotCount} 张图 · ${mediaLayoutTextModeLabels[preset.textMode]} · ${mediaLayoutFamilyLabels[preset.family]}`"
                   @click="setPreset(preset)"
                 >
                   <div class="media-layout-preset__preview">
@@ -1137,20 +1165,13 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
                     </template>
                   </div>
 
+                  <!-- 描述和分类收进 title，卡片上只留扫视需要的名称与张数 -->
                   <div class="media-layout-preset__body">
-                    <div class="media-layout-preset__title-row">
-                      <div class="media-layout-preset__title">
-                        {{ preset.name }}
-                      </div>
-                      <span class="media-layout-preset__cue">{{ preset.cue }}</span>
-                    </div>
-                    <div class="media-layout-preset__desc">
-                      {{ preset.description }}
+                    <div class="media-layout-preset__title">
+                      {{ preset.name }}
                     </div>
                     <div class="media-layout-preset__meta">
-                      <span>{{ preset.slotCount }} 张图</span>
-                      <span>{{ mediaLayoutTextModeLabels[preset.textMode] }}</span>
-                      <span>{{ mediaLayoutFamilyLabels[preset.family] }}</span>
+                      {{ preset.slotCount }} 张图
                     </div>
                   </div>
                 </button>
@@ -1755,11 +1776,13 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   padding: 1rem;
 }
 
+/* 栏窄时按钮不肯让位，标题会被压到一个字宽然后竖排，所以允许换行 */
 .media-layout-section__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.55rem 0.75rem;
   margin-bottom: 0.95rem;
 }
 
@@ -1767,6 +1790,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   margin: 0;
   font-size: 0.96rem;
   font-weight: 700;
+  white-space: nowrap;
   color: hsl(var(--foreground));
 }
 
@@ -1837,18 +1861,24 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   color: hsl(var(--destructive));
 }
 
+/*
+ * 32 个版式排成单列时，每张卡近 280px 高，整列近 9000px，翻到底比挑模板还累。
+ * 改成按栏宽自适应列数：窄栏两列，拖宽了自动变三四列。
+ */
 .media-layout-preset-grid {
   display: grid;
-  gap: 0.75rem;
+  /* 板块库默认栏宽下网格只有 220px 左右，最小列宽得压到 100px 才排得下两列 */
+  grid-template-columns: repeat(auto-fill, minmax(6.25rem, 1fr));
+  gap: 0.5rem;
   margin-top: 1rem;
 }
 
 .media-layout-preset {
   display: grid;
-  gap: 0.85rem;
-  padding: 0.9rem;
+  gap: 0.5rem;
+  padding: 0.5rem;
   border: 1px solid hsl(var(--border));
-  border-radius: 20px;
+  border-radius: 14px;
   text-align: left;
   background: linear-gradient(180deg, hsl(var(--background)), hsl(var(--background) / 0.92));
   transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
@@ -1871,7 +1901,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   overflow: hidden;
   aspect-ratio: 16 / 9;
   border: 1px solid hsl(var(--border) / 0.72);
-  border-radius: 18px;
+  border-radius: 10px;
   background:
     linear-gradient(180deg, #ffffff, hsl(var(--muted) / 0.55)),
     radial-gradient(circle at top left, hsl(var(--accent) / 0.34), transparent 44%);
@@ -1906,51 +1936,22 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
 
 .media-layout-preset__body {
   display: grid;
-  gap: 0.42rem;
-}
-
-.media-layout-preset__title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
+  gap: 0.1rem;
+  padding: 0 0.1rem;
 }
 
 .media-layout-preset__title {
-  font-size: 0.9rem;
-  font-weight: 700;
+  overflow: hidden;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: hsl(var(--foreground));
 }
 
-.media-layout-preset__cue {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.48rem;
-  border-radius: 999px;
-  background: hsl(var(--secondary));
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: hsl(var(--muted-foreground));
-}
-
-.media-layout-preset__desc {
-  font-size: 0.77rem;
-  line-height: 1.52;
-  color: hsl(var(--muted-foreground));
-}
-
 .media-layout-preset__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   color: hsl(var(--muted-foreground));
-}
-
-.media-layout-preset__meta span {
-  padding: 0.18rem 0.46rem;
-  border-radius: 999px;
-  background: hsl(var(--secondary) / 0.82);
 }
 
 .media-layout-stage {

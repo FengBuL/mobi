@@ -94,11 +94,19 @@ export const fontCategoryOptions: IFontCategory[] = [
 ]
 
 export const fontSizeOptions: IConfigOption[] = [
-  { label: `10px`, value: `10px`, desc: `极限小` },
-  { label: `11px`, value: `11px`, desc: `超小` },
-  { label: `12px`, value: `12px`, desc: `极小` },
-  { label: `13px`, value: `13px`, desc: `很小` },
-  { label: `14px`, value: `14px`, desc: `较小` },
+  { label: `8px`, value: `8px`, desc: `极小` },
+  { label: `9px`, value: `9px`, desc: `极小` },
+  { label: `10px`, value: `10px`, desc: `很小` },
+  { label: `11px`, value: `11px`, desc: `很小` },
+  { label: `12px`, value: `12px`, desc: `偏小` },
+  { label: `13px`, value: `13px`, desc: `偏小` },
+  { label: `14px`, value: `14px`, desc: `常用` },
+  { label: `15px`, value: `15px`, desc: `常用` },
+  { label: `16px`, value: `16px`, desc: `偏大` },
+  { label: `17px`, value: `17px`, desc: `偏大` },
+  { label: `18px`, value: `18px`, desc: `很大` },
+  { label: `19px`, value: `19px`, desc: `很大` },
+  { label: `20px`, value: `20px`, desc: `最大` },
 ]
 
 /**

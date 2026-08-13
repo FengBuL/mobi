@@ -70,6 +70,44 @@ const filteredThemeOptions = computed(() => {
 
 const allFontOptions = fontCategoryOptions.flatMap(category => category.fonts)
 const activeStylePanel = ref(`template`)
+
+/**
+ * 跟随预览里的点击：翻到对应的页、展开那一组、滚过去，再闪一下告诉用户「就是这里」。
+ * 高亮用 class 而不是 :focus，focus 会被面板里第一个输入框抢走。
+ */
+let focusFlashTimer: ReturnType<typeof setTimeout> | undefined
+
+watch(() => uiStore.styleFocusRequest, (request) => {
+  if (!request) {
+    return
+  }
+
+  activeStylePanel.value = request.panel
+
+  if (!request.groupId) {
+    return
+  }
+
+  if (request.headingLevel) {
+    themeDesignerStore.activeHeadingLevel = request.headingLevel as typeof themeDesignerStore.activeHeadingLevel
+  }
+
+  if (!themeDesignerStore.expandedGroups.includes(request.groupId)) {
+    themeDesignerStore.expandedGroups = [...themeDesignerStore.expandedGroups, request.groupId]
+  }
+
+  nextTick(() => {
+    const card = document.querySelector<HTMLElement>(`[data-style-group="${request.groupId}"]`)
+    card?.scrollIntoView({ block: `nearest`, behavior: `smooth` })
+    themeDesignerStore.focusedGroupId = request.groupId!
+    clearTimeout(focusFlashTimer)
+    focusFlashTimer = setTimeout(() => {
+      themeDesignerStore.focusedGroupId = ``
+    }, 1400)
+  })
+})
+
+onBeforeUnmount(() => clearTimeout(focusFlashTimer))
 const STYLE_PRESET_STORAGE_KEY = `md_savedStylePresets`
 const CUSTOM_STYLE_PRESET_PLACEHOLDER = `__custom_style_preset__`
 const customStylePresets = ref<IStylePreset[]>(JSON.parse(localStorage.getItem(STYLE_PRESET_STORAGE_KEY) || `[]`))
@@ -577,7 +615,7 @@ watch(isOpen, () => {
     :style="isMobile ? { transform: isOpenRightSlider ? 'translateX(0)' : 'translateX(100%)' } : undefined"
   >
     <div
-      class="space-y-4 h-full overflow-auto p-4"
+      class="style-panel space-y-4 h-full overflow-auto p-4"
       :class="{ 'pt-0': isMobile }"
     >
       <!-- 移动端标题栏 -->
@@ -607,6 +645,9 @@ watch(isOpen, () => {
             </Button>
           </div>
         </div>
+        <p class="text-[11px] leading-4 text-muted-foreground">
+          在右侧预览里点任意文字、图片或代码，这里会自动翻到管它的那一组。
+        </p>
         <div
           v-if="themeDesignerStore.hasOverrides"
           class="flex items-center justify-between gap-2 rounded-xl border border-dashed bg-background/60 px-2.5 py-1.5"
@@ -642,7 +683,7 @@ watch(isOpen, () => {
         </TabsList>
 
         <TabsContent value="template" class="mt-4 space-y-4">
-          <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
+          <div class="style-card space-y-3">
             <div class="flex items-start justify-between gap-3">
               <div class="space-y-1">
                 <h2 class="text-sm font-semibold">
@@ -702,7 +743,7 @@ watch(isOpen, () => {
             </div>
           </div>
 
-          <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
+          <div class="style-card space-y-3">
             <div class="flex items-start justify-between gap-3">
               <div class="space-y-1">
                 <h2 class="text-sm font-semibold">
@@ -804,7 +845,7 @@ watch(isOpen, () => {
 
           <StyleQuickControls variant="full" />
 
-          <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
+          <div class="style-card space-y-3">
             <div class="space-y-1">
               <h2 class="text-sm font-semibold">
                 标题装饰
@@ -859,7 +900,7 @@ watch(isOpen, () => {
             </div>
           </div>
 
-          <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
+          <div class="style-card space-y-3">
             <div class="space-y-1">
               <h2 class="text-sm font-semibold">
                 段落阅读方式
@@ -942,7 +983,7 @@ watch(isOpen, () => {
             </Button>
           </div>
 
-          <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
+          <div class="style-card space-y-3">
             <div class="space-y-1">
               <h2 class="text-sm font-semibold">
                 代码块
@@ -1018,7 +1059,7 @@ watch(isOpen, () => {
             <ThemeDesignerGroupCard :group="getDesignerGroup('inlineCode')" />
           </div>
 
-          <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
+          <div class="style-card space-y-3">
             <div class="space-y-1">
               <h2 class="text-sm font-semibold">
                 发布与注释

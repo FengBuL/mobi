@@ -772,10 +772,64 @@ function deleteHoveredBlock() {
   toast.success(`已删除该板块`)
 }
 
+/**
+ * 预览里的元素 → 样式面板中管它的那一组设置。
+ *
+ * 判断顺序是从内到外：行内代码、链接这些嵌在段落里，先问 `p` 的话会被一路吃掉，
+ * 点「行内代码」就只能跳到「正文段落」。
+ */
+function resolveStyleTarget(target: HTMLElement) {
+  const code = target.closest<HTMLElement>(`code`)
+  if (code) {
+    return code.closest(`pre`)
+      ? { panel: `detail`, groupId: `codeBlock` }
+      : { panel: `detail`, groupId: `inlineCode` }
+  }
+  if (target.closest(`pre`)) {
+    return { panel: `detail`, groupId: `codeBlock` }
+  }
+  if (target.closest(`figcaption`)) {
+    return { panel: `block`, groupId: `figcaption` }
+  }
+  if (target.closest(`img`)) {
+    return { panel: `block`, groupId: `image` }
+  }
+  if (target.closest(`a`)) {
+    return { panel: `text`, groupId: `link` }
+  }
+  if (target.closest(`blockquote`)) {
+    return { panel: `block`, groupId: `blockquote` }
+  }
+  if (target.closest(`table`)) {
+    return { panel: `block`, groupId: `table` }
+  }
+  if (target.closest(`li,ul,ol`)) {
+    return { panel: `block`, groupId: `list` }
+  }
+  if (target.closest(`hr`)) {
+    return { panel: `block`, groupId: `divider` }
+  }
+
+  const heading = target.closest<HTMLElement>(`h1,h2,h3,h4,h5,h6`)
+  if (heading) {
+    return { panel: `text`, groupId: `heading`, headingLevel: heading.tagName.toLowerCase() }
+  }
+  if (target.closest(`p`)) {
+    return { panel: `text`, groupId: `paragraph` }
+  }
+
+  return null
+}
+
 function handlePreviewContentClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null
   if (!target)
     return
+
+  const styleTarget = resolveStyleTarget(target)
+  if (styleTarget) {
+    uiStore.focusStyleGroup(styleTarget.panel, styleTarget.groupId, styleTarget.headingLevel)
+  }
 
   const existingBlock = target.closest<HTMLElement>(`section.md-block`)
   const nativeBlock = target.closest<HTMLElement>(`[data-src-kind][data-src-ordinal]`)
@@ -791,12 +845,27 @@ function handlePreviewContentClick(event: MouseEvent) {
     }
     else {
       blockSelectionStore.select(nextSelection)
+      // 再点一次是取消选中，那时候不该再把面板叫出来
+      uiStore.focusBlockLibrary()
     }
     focusEditorAtPos(nextSelection.from)
     return
   }
 
   blockSelectionStore.clear()
+
+  // 图片归图文排版管，它不在 blockSelection 的七个类别里，得单独把板块库切过去
+  const mediaBlock = target.closest<HTMLElement>(`.md-media-block`)
+  if (mediaBlock) {
+    // 正文里第几个图文块，就回填第几个：解析出来的顺序和预览里的渲染顺序一致
+    const blocks = [...(previewRef.value?.querySelectorAll<HTMLElement>(`.md-media-block`) ?? [])]
+    const index = blocks.indexOf(mediaBlock)
+    uiStore.focusBlockLibrary(`image`, index >= 0 ? index : undefined)
+  }
+  else if (target.closest(`img, figure`)) {
+    uiStore.focusBlockLibrary(`image`)
+  }
+
   const block = target.closest(`h1,h2,h3,h4,h5,h6,p,li,blockquote,pre,td,th,img`) as HTMLElement | null
   if (!block)
     return
@@ -1825,11 +1894,12 @@ onUnmounted(() => {
   box-shadow: inset 0 1px 0 hsl(var(--background));
 }
 
+/* 状态标签只是标注当前视图，朱砂留给「复制到公众号」，一屏里只该有一处高饱和 */
 .workspace-chip--accent {
-  border-color: hsl(var(--primary) / 0.25);
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-  box-shadow: 0 12px 30px hsl(var(--primary) / 0.16);
+  border-color: hsl(var(--foreground) / 0.14);
+  background: hsl(var(--foreground) / 0.06);
+  font-weight: 500;
+  color: hsl(var(--foreground) / 0.78);
 }
 
 .workspace-panel__body {
@@ -1934,6 +2004,18 @@ onUnmounted(() => {
     0 8px 20px hsl(var(--foreground) / 0.05);
 }
 
+/*
+ * 深色模式只暗化桌面，纸不跟着反色。
+ * 正文颜色来自主题 CSS，不会随深浅模式变化，纸一黑就成了深字压深底；
+ * 而且这里预览的是发布后的样子，公众号里本来就是白底。
+ * 深色主题自己会在 #output 上铺底色，盖在这层之上，不受影响。
+ */
+.dark .preview-panel :deep(#output-wrapper > .preview) {
+  background: hsl(40 22% 95%);
+  color: hsl(24 9% 13%);
+  box-shadow: 0 32px 80px rgb(0 0 0 / 0.5);
+}
+
 .editor-panel__body :deep(.cm-editor) {
   height: 100% !important;
   background: transparent;
@@ -2016,9 +2098,9 @@ onUnmounted(() => {
     transform: translateY(-50%);
 
     .loading__img {
-      width: 75px;
-      height: 75px;
-      background: url('../assets/images/favicon.png') no-repeat;
+      width: 64px;
+      height: 64px;
+      background: url('/logo.svg') no-repeat;
       margin: 1em auto;
       background-size: cover;
     }

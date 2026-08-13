@@ -23,7 +23,6 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppSplash />
   <CodemirrorEditor />
 
   <Toaster

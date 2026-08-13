@@ -64,6 +64,8 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
   const activeCategory = ref(`text`)
   const activeHeadingLevel = ref<HeadingLevelId>(`h2`)
   const expandedGroups = ref<string[]>([`heading`, `paragraph`, `blockquote`, `codeBlock`, `image`])
+  /** 从预览点过来时短暂高亮的分组，用完由样式面板清掉 */
+  const focusedGroupId = ref(``)
 
   const past = ref<ThemeTokens[]>([])
   const future = ref<ThemeTokens[]>([])
@@ -311,6 +313,7 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
     activeCategory,
     activeHeadingLevel,
     expandedGroups,
+    focusedGroupId,
 
     // Getters
     tokens,

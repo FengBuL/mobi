@@ -119,7 +119,7 @@ watch(theme, (value) => {
 </script>
 
 <template>
-  <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
+  <div class="style-card space-y-3">
     <div class="flex items-start justify-between gap-3">
       <div class="space-y-1">
         <h2 class="text-sm font-semibold">

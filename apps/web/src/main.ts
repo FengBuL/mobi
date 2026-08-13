@@ -21,3 +21,16 @@ const app = createApp(App)
 app.use(createPinia())
 
 app.mount(`#app`)
+
+// 等首帧画完再淡出，否则会露出一瞬间的空白骨架
+function dismissSplash() {
+  const splash = document.getElementById(`app-splash`)
+  if (!splash) {
+    return
+  }
+
+  splash.classList.add(`is-leaving`)
+  splash.addEventListener(`transitionend`, () => splash.remove(), { once: true })
+}
+
+requestAnimationFrame(() => requestAnimationFrame(dismissSplash))

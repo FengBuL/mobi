@@ -24,7 +24,6 @@ declare module 'vue' {
     AlertDialogTitle: typeof import('./src/components/ui/alert-dialog/AlertDialogTitle.vue')['default']
     AlertDialogTrigger: typeof import('./src/components/ui/alert-dialog/AlertDialogTrigger.vue')['default']
     AlertTitle: typeof import('./src/components/ui/alert/AlertTitle.vue')['default']
-    AppSplash: typeof import('./src/components/AppSplash.vue')['default']
     BackTop: typeof import('./src/components/ui/back-top/BackTop.vue')['default']
     Button: typeof import('./src/components/ui/button/Button.vue')['default']
     ContextMenu: typeof import('./src/components/ui/context-menu/ContextMenu.vue')['default']

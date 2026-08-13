@@ -7,11 +7,15 @@ const props = defineProps<{
   group: ThemeGroup
   /** 折叠状态的 key，标题这种共用一张卡片的分组需要固定住 */
   panelKey?: string
+  /** 从预览点过来时的定位标记，标题卡片要用 `heading` 而不是具体的 h1~h6 */
+  focusKey?: string
 }>()
 
 const designerStore = useThemeDesignerStore()
 
 const key = computed(() => props.panelKey || props.group.id)
+const focusId = computed(() => props.focusKey || props.group.id)
+const isFocused = computed(() => designerStore.focusedGroupId === focusId.value)
 const isExpanded = computed(() => designerStore.expandedGroups.includes(key.value))
 const modifiedCount = computed(() => designerStore.groupCount(props.group.id))
 const visibleFields = computed(() => {
@@ -27,7 +31,11 @@ function toggle() {
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-2xl border bg-background/80">
+  <div
+    class="style-group-card overflow-hidden rounded-2xl border bg-background/80"
+    :class="{ 'is-focused': isFocused }"
+    :data-style-group="focusId"
+  >
     <button
       type="button"
       class="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-accent/40"

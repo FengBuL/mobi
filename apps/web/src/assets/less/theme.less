@@ -1,4 +1,3 @@
-@nightPreviewColor: #191919;
 @nightCodeMirrorColor: #191919;
 @nightActiveCodeMirrorColor: gray;
 @nightFontColor: gray;
@@ -15,9 +14,13 @@
     }
 
     .output_night {
+      /*
+       * 只把纸张四周的「桌面」调暗，纸本身不跟着反色。
+       * 文章的文字色来自主题 CSS，不会随深色模式变亮，纸一暗就成了深字压深底；
+       * 何况预览是发布前的样张，公众号里就是白底。
+       */
       .preview {
-        background-color: @nightPreviewColor;
-        box-shadow: 0 0 70px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 0 70px rgba(0, 0, 0, 0.55);
       }
 
       .preview-wrapper {

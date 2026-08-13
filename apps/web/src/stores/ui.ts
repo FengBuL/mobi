@@ -185,6 +185,53 @@ export const useUIStore = defineStore(`ui`, () => {
     searchTabRequest.value = null
   }
 
+  // ==================== 从预览反查样式 ====================
+  /**
+   * 在预览里点到某个元素时，把样式面板翻到管这个元素的设置组。
+   *
+   * 只在面板已经打开时才跟随：写作时点预览是为了定位原文，
+   * 这时候弹出面板反而碍事。
+   */
+  const styleFocusRequest = ref<{ panel: string, groupId?: string, headingLevel?: string, seq: number } | null>(null)
+  let styleFocusSeq = 0
+
+  function focusStyleGroup(panel: string, groupId?: string, headingLevel?: string) {
+    if (!isOpenRightSlider.value) {
+      return
+    }
+
+    styleFocusSeq += 1
+    styleFocusRequest.value = { panel, groupId, headingLevel, seq: styleFocusSeq }
+  }
+
+  /**
+   * 在预览里点到标题、引用这类能换板块样式的元素时，把板块库叫出来。
+   *
+   * 标题、引用这些类别由板块库自己跟着 blockSelection 切，不用传 category；
+   * 图片走的是图文排版那套，不在 blockSelection 的类型里，得显式指定。
+   */
+  const blockLibraryCategoryRequest = ref<{ category: string, mediaBlockIndex?: number, seq: number } | null>(null)
+  let blockLibrarySeq = 0
+
+  function focusBlockLibrary(category?: string, mediaBlockIndex?: number) {
+    // 移动端板块库是全屏对话框，自动弹出会盖住正文
+    if (isMobile.value) {
+      return
+    }
+
+    // 简洁模式下侧边只有一个抽屉位，样式面板开着就说明用户在调样式，别抢
+    if (isSimpleWorkspace.value && isOpenRightSlider.value) {
+      return
+    }
+
+    isOpenBlockWorkspace.value = true
+
+    if (category) {
+      blockLibrarySeq += 1
+      blockLibraryCategoryRequest.value = { category, mediaBlockIndex, seq: blockLibrarySeq }
+    }
+  }
+
   // ==================== 工具函数 ====================
   // 处理窗口大小变化
   function handleResize() {
@@ -313,6 +360,12 @@ export const useUIStore = defineStore(`ui`, () => {
     searchTabRequest,
     openSearchTab,
     clearSearchTabRequest,
+
+    // ==================== 从预览反查样式 ====================
+    styleFocusRequest,
+    focusStyleGroup,
+    focusBlockLibrary,
+    blockLibraryCategoryRequest,
 
     // ==================== Actions ====================
     toggleDark,

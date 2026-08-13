@@ -226,7 +226,7 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
   </div>
 
   <template v-else>
-    <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
+    <div class="style-card space-y-3">
       <div class="space-y-1">
         <h2 class="text-sm font-semibold">
           字体与字号
@@ -276,7 +276,7 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
       </div>
     </div>
 
-    <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
+    <div class="style-card space-y-3">
       <div class="space-y-1">
         <div class="flex items-center justify-between gap-2">
           <h2 class="text-sm font-semibold">

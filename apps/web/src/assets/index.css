@@ -19,68 +19,80 @@
   }
 }
 
+/*
+ * 墨笔的界面配色：纸、墨、朱砂。
+ *
+ * 只管编辑器外壳，不碰预览里的文章 —— 文章的样子由主题 CSS 决定，
+ * `--blockquote-background` 是唯一的例外，它会被复制链路换成实色带进公众号，所以保持原值。
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    /* 纸：暖白，长时间盯着比纯白舒服 */
+    --background: 40 30% 97%;
+    /* 墨：偏暖的黑，避免和纸底形成生硬对比 */
+    --foreground: 24 9% 13%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card: 42 40% 99%;
+    --card-foreground: 24 9% 13%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
+    --popover: 42 40% 99%;
+    --popover-foreground: 24 9% 13%;
 
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
+    /* 朱砂：主按钮与聚焦环，全局只此一处高饱和 */
+    --primary: 9 65% 45%;
+    --primary-foreground: 40 33% 97%;
 
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
+    --secondary: 38 24% 93%;
+    --secondary-foreground: 24 9% 20%;
 
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted: 38 22% 94%;
+    --muted-foreground: 28 7% 42%;
 
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --accent: 36 27% 91%;
+    --accent-foreground: 24 9% 16%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    /* 比朱砂更冷更深，免得两种红在界面里打架 */
+    --destructive: 358 62% 46%;
+    --destructive-foreground: 40 33% 97%;
 
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --border: 36 17% 87%;
+    --input: 36 17% 87%;
+    --ring: 9 65% 45%;
     --radius: 0.5rem;
 
     --blockquote-background: #f7f7f7;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
+    /* 墨夜：带一点暖，纯黑会让朱砂显得发脏 */
+    --background: 26 8% 9%;
+    --foreground: 38 18% 91%;
 
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 26 8% 11%;
+    --card-foreground: 38 18% 91%;
 
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 26 8% 11%;
+    --popover-foreground: 38 18% 91%;
 
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
+    /* 暗底上朱砂要提亮才够醒目 */
+    --primary: 9 62% 53%;
+    --primary-foreground: 26 8% 9%;
 
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 26 7% 17%;
+    --secondary-foreground: 38 18% 91%;
 
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 26 7% 16%;
+    --muted-foreground: 35 10% 62%;
 
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 26 7% 20%;
+    --accent-foreground: 38 18% 91%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 358 55% 42%;
+    --destructive-foreground: 38 18% 91%;
 
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --border: 26 7% 20%;
+    --input: 26 7% 20%;
+    --ring: 9 62% 53%;
 
     --blockquote-background: #212121;
   }
@@ -92,5 +104,63 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /*
+   * 样式面板里的分组卡片。
+   *
+   * 这些卡片是竖着一路堆下来的，只靠描边区分时一屏能有六七块，扫过去分不清哪句归哪组。
+   * 所以让底色和面板拉开一档、标题前加一道锚点，先看见「有几块」，再看块里写了什么。
+   */
+  .style-panel {
+    background: hsl(var(--muted) / 0.4);
+  }
+
+  .style-card {
+    padding: 1rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: 1rem;
+    background: hsl(var(--card));
+    box-shadow: 0 1px 2px hsl(var(--foreground) / 0.05);
+  }
+
+  .style-card h2 {
+    position: relative;
+    padding-left: 0.625rem;
+  }
+
+  .style-card h2::before {
+    content: '';
+    position: absolute;
+    top: 0.2em;
+    bottom: 0.2em;
+    left: 0;
+    width: 3px;
+    border-radius: 999px;
+    background: hsl(var(--foreground) / 0.24);
+  }
+
+  /* 深色下反过来：面板保持最暗，卡片提亮才浮得起来 */
+  .dark .style-panel {
+    background: transparent;
+  }
+
+  .dark .style-card {
+    background: hsl(var(--muted) / 0.55);
+    box-shadow: none;
+  }
+
+  /* 从预览点过来时闪一下，指明「你要找的设置在这」 */
+  .style-group-card {
+    transition:
+      border-color 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .style-group-card.is-focused {
+    border-color: hsl(var(--primary) / 0.65);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.16);
   }
 }

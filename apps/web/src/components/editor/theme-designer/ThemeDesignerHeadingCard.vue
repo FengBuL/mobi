@@ -32,7 +32,7 @@ function syncHeadingToAll() {
 </script>
 
 <template>
-  <ThemeDesignerGroupCard :group="headingGroup" panel-key="heading">
+  <ThemeDesignerGroupCard :group="headingGroup" panel-key="heading" focus-key="heading">
     <template #before-fields>
       <div class="space-y-2">
         <div class="flex flex-wrap gap-1">
