@@ -1,6 +1,8 @@
 import { app, BrowserWindow } from 'electron'
 import { isDev } from './env'
 import { registerWechatIpc } from './ipc'
+import { installApplicationMenu } from './menu'
+import { installPermissionHandlers } from './permissions'
 import { handleAppProtocol, registerAppScheme } from './protocol'
 import { createMainWindow, hardenWebContents } from './window'
 
@@ -30,6 +32,8 @@ else {
 
   app.whenReady().then(() => {
     handleAppProtocol()
+    installPermissionHandlers()
+    installApplicationMenu()
     registerWechatIpc()
     createMainWindow()
 

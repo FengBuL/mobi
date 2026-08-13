@@ -18,6 +18,7 @@ interface Window {
 // Extend FileSystemDirectoryHandle with full File System Access API methods
 interface FileSystemDirectoryHandle {
   // Permission management
+  queryPermission: (descriptor?: { mode?: `read` | `readwrite` }) => Promise<PermissionState>
   requestPermission: (descriptor?: { mode?: `read` | `readwrite` }) => Promise<PermissionState>
 
   // Directory operations

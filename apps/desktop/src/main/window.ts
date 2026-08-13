@@ -2,6 +2,7 @@ import path from 'node:path'
 import { BrowserWindow, nativeTheme, shell } from 'electron'
 import { APP_ORIGIN } from '../shared/scheme'
 import { devServerUrl, isDev } from './env'
+import { loadWindowState, MIN_WINDOW_SIZE, trackWindowState } from './windowState'
 
 /** 和 index.html 里首屏 splash 的底色对齐，避免开窗那一下白闪 */
 const BACKGROUND = { light: `#faf8f5`, dark: `#171514` }
@@ -52,11 +53,15 @@ export function hardenWebContents(contents: Electron.WebContents): void {
 }
 
 export function createMainWindow(): BrowserWindow {
+  const state = loadWindowState()
+
   const window = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 1024,
-    minHeight: 680,
+    width: state.width,
+    height: state.height,
+    x: state.x,
+    y: state.y,
+    minWidth: MIN_WINDOW_SIZE.width,
+    minHeight: MIN_WINDOW_SIZE.height,
     show: false,
     title: `墨笔`,
     backgroundColor: nativeTheme.shouldUseDarkColors ? BACKGROUND.dark : BACKGROUND.light,
@@ -69,6 +74,12 @@ export function createMainWindow(): BrowserWindow {
       spellcheck: false,
     },
   })
+
+  if (state.maximized) {
+    window.maximize()
+  }
+
+  trackWindowState(window)
 
   window.once(`ready-to-show`, () => {
     window.show()

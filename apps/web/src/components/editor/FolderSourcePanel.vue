@@ -28,6 +28,14 @@ const {
 
 const expandedPaths = ref<Set<string>>(new Set())
 
+// 恢复放在面板挂载时而不是应用启动时：没人看这块面板就没必要去读盘
+onMounted(async () => {
+  await folderSourceStore.restoreSavedFolders()
+  if (fileTree.value.length > 0) {
+    expandedPaths.value.add(fileTree.value[0].path)
+  }
+})
+
 function handleToggleExpand(path: string) {
   if (expandedPaths.value.has(path)) {
     expandedPaths.value.delete(path)

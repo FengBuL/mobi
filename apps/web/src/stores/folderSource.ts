@@ -1,3 +1,9 @@
+import {
+  deleteFolderHandle,
+  listSavedFolderHandles,
+  saveFolderHandle,
+} from '@/services/folder/handleStore'
+
 /**
  * 文件系统节点接口
  */
@@ -48,16 +54,6 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
     return runtimeFolderMap.get(currentFolderId.value) || null
   })
 
-  // 兼容旧代码的属性
-  const folderHandles = computed(() => {
-    return Array.from(runtimeFolderMap.values()).map(folder => ({
-      id: folder.id,
-      name: folder.name,
-      handle: folder.handle,
-      permission: true,
-    }))
-  })
-
   const currentFolderHandle = computed(() => {
     if (!currentRuntimeFolder.value)
       return null
@@ -68,9 +64,6 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
       permission: true,
     }
   })
-
-  // 兼容：savedFolders 返回空数组
-  const savedFolders = ref<any[]>([])
 
   // 检查浏览器是否支持 File System Access API
   const isFileSystemAPISupported = computed(() => {
@@ -127,6 +120,13 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
       // 加载文件树
       await loadFileTree(handle)
 
+      await saveFolderHandle({
+        id: folderId,
+        name: handle.name,
+        handle,
+        lastOpenedAt: Date.now(),
+      })
+
       toast.success(`文件夹「${handle.name}」已打开`)
     }
     catch (error: any) {
@@ -156,10 +156,56 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
    */
   function removeFolder(folderId: string) {
     runtimeFolderMap.delete(folderId)
+    void deleteFolderHandle(folderId)
 
     // 如果关闭的是当前文件夹，清空当前状态
     if (currentFolderId.value === folderId) {
       closeFolder()
+    }
+  }
+
+  /**
+   * 恢复上次打开的文件夹。
+   *
+   * handle 存得住，权限存不住：取回来的 handle 权限会退回 prompt，
+   * 而重新申请权限必须挂在用户手势上，没法在启动时静默完成。
+   * 所以这里只在权限仍然有效时自动恢复——桌面版由主进程放行，
+   * 走到这一步就是无感的；浏览器里则是等用户自己再点一次「打开文件夹」。
+   */
+  async function restoreSavedFolders(): Promise<void> {
+    if (!isFileSystemAPISupported.value || currentFolderId.value) {
+      return
+    }
+
+    const saved = await listSavedFolderHandles()
+    for (const entry of saved) {
+      runtimeFolderMap.set(entry.id, {
+        id: entry.id,
+        name: entry.name,
+        handle: entry.handle,
+      })
+    }
+
+    const mostRecent = saved[0]
+    if (!mostRecent) {
+      return
+    }
+
+    try {
+      const permission = await mostRecent.handle.queryPermission({ mode: `readwrite` })
+      if (permission !== `granted`) {
+        return
+      }
+
+      currentFolderId.value = mostRecent.id
+      await loadFileTree(mostRecent.handle)
+    }
+    catch (error: any) {
+      // 目录被删掉或者移走了，别把启动流程也带崩
+      console.error(`恢复上次的文件夹失败`, error)
+      currentFolderId.value = null
+      await deleteFolderHandle(mostRecent.id)
+      runtimeFolderMap.delete(mostRecent.id)
     }
   }
 
@@ -340,9 +386,7 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
 
   return {
     // State
-    folderHandles, // 兼容旧代码
-    currentFolderHandle, // 兼容旧代码
-    savedFolders,
+    currentFolderHandle,
     fileTree,
     selectedFilePath,
     isLoading,
@@ -353,6 +397,7 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
 
     // Actions
     selectFolder,
+    restoreSavedFolders,
     closeFolder,
     removeFolder,
     loadFileTree,
