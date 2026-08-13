@@ -84,7 +84,7 @@ export function postProcessHtml(baseHtml: string, reading: ReadTimeResults, rend
   html += `
     <style>
       .hljs.code__pre > .mac-sign {
-        display: ${renderer.getOpts().isMacCodeBlock ? `flex` : `none`};
+        display: ${renderer.getOpts().isShowCodeLanguage ? `flex` : `none`};
       }
     </style>
   `

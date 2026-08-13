@@ -58,7 +58,16 @@
     --border: 36 17% 87%;
     --input: 36 17% 87%;
     --ring: 9 65% 45%;
-    --radius: 0.5rem;
+
+    /*
+     * 控件圆角收到 3px。0.5rem 是 shadcn 的出厂值，那个弧度会让每个按钮、
+     * 每个页签都带上一层「组件库」的通用观感；印刷品上的方框和细线才是这个产品要的语气。
+     * 大块面板另有各自的显式圆角，不受这里影响。
+     */
+    --radius: 0.1875rem;
+
+    /* 编辑器外壳里的分隔线。比 --border 更淡，用来划分区域而不是圈出边框 */
+    --rule: 36 14% 84%;
 
     --blockquote-background: #f7f7f7;
   }
@@ -94,6 +103,8 @@
     --input: 26 7% 20%;
     --ring: 9 62% 53%;
 
+    --rule: 26 7% 22%;
+
     --blockquote-background: #212121;
   }
 }
@@ -120,26 +131,16 @@
 
   .style-card {
     padding: 1rem;
-    border: 1px solid hsl(var(--border));
-    border-radius: 1rem;
+    border: 1px solid hsl(var(--rule));
+    border-radius: 3px;
     background: hsl(var(--card));
-    box-shadow: 0 1px 2px hsl(var(--foreground) / 0.05);
+    box-shadow: none;
   }
 
+  /* 标题压一道通栏细线，像版面上的栏目分隔，而不是给每块加一枚圆头色标 */
   .style-card h2 {
-    position: relative;
-    padding-left: 0.625rem;
-  }
-
-  .style-card h2::before {
-    content: '';
-    position: absolute;
-    top: 0.2em;
-    bottom: 0.2em;
-    left: 0;
-    width: 3px;
-    border-radius: 999px;
-    background: hsl(var(--foreground) / 0.24);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid hsl(var(--rule));
   }
 
   /* 深色下反过来：面板保持最暗，卡片提亮才浮得起来 */

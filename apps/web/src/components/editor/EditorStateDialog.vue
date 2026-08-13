@@ -72,7 +72,7 @@ function getAllStoreStates() {
     primaryColor: themeStore.primaryColor,
     codeBlockTheme: themeStore.codeBlockTheme,
     legend: themeStore.legend,
-    isMacCodeBlock: themeStore.isMacCodeBlock,
+    isShowCodeLanguage: themeStore.isShowCodeLanguage,
     isShowLineNumber: themeStore.isShowLineNumber,
     isCiteStatus: themeStore.isCiteStatus,
     isCountStatus: themeStore.isCountStatus,
@@ -267,8 +267,8 @@ function applyImportedConfig() {
         themeStore.codeBlockTheme = value
       else if (key === `legend`)
         themeStore.legend = value
-      else if (key === `isMacCodeBlock`)
-        themeStore.isMacCodeBlock = value
+      else if (key === `isShowCodeLanguage`)
+        themeStore.isShowCodeLanguage = value
       else if (key === `isShowLineNumber`)
         themeStore.isShowLineNumber = value
       else if (key === `isCiteStatus`)

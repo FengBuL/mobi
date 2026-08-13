@@ -1019,7 +1019,6 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   <div class="block-library-shell">
     <header class="block-library-shell__header">
       <div>
-        <span>Block Library</span>
         <h2>板块库</h2>
         <p>选样式、填内容，像拼积木一样组合公众号排版。</p>
       </div>
@@ -1562,14 +1561,6 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   border-bottom: 1px solid hsl(var(--border) / 0.72);
 }
 
-.block-library-shell__header span {
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: hsl(var(--muted-foreground));
-}
-
 .block-library-shell__header h2 {
   margin: 0.18rem 0 0;
   font-size: 1.25rem;
@@ -1606,9 +1597,13 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   min-width: 4.5rem;
   gap: 0.12rem;
   padding: 0.5rem 0.58rem;
-  border-radius: 12px;
-  background: hsl(var(--secondary) / 0.62);
+  border: 1px solid hsl(var(--rule));
+  border-radius: 2px;
+  background: transparent;
   text-align: left;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .block-library-nav__item strong {
@@ -1621,6 +1616,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
 }
 
 .block-library-nav__item--active {
+  border-color: hsl(var(--foreground));
   background: hsl(var(--foreground));
   color: hsl(var(--background));
 }

@@ -34,7 +34,7 @@ export const useRenderStore = defineStore(`render`, () => {
    * 主题样式通过 useThemeStore().applyCurrentTheme() 注入到 <style> 标签
    */
   const initRendererInstance = (options?: {
-    isMacCodeBlock?: boolean
+    isShowCodeLanguage?: boolean
     isShowLineNumber?: boolean
   }) => {
     renderer = initRenderer(options || {})
@@ -79,7 +79,7 @@ export const useRenderStore = defineStore(`render`, () => {
       citeStatus: themeStore.isCiteStatus,
       legend: themeStore.legend,
       countStatus: themeStore.isCountStatus,
-      isMacCodeBlock: themeStore.isMacCodeBlock,
+      isShowCodeLanguage: themeStore.isShowCodeLanguage,
       isShowLineNumber: themeStore.isShowLineNumber,
       themeMode: uiStore.isDark ? `dark` : `light`,
       headingDecorationStatus: themeStore.isHeadingDecorationStatus,

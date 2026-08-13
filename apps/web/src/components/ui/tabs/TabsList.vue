@@ -17,7 +17,8 @@ const delegatedProps = computed(() => {
   <TabsList
     v-bind="delegatedProps"
     :class="cn(
-      'inline-flex items-center justify-center rounded-md bg-muted p-1 text-muted-foreground',
+      // 页签靠一道底线分区，不靠灰胶囊。胶囊是组件库的通用手势，也白白吃掉一圈空间
+      'inline-flex items-center justify-start gap-5 border-b border-[hsl(var(--rule))] text-muted-foreground',
       props.class,
     )"
   >

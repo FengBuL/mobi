@@ -9,7 +9,7 @@ export interface IOpts {
   legend?: string
   citeStatus?: boolean
   countStatus?: boolean
-  isMacCodeBlock?: boolean
+  isShowCodeLanguage?: boolean
   isShowLineNumber?: boolean
   themeMode?: `light` | `dark`
   headingDecorationStatus?: boolean

@@ -42,7 +42,7 @@ const {
   primaryColor,
   codeBlockTheme,
   legend,
-  isMacCodeBlock,
+  isShowCodeLanguage,
   isShowLineNumber,
   isCiteStatus,
   isUseIndent,
@@ -176,7 +176,7 @@ const paragraphStatusSummary = computed(() => {
 })
 const codeStatusSummary = computed(() => {
   const parts = [
-    isMacCodeBlock.value ? `Mac 风格` : `标准代码块`,
+    isShowCodeLanguage.value ? `标语言` : `不标语言`,
     isShowLineNumber.value ? `带行号` : `无行号`,
   ]
 
@@ -266,7 +266,7 @@ function buildCurrentStylePreset(overrides: Partial<IStylePreset>): IStylePreset
     codeBlockTheme: overrides.codeBlockTheme || codeBlockTheme.value,
     legend: overrides.legend || legend.value,
     headingStyles: overrides.headingStyles || { ...headingStyles.value },
-    isMacCodeBlock: overrides.isMacCodeBlock ?? isMacCodeBlock.value,
+    isShowCodeLanguage: overrides.isShowCodeLanguage ?? isShowCodeLanguage.value,
     isShowLineNumber: overrides.isShowLineNumber ?? isShowLineNumber.value,
     isCiteStatus: overrides.isCiteStatus ?? isCiteStatus.value,
     isUseIndent: overrides.isUseIndent ?? isUseIndent.value,
@@ -289,7 +289,7 @@ function isPresetActive(preset: IStylePreset) {
     && primaryColor.value === preset.primaryColor
     && codeBlockTheme.value === preset.codeBlockTheme
     && legend.value === preset.legend
-    && isMacCodeBlock.value === preset.isMacCodeBlock
+    && isShowCodeLanguage.value === preset.isShowCodeLanguage
     && isShowLineNumber.value === preset.isShowLineNumber
     && isCiteStatus.value === preset.isCiteStatus
     && isUseIndent.value === preset.isUseIndent
@@ -305,7 +305,7 @@ function applyStylePreset(preset: IStylePreset) {
   themeStore.primaryColor = preset.primaryColor
   themeStore.codeBlockTheme = preset.codeBlockTheme
   themeStore.legend = preset.legend
-  themeStore.isMacCodeBlock = preset.isMacCodeBlock
+  themeStore.isShowCodeLanguage = preset.isShowCodeLanguage
   themeStore.isShowLineNumber = preset.isShowLineNumber
   themeStore.isCiteStatus = preset.isCiteStatus
   themeStore.isUseIndent = preset.isUseIndent
@@ -373,7 +373,7 @@ function resetTextGroup() {
 function resetDetailGroup() {
   themeStore.codeBlockTheme = defaultStyleConfig.codeBlockTheme
   themeStore.legend = defaultStyleConfig.legend
-  themeStore.isMacCodeBlock = defaultStyleConfig.isMacCodeBlock
+  themeStore.isShowCodeLanguage = defaultStyleConfig.isShowCodeLanguage
   themeStore.isShowLineNumber = defaultStyleConfig.isShowLineNumber
   themeStore.isCiteStatus = defaultStyleConfig.isCiteStatus
   editorRefresh()
@@ -457,7 +457,7 @@ function legendChanged(newVal: string) {
 }
 
 function macCodeBlockChanged() {
-  themeStore.isMacCodeBlock = !themeStore.isMacCodeBlock
+  themeStore.isShowCodeLanguage = !themeStore.isShowCodeLanguage
   editorRefresh()
 }
 
@@ -533,8 +533,8 @@ function resetAllHeadingStyles() {
   editorRefresh()
 }
 
-function setMacCodeBlock(enabled: boolean) {
-  if (isMacCodeBlock.value !== enabled)
+function setShowCodeLanguage(enabled: boolean) {
+  if (isShowCodeLanguage.value !== enabled)
     macCodeBlockChanged()
 }
 
@@ -1012,17 +1012,17 @@ watch(isOpen, () => {
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <div class="text-sm font-medium">
-                      Mac 代码块外观
+                      代码块语言标注
                     </div>
                     <div class="text-xs text-muted-foreground">
-                      顶部显示三色圆点
+                      在代码块顶部标出语言名
                     </div>
                   </div>
                   <div class="grid grid-cols-2 gap-2">
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isMacCodeBlock }" @click="setMacCodeBlock(true)">
+                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isShowCodeLanguage }" @click="setShowCodeLanguage(true)">
                       开
                     </Button>
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isMacCodeBlock }" @click="setMacCodeBlock(false)">
+                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isShowCodeLanguage }" @click="setShowCodeLanguage(false)">
                       关
                     </Button>
                   </div>

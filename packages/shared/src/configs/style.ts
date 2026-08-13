@@ -1,6 +1,7 @@
 import type { IConfigOption } from '../types'
 import type { ThemeName } from './theme'
 import { HLJS_ASSET_BASE, localAssetUrl } from '../utils/localAsset'
+import { codeBlockThemeIds, FALLBACK_CODE_BLOCK_THEME } from './code-block-themes'
 import { themeOptions } from './theme'
 
 /**
@@ -187,100 +188,29 @@ export const widthOptions: IConfigOption[] = [
 
 const codeBlockUrlPrefix = localAssetUrl(`${HLJS_ASSET_BASE}/styles/`)
 
+function codeBlockThemeUrl(themeId: string) {
+  return `${codeBlockUrlPrefix}${themeId}.min.css`
+}
+
 /**
- * 早期版本把完整的 CDN 地址存进了 localStorage，样式改成本地打包之后那些地址就失效了。
- * 读取时按文件名重新拼一遍，老用户不用手动换主题。
+ * localStorage 里存的是完整地址，而地址前缀和可选主题都变过：
+ * 早期指向 CDN，后来改成本地打包，再后来主题从 73 套砍到 10 套。
+ * 这里把存量的值统一校准到当前这套，读到不认识的主题就回落，不要留一个 404 的样式表。
  */
 export function resolveCodeBlockThemeUrl(stored: string): string {
   if (!stored) {
-    return stored
-  }
-  if (stored.startsWith(codeBlockUrlPrefix)) {
-    return stored
+    return codeBlockThemeUrl(FALLBACK_CODE_BLOCK_THEME)
   }
 
-  const fileName = stored.split(`/`).pop()
-  return fileName ? `${codeBlockUrlPrefix}${fileName}` : stored
+  const themeId = stored.split(`/`).pop()?.replace(/\.min\.css$/, ``) || ``
+  const kept = (codeBlockThemeIds as readonly string[]).includes(themeId)
+
+  return codeBlockThemeUrl(kept ? themeId : FALLBACK_CODE_BLOCK_THEME)
 }
-const codeBlockThemeList = [
-  `1c-light`,
-  `a11y-dark`,
-  `a11y-light`,
-  `agate`,
-  `an-old-hope`,
-  `androidstudio`,
-  `arduino-light`,
-  `arta`,
-  `ascetic`,
-  `atom-one-dark-reasonable`,
-  `atom-one-dark`,
-  `atom-one-light`,
-  `brown-paper`,
-  `codepen-embed`,
-  `color-brewer`,
-  `dark`,
-  `default`,
-  `devibeans`,
-  `docco`,
-  `far`,
-  `felipec`,
-  `foundation`,
-  `github-dark-dimmed`,
-  `github-dark`,
-  `github`,
-  `gml`,
-  `googlecode`,
-  `gradient-dark`,
-  `gradient-light`,
-  `grayscale`,
-  `hybrid`,
-  `idea`,
-  `intellij-light`,
-  `ir-black`,
-  `isbl-editor-dark`,
-  `isbl-editor-light`,
-  `kimbie-dark`,
-  `kimbie-light`,
-  `lightfair`,
-  `lioshi`,
-  `magula`,
-  `mono-blue`,
-  `monokai-sublime`,
-  `monokai`,
-  `night-owl`,
-  `nnfx-dark`,
-  `nnfx-light`,
-  `nord`,
-  `obsidian`,
-  `panda-syntax-dark`,
-  `panda-syntax-light`,
-  `paraiso-dark`,
-  `paraiso-light`,
-  `pojoaque`,
-  `purebasic`,
-  `qtcreator-dark`,
-  `qtcreator-light`,
-  `rainbow`,
-  `routeros`,
-  `school-book`,
-  `shades-of-purple`,
-  `srcery`,
-  `stackoverflow-dark`,
-  `stackoverflow-light`,
-  `sunburst`,
-  `tokyo-night-dark`,
-  `tokyo-night-light`,
-  `tomorrow-night-blue`,
-  `tomorrow-night-bright`,
-  `vs`,
-  `vs2015`,
-  `xcode`,
-  `xt256`,
-]
 
-export const codeBlockThemeOptions: IConfigOption[] = codeBlockThemeList.map(codeBlockTheme => ({
-  label: codeBlockTheme,
-  value: `${codeBlockUrlPrefix}${codeBlockTheme}.min.css`,
+export const codeBlockThemeOptions: IConfigOption[] = codeBlockThemeIds.map(themeId => ({
+  label: themeId,
+  value: codeBlockThemeUrl(themeId),
   desc: ``,
 }))
 
@@ -365,14 +295,14 @@ export const legendOptions: IConfigOption[] = [
 
 export const defaultStyleConfig = {
   isCiteStatus: false,
-  isMacCodeBlock: true,
+  isShowCodeLanguage: true,
   isShowLineNumber: false,
   isCountStatus: false,
   theme: themeOptions[0].value,
   fontFamily: fontFamilyOptions[0].value,
   fontSize: `14px`,
   primaryColor: colorOptions[0].value,
-  codeBlockTheme: codeBlockThemeOptions[23].value,
+  codeBlockTheme: codeBlockThemeUrl(`github-dark`),
   legend: legendOptions[3].value,
   headingStyles: defaultHeadingStyles as HeadingStyles,
 }
@@ -389,7 +319,7 @@ export interface IStylePreset {
   codeBlockTheme: string
   legend: string
   headingStyles: HeadingStyles
-  isMacCodeBlock: boolean
+  isShowCodeLanguage: boolean
   isShowLineNumber: boolean
   isCiteStatus: boolean
   isUseIndent: boolean
@@ -430,7 +360,7 @@ export const stylePresetOptions: IStylePreset[] = [
       h2: `border-left`,
       h3: `color-only`,
     },
-    isMacCodeBlock: true,
+    isShowCodeLanguage: true,
     isShowLineNumber: true,
     isCiteStatus: false,
     isUseIndent: false,
@@ -453,7 +383,7 @@ export const stylePresetOptions: IStylePreset[] = [
       h2: `border-bottom`,
       h3: `color-only`,
     },
-    isMacCodeBlock: true,
+    isShowCodeLanguage: true,
     isShowLineNumber: false,
     isCiteStatus: false,
     isUseIndent: true,
@@ -470,13 +400,13 @@ export const stylePresetOptions: IStylePreset[] = [
     fontFamily: getFontValue(`华文中宋`),
     fontSize: `14px`,
     primaryColor: getColorValue(`琥珀金`),
-    codeBlockTheme: getCodeBlockThemeValue(`gradient-light`),
+    codeBlockTheme: getCodeBlockThemeValue(`atom-one-light`),
     legend: getLegendValue(`只显示 title`),
     headingStyles: {
       h2: `soft-banner`,
       h3: `eyebrow-line`,
     },
-    isMacCodeBlock: true,
+    isShowCodeLanguage: true,
     isShowLineNumber: false,
     isCiteStatus: false,
     isUseIndent: false,
@@ -499,7 +429,7 @@ export const stylePresetOptions: IStylePreset[] = [
       h2: `solid-banner`,
       h3: `capsule-outline`,
     },
-    isMacCodeBlock: false,
+    isShowCodeLanguage: false,
     isShowLineNumber: true,
     isCiteStatus: true,
     isUseIndent: false,
@@ -522,7 +452,7 @@ export const stylePresetOptions: IStylePreset[] = [
       h2: `double-line`,
       h3: `color-only`,
     },
-    isMacCodeBlock: false,
+    isShowCodeLanguage: false,
     isShowLineNumber: false,
     isCiteStatus: true,
     isUseIndent: true,
@@ -545,7 +475,7 @@ export const stylePresetOptions: IStylePreset[] = [
       h2: `eyebrow-line`,
       h3: `marker`,
     },
-    isMacCodeBlock: true,
+    isShowCodeLanguage: true,
     isShowLineNumber: false,
     isCiteStatus: false,
     isUseIndent: false,

@@ -1362,7 +1362,7 @@ onMounted(() => {
 
   // 初始化渲染器（新主题系统）
   renderStore.initRendererInstance({
-    isMacCodeBlock: themeStore.isMacCodeBlock,
+    isShowCodeLanguage: themeStore.isShowCodeLanguage,
     isShowLineNumber: themeStore.isShowLineNumber,
   })
 
@@ -1537,15 +1537,9 @@ onUnmounted(() => {
                 >
                   <div class="workspace-panel editor-panel">
                     <div class="workspace-panel__header" :class="{ 'workspace-panel__header--compact': isSimpleWorkspace }">
-                      <div v-if="!isSimpleWorkspace" class="workspace-panel__eyebrow">
-                        Markdown Workspace
-                      </div>
                       <div class="workspace-panel__headline">
                         <div class="workspace-panel__copy">
                           <h2>{{ currentPostTitle }}</h2>
-                          <p v-if="!isSimpleWorkspace">
-                            直接输入 Markdown，支持搜索替换、图片粘贴与样式调节。
-                          </p>
                         </div>
                         <div class="workspace-panel__chips">
                           <span class="workspace-chip workspace-chip--accent">{{ viewModeLabel }}</span>
@@ -1598,16 +1592,11 @@ onUnmounted(() => {
               >
                 <div v-show="viewMode !== 'edit'" class="preview-stage relative h-full overflow-x-hidden p-3 md:p-4">
                   <div class="workspace-panel preview-panel">
-                    <div class="workspace-panel__header" :class="{ 'workspace-panel__header--compact': isSimpleWorkspace }">
-                      <div v-if="!isSimpleWorkspace" class="workspace-panel__eyebrow">
-                        Article Preview
-                      </div>
+                    <!-- 标题和描述在左栏已经有了，隔两厘米再写一遍只是占地方 -->
+                    <div class="workspace-panel__header workspace-panel__header--compact">
                       <div class="workspace-panel__headline">
                         <div class="workspace-panel__copy">
-                          <h2>{{ currentPostTitle }}</h2>
-                          <p v-if="!isSimpleWorkspace">
-                            点击标题、段落、图片或代码块，会自动回到左侧原文定位。
-                          </p>
+                          <span class="workspace-panel__label">预览</span>
                         </div>
                         <div class="workspace-panel__chips">
                           <span class="workspace-chip workspace-chip--accent">{{ previewDeviceLabel }}</span>
@@ -1858,21 +1847,12 @@ onUnmounted(() => {
   font-size: 0.7rem;
 }
 
-.workspace-panel__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  margin-bottom: 0.95rem;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid hsl(var(--border) / 0.8);
-  border-radius: 999px;
-  background: hsl(var(--background) / 0.85);
-  font-size: 0.72rem;
+/* 预览栏的静默标签：不跟左栏的文章标题抢层级 */
+.workspace-panel__label {
+  font-size: 0.9rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
-  line-height: 1;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   color: hsl(var(--muted-foreground));
-  box-shadow: inset 0 1px 0 hsl(var(--background));
 }
 
 .workspace-panel__headline {
@@ -1915,11 +1895,11 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   max-width: 100%;
-  padding: 0.46rem 0.78rem;
-  border: 1px solid hsl(var(--border) / 0.8);
-  border-radius: 999px;
-  background: hsl(var(--secondary) / 0.95);
-  font-size: 0.76rem;
+  padding: 0.34rem 0.6rem;
+  border: 1px solid hsl(var(--rule));
+  border-radius: 2px;
+  background: transparent;
+  font-size: 0.74rem;
   line-height: 1;
   white-space: nowrap;
   color: hsl(var(--muted-foreground));
@@ -2239,7 +2219,6 @@ onUnmounted(() => {
     padding: 0.8rem;
   }
 
-  .workspace-panel__eyebrow,
   .workspace-chip {
     font-size: 0.7rem;
   }

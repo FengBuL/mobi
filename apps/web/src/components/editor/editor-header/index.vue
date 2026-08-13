@@ -104,15 +104,15 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
 
     <!-- 右侧操作区 -->
     <div class="flex flex-wrap items-center gap-2">
-      <!-- 工作区模式 -->
-      <div class="mode-switch hidden items-center rounded-lg border bg-muted/50 p-0.5 md:flex">
+      <!-- 工作区模式：选中的一项直接上墨，不做胶囊 -->
+      <div class="mode-switch hidden items-center md:flex">
         <button
           v-for="item in workspaceModes"
           :key="item.value"
           type="button"
-          class="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+          class="border border-border px-3 py-1.5 text-xs font-medium transition-colors first:rounded-l-sm last:rounded-r-sm not-first:-ml-px"
           :class="workspaceMode === item.value
-            ? 'bg-background text-foreground shadow-sm'
+            ? 'relative z-10 border-foreground bg-foreground text-background'
             : 'text-muted-foreground hover:text-foreground'"
           :title="item.hint"
           @click="uiStore.setWorkspaceMode(item.value)"
@@ -122,7 +122,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
       </div>
 
       <!-- 复制：主按钮走公众号，其余格式收在下拉里 -->
-      <div class="flex overflow-hidden rounded-md shadow-sm">
+      <div class="flex overflow-hidden rounded-sm">
         <Button class="h-9 rounded-r-none pl-3 pr-3.5" @click="copyToWeChat">
           <Copy class="mr-2 h-4 w-4" />
           <span>复制到公众号</span>
@@ -148,7 +148,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
         v-if="workspaceMode === 'professional' && !isMobile"
         variant="outline"
         class="h-9"
-        :class="{ 'bg-accent text-accent-foreground': isOpenBlockWorkspace }"
+        :class="{ 'border-foreground/45 bg-foreground/[0.06] text-foreground': isOpenBlockWorkspace }"
         @click="handleOpenMediaLayout"
       >
         <Images class="mr-2 h-4 w-4" />
@@ -162,7 +162,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
       <Button
         variant="outline"
         class="h-9"
-        :class="{ 'bg-accent text-accent-foreground': isOpenRightSlider }"
+        :class="{ 'border-foreground/45 bg-foreground/[0.06] text-foreground': isOpenRightSlider }"
         @click="handleOpenStyleWorkspace"
       >
         <Palette class="mr-2 h-4 w-4" />
@@ -190,31 +190,43 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
   }
 }
 
+/*
+ * 菜单栏保持排版意义上的「一行字」：不铺灰块、不上浮、不投影。
+ * 打开的那一项用底部一道墨线标出来——这也是全局页签用的同一种手势。
+ */
 .menubar {
   user-select: none;
 
   :deep([data-radix-menubar-trigger]) {
+    position: relative;
+    padding: 0.5rem 0.625rem;
+    border-radius: 0;
     font-size: 0.875rem;
     font-weight: 500;
-    padding: 0.5rem 0.875rem;
-    border-radius: 6px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
+    color: hsl(var(--foreground) / 0.68);
+    transition: color 0.15s ease;
+
+    &::after {
+      content: '';
+      position: absolute;
+      right: 0.625rem;
+      bottom: 0.3rem;
+      left: 0.625rem;
+      height: 1.5px;
+      background: transparent;
+      transition: background-color 0.15s ease;
+    }
 
     &:hover {
-      background: hsl(var(--accent) / 0.8);
-      color: hsl(var(--accent-foreground));
-      transform: translateY(-1px);
+      color: hsl(var(--foreground));
     }
 
     &[data-state='open'] {
-      background: hsl(var(--accent));
-      color: hsl(var(--accent-foreground));
-      box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-    }
+      color: hsl(var(--foreground));
 
-    &:active {
-      transform: translateY(0);
+      &::after {
+        background: hsl(var(--foreground));
+      }
     }
   }
 
@@ -222,21 +234,13 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
     animation: slideDownAndFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  :deep([data-radix-menubar-item]) {
-    border-radius: 4px;
-    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-
-    &:hover {
-      background: hsl(var(--accent) / 0.8);
-    }
-  }
-
+  :deep([data-radix-menubar-item]),
   :deep([data-radix-menubar-sub-trigger]) {
-    border-radius: 4px;
-    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 2px;
+    transition: background-color 0.12s ease;
 
     &:hover {
-      background: hsl(var(--accent) / 0.8);
+      background: hsl(var(--foreground) / 0.06);
     }
   }
 }

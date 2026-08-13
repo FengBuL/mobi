@@ -114,13 +114,27 @@ function transform(legend: string, text: string | null, title: string | null, hr
   return ``
 }
 
-const macCodeSvg = `
-  <svg xmlns="http://www.w3.org/2000/svg" version="1.1" x="0px" y="0px" width="45px" height="13px" viewBox="0 0 450 130">
-    <ellipse cx="50" cy="65" rx="50" ry="52" stroke="rgb(220,60,54)" stroke-width="2" fill="rgb(237,108,96)" />
-    <ellipse cx="225" cy="65" rx="50" ry="52" stroke="rgb(218,151,33)" stroke-width="2" fill="rgb(247,193,81)" />
-    <ellipse cx="400" cy="65" rx="50" ry="52" stroke="rgb(27,161,37)" stroke-width="2" fill="rgb(100,200,86)" />
-  </svg>
-`.trim()
+/**
+ * 代码块顶栏。以前放的是三个 macOS 窗口圆点，纯装饰，读者看不出任何信息。
+ * 换成语言名：占同样的位置，但能告诉读者这段是什么语言。
+ *
+ * 颜色用 inherit：25 套主题的代码块底色差得很远（有纯黑也有浅米），
+ * 而 hljs 主题一定会给 pre 设一个在自己底色上可读的前景色，跟着它走就不会踩到看不清的组合。
+ */
+const UNLABELED_LANGUAGES = new Set([`plaintext`, `text`, `txt`, `plain`])
+
+function codeBlockHeader(langText: string, language: { name?: string } | undefined): string {
+  // 判空要看围栏上写的原文，不能看解析后的显示名：
+  // hljs 把 plaintext 的 name 定义成 "Plain text"，拿它去比对会漏掉
+  if (!langText || UNLABELED_LANGUAGES.has(langText.toLowerCase())) {
+    return ``
+  }
+
+  const label = language?.name || langText
+
+  const style = `padding: 10px 14px 0; font-size: 12px; letter-spacing: 0.08em; color: inherit; opacity: 0.5;`
+  return `<span class="mac-sign" style="${style}">${escapeHtml(label)}</span>`
+}
 
 interface ParseResult {
   yamlData: Record<string, any>
@@ -272,7 +286,7 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
 
       const highlighted = highlightAndFormatCode(text, language, hljs, !!opts.isShowLineNumber)
 
-      const span = `<span class="mac-sign" style="padding: 10px 14px 0;">${macCodeSvg}</span>`
+      const span = codeBlockHeader(langText, isLanguageRegistered || undefined)
       // 如果语言未注册，添加 data-language-pending 属性和原始代码文本用于后续动态加载
       let pendingAttr = ``
       if (!isLanguageRegistered && langText !== `plaintext`) {

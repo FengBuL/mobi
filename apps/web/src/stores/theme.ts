@@ -110,7 +110,7 @@ export const useThemeStore = defineStore(`theme`, () => {
   const legend = store.reactive(`legend`, defaultStyleConfig.legend)
 
   // 是否开启 Mac 代码块
-  const isMacCodeBlock = store.reactive(`isMacCodeBlock`, defaultStyleConfig.isMacCodeBlock)
+  const isShowCodeLanguage = store.reactive(`isShowCodeLanguage`, defaultStyleConfig.isShowCodeLanguage)
 
   // 是否开启代码块行号显示
   const isShowLineNumber = store.reactive(`isShowLineNumber`, defaultStyleConfig.isShowLineNumber)
@@ -223,7 +223,7 @@ export const useThemeStore = defineStore(`theme`, () => {
   }
 
   // Toggle 方法
-  const toggleMacCodeBlock = useToggle(isMacCodeBlock)
+  const toggleCodeLanguage = useToggle(isShowCodeLanguage)
   const toggleShowLineNumber = useToggle(isShowLineNumber)
   const toggleCiteStatus = useToggle(isCiteStatus)
   const toggleCountStatus = useToggle(isCountStatus)
@@ -234,7 +234,7 @@ export const useThemeStore = defineStore(`theme`, () => {
   // 重置样式
   const resetStyle = () => {
     isCiteStatus.value = defaultStyleConfig.isCiteStatus
-    isMacCodeBlock.value = defaultStyleConfig.isMacCodeBlock
+    isShowCodeLanguage.value = defaultStyleConfig.isShowCodeLanguage
     isShowLineNumber.value = defaultStyleConfig.isShowLineNumber
     isCountStatus.value = defaultStyleConfig.isCountStatus
 
@@ -364,7 +364,7 @@ export const useThemeStore = defineStore(`theme`, () => {
     isPrimaryColorFollowingTheme,
     codeBlockTheme,
     legend,
-    isMacCodeBlock,
+    isShowCodeLanguage,
     isShowLineNumber,
     isCiteStatus,
     isCountStatus,
@@ -384,7 +384,7 @@ export const useThemeStore = defineStore(`theme`, () => {
     savedCustomColors,
 
     // Actions
-    toggleMacCodeBlock,
+    toggleCodeLanguage,
     toggleShowLineNumber,
     toggleCiteStatus,
     toggleCountStatus,

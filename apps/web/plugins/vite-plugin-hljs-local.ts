@@ -2,11 +2,12 @@ import type { Plugin } from 'vite'
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { codeBlockThemeIds } from '@md/shared/configs/code-block-themes'
 
 /**
  * 把 highlight.js 的代码主题样式和语言包放进自己的产物，不走任何外部 CDN。
  *
- * 只拷两块：styles 下的 .min.css（80 个主题，约 320KB），
+ * 只拷两块：codeBlockThemeIds 里保留的那几套主题 CSS，
  * 以及 es/languages（按需动态 import，不用的语言不会被下载）。
  *
  * 和 mathjax 那个插件同样的做法：dev 时用中间件从 node_modules 直接读，
@@ -60,10 +61,14 @@ export function hljsLocalPlugin(): Plugin {
     closeBundle() {
       const dest = path.resolve(outDir, `static/hljs`)
 
-      fs.cpSync(path.join(hljsDir, `styles`), path.join(dest, `styles`), {
-        recursive: true,
-        filter: src => fs.statSync(src).isDirectory() || src.endsWith(`.min.css`),
-      })
+      fs.mkdirSync(path.join(dest, `styles`), { recursive: true })
+      for (const themeId of codeBlockThemeIds) {
+        const fileName = `${themeId}.min.css`
+        fs.copyFileSync(
+          path.join(hljsDir, `styles`, fileName),
+          path.join(dest, `styles`, fileName),
+        )
+      }
 
       fs.cpSync(path.join(hljsDir, `es/languages`), path.join(dest, `es/languages`), {
         recursive: true,
