@@ -1895,9 +1895,9 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   max-width: 100%;
-  padding: 0.34rem 0.6rem;
+  padding: 0.4rem 0.72rem;
   border: 1px solid hsl(var(--rule));
-  border-radius: 2px;
+  border-radius: 999px;
   background: transparent;
   font-size: 0.74rem;
   line-height: 1;

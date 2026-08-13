@@ -60,11 +60,11 @@
     --ring: 9 65% 45%;
 
     /*
-     * 控件圆角收到 3px。0.5rem 是 shadcn 的出厂值，那个弧度会让每个按钮、
-     * 每个页签都带上一层「组件库」的通用观感；印刷品上的方框和细线才是这个产品要的语气。
-     * 大块面板另有各自的显式圆角，不受这里影响。
+     * 控件圆角跟着面板走。面板是 18–28px 的软圆角，控件做成方角会和容器打架。
+     * 让界面不像组件库出厂样的是别的东西——细线代替灰色填充块、下划线代替胶囊页签，
+     * 跟圆角没关系。
      */
-    --radius: 0.1875rem;
+    --radius: 0.5rem;
 
     /* 编辑器外壳里的分隔线。比 --border 更淡，用来划分区域而不是圈出边框 */
     --rule: 36 14% 84%;
@@ -132,7 +132,7 @@
   .style-card {
     padding: 1rem;
     border: 1px solid hsl(var(--rule));
-    border-radius: 3px;
+    border-radius: 1rem;
     background: hsl(var(--card));
     box-shadow: none;
   }

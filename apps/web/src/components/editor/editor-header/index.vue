@@ -110,7 +110,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
           v-for="item in workspaceModes"
           :key="item.value"
           type="button"
-          class="border border-border px-3 py-1.5 text-xs font-medium transition-colors first:rounded-l-sm last:rounded-r-sm not-first:-ml-px"
+          class="border border-border px-3 py-1.5 text-xs font-medium transition-colors first:rounded-l-md last:rounded-r-md not-first:-ml-px"
           :class="workspaceMode === item.value
             ? 'relative z-10 border-foreground bg-foreground text-background'
             : 'text-muted-foreground hover:text-foreground'"
@@ -122,7 +122,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
       </div>
 
       <!-- 复制：主按钮走公众号，其余格式收在下拉里 -->
-      <div class="flex overflow-hidden rounded-sm">
+      <div class="flex overflow-hidden rounded-md">
         <Button class="h-9 rounded-r-none pl-3 pr-3.5" @click="copyToWeChat">
           <Copy class="mr-2 h-4 w-4" />
           <span>复制到公众号</span>
@@ -236,7 +236,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
 
   :deep([data-radix-menubar-item]),
   :deep([data-radix-menubar-sub-trigger]) {
-    border-radius: 2px;
+    border-radius: 6px;
     transition: background-color 0.12s ease;
 
     &:hover {
