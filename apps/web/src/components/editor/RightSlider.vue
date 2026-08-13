@@ -22,14 +22,14 @@ import {
   themeOptions,
   themeOptionsMap,
 } from '@md/shared/configs'
-import { SlidersHorizontal, X } from 'lucide-vue-next'
+import { FileCode, X } from 'lucide-vue-next'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useUIStore } from '@/stores/ui'
-import { exportCustomThemeAsCSS, exportCustomThemeAsJSON } from '@/utils/theme-designer'
+import { exportCustomThemeAsCSS, exportCustomThemeAsJSON, themeDesignerGroupMap } from '@/utils/theme-designer'
 
 const uiStore = useUIStore()
 const themeStore = useThemeStore()
@@ -312,19 +312,20 @@ function saveCurrentStylePreset() {
 }
 
 function resetTemplateGroup() {
-  clearHeadingSyncState()
   themeStore.theme = defaultStyleConfig.theme
-  headingStyles.value = { ...defaultStyleConfig.headingStyles }
-  selectedHeadingLevel.value = `h2`
   selectThemeCategoryByTheme(defaultStyleConfig.theme)
   themeStore.applyCurrentTheme()
   editorRefresh()
 }
 
+// 标题装饰属于文字排版，跟着它所在的分组一起重置
 function resetTextGroup() {
+  clearHeadingSyncState()
   themeStore.fontFamily = defaultStyleConfig.fontFamily
   themeStore.fontSize = defaultStyleConfig.fontSize
   themeStore.primaryColor = defaultStyleConfig.primaryColor
+  headingStyles.value = { ...defaultStyleConfig.headingStyles }
+  selectedHeadingLevel.value = `h2`
   themeStore.isUseIndent = false
   themeStore.isUseJustify = false
   themeStore.applyCurrentTheme()
@@ -348,11 +349,8 @@ function themeChanged(newTheme: keyof typeof themeMap) {
   editorRefresh()
 }
 
-function openThemeDesigner() {
-  if (!visualThemeDraft.value.sourceId) {
-    themeDesignerStore.setBaseTheme(theme.value)
-  }
-  themeDesignerStore.open()
+function getDesignerGroup(groupId: string) {
+  return themeDesignerGroupMap[groupId]
 }
 
 function applyCustomVisualTheme(id: string) {
@@ -366,9 +364,10 @@ function applyCustomVisualTheme(id: string) {
   editorRefresh()
 }
 
+// 精细调节现在就在下面几页里，载入后跳到「文字」页即可继续改
 function editCustomVisualTheme(id: string) {
   applyCustomVisualTheme(id)
-  themeDesignerStore.open()
+  activeStylePanel.value = `text`
 }
 
 function renameCustomVisualTheme(item: CustomTheme) {
@@ -577,10 +576,7 @@ watch(isOpen, () => {
     }"
     :style="isMobile ? { transform: isOpenRightSlider ? 'translateX(0)' : 'translateX(100%)' } : undefined"
   >
-    <ThemeDesignerPanel v-if="themeDesignerStore.isOpen" />
-
     <div
-      v-else
       class="space-y-4 h-full overflow-auto p-4"
       :class="{ 'pt-0': isMobile }"
     >
@@ -593,64 +589,52 @@ watch(isOpen, () => {
           <X class="h-4 w-4" />
         </Button>
       </div>
-      <div class="space-y-3 rounded-2xl border bg-muted/20 p-4">
-        <div class="flex items-start justify-between gap-3">
-          <div class="space-y-1">
-            <h2 class="text-sm font-semibold">
-              样式工作台
-            </h2>
-            <p class="text-xs leading-5 text-muted-foreground">
-              先定版式气质，再调文字系统，最后补发布细节。主题、颜色、字体、字号始终可以自由搭配。
-            </p>
-          </div>
-          <Button variant="ghost" size="sm" class="h-8 shrink-0 px-3 text-xs" @click="resetStyleConfirm">
-            全部重置
-          </Button>
-        </div>
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div class="rounded-xl border bg-background/85 px-3 py-2">
-            <div class="text-muted-foreground">
-              模板
-            </div>
-            <div class="mt-1 font-medium">
-              {{ selectedThemeMeta?.label || '未选择' }}
-            </div>
-          </div>
-          <div class="rounded-xl border bg-background/85 px-3 py-2">
-            <div class="text-muted-foreground">
-              文字
-            </div>
-            <div class="mt-1 font-medium">
-              {{ selectedFontMeta?.label || '未选择' }} · {{ fontSize }}
-            </div>
-          </div>
-          <div class="rounded-xl border bg-background/85 px-3 py-2">
-            <div class="text-muted-foreground">
-              主题色
-            </div>
-            <div class="mt-1 flex items-center gap-2 font-medium">
-              <span class="inline-block h-3.5 w-3.5 rounded-full border" :style="{ background: primaryColor as string }" />
+      <div class="space-y-2 rounded-2xl border bg-muted/20 px-3 py-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
+            <span class="font-medium">{{ selectedThemeMeta?.label || '未选择' }}</span>
+            <span class="text-muted-foreground">·</span>
+            <span class="text-muted-foreground">{{ selectedFontMeta?.label || '未选择' }} {{ fontSize }}</span>
+            <span class="text-muted-foreground">·</span>
+            <span class="inline-flex items-center gap-1 text-muted-foreground">
+              <span class="inline-block size-3 rounded-full border" :style="{ background: primaryColor as string }" />
               {{ selectedColorMeta.label }}
-            </div>
+            </span>
           </div>
-          <div class="rounded-xl border bg-background/85 px-3 py-2">
-            <div class="text-muted-foreground">
-              标题
-            </div>
-            <div class="mt-1 font-medium">
-              {{ headingStatusSummary }}
-            </div>
+          <div class="flex shrink-0 items-center gap-1">
+            <Button variant="ghost" size="sm" class="h-7 px-2.5 text-xs" @click="resetStyleConfirm">
+              重置
+            </Button>
           </div>
+        </div>
+        <div
+          v-if="themeDesignerStore.hasOverrides"
+          class="flex items-center justify-between gap-2 rounded-xl border border-dashed bg-background/60 px-2.5 py-1.5"
+        >
+          <span class="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+            {{ themeDesignerStore.sourceTheme ? themeDesignerStore.sourceTheme.name : '未保存的调整' }} ·
+            {{ themeDesignerStore.modifiedCount }} 项生效中
+          </span>
+          <button
+            type="button"
+            class="shrink-0 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            @click="clearVisualOverrides"
+          >
+            清除
+          </button>
         </div>
       </div>
 
       <Tabs v-model="activeStylePanel" class="w-full">
-        <TabsList class="grid w-full grid-cols-3">
+        <TabsList class="grid w-full grid-cols-4">
           <TabsTrigger value="template">
             模板
           </TabsTrigger>
           <TabsTrigger value="text">
             文字
+          </TabsTrigger>
+          <TabsTrigger value="block">
+            区块
           </TabsTrigger>
           <TabsTrigger value="detail">
             细节
@@ -658,32 +642,18 @@ watch(isOpen, () => {
         </TabsList>
 
         <TabsContent value="template" class="mt-4 space-y-4">
-          <div class="flex items-start justify-between gap-3">
-            <div class="space-y-1">
-              <h2 class="text-sm font-semibold">
-                模板流
-              </h2>
-              <p class="text-xs leading-5 text-muted-foreground">
-                先套一个场景方案，再微调主题和标题系统，会比从零拼装更快。
-              </p>
-            </div>
-            <Button variant="ghost" size="sm" class="h-8 shrink-0 px-3 text-xs" @click="resetTemplateGroup">
-              重置本组
-            </Button>
-          </div>
-
           <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
             <div class="flex items-start justify-between gap-3">
               <div class="space-y-1">
                 <h2 class="text-sm font-semibold">
-                  1. 套用场景预设
+                  整套搭配
                 </h2>
                 <p class="text-xs leading-5 text-muted-foreground">
-                  先选一个场景方案，再微调主题和标题，会比从零拼装快很多。
+                  一次换掉版式、字体和主题色。
                 </p>
               </div>
               <Button variant="ghost" size="sm" class="h-8 shrink-0 px-3 text-xs" @click="saveCurrentStylePreset">
-                保存为我的预设
+                存为我的
               </Button>
             </div>
             <div class="grid gap-3">
@@ -733,13 +703,18 @@ watch(isOpen, () => {
           </div>
 
           <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
-            <div class="space-y-1">
-              <h2 class="text-sm font-semibold">
-                2. 选择版式模板
-              </h2>
-              <p class="text-xs leading-5 text-muted-foreground">
-                主题主要决定排版气质和模块结构，不会再锁死颜色和字体。
-              </p>
+            <div class="flex items-start justify-between gap-3">
+              <div class="space-y-1">
+                <h2 class="text-sm font-semibold">
+                  只换版式
+                </h2>
+                <p class="text-xs leading-5 text-muted-foreground">
+                  保留当前字体和主题色，只改排版气质与模块结构。
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" class="h-8 shrink-0 px-3 text-xs" @click="resetTemplateGroup">
+                恢复默认
+              </Button>
             </div>
             <div class="flex flex-wrap gap-1">
               <Button
@@ -815,41 +790,27 @@ watch(isOpen, () => {
                 </ContextMenu>
               </div>
             </div>
-
-            <div class="space-y-2 border-t pt-3">
-              <Button variant="secondary" class="w-full justify-center" @click="openThemeDesigner">
-                <SlidersHorizontal class="mr-2 h-4 w-4" />
-                可视化编辑主题
-              </Button>
-              <p v-if="!themeDesignerStore.hasOverrides" class="text-[11px] leading-4 text-muted-foreground">
-                不用写 CSS，直接调标题、正文、引用、表格、代码这些细节，改完可以存成自己的主题。
-              </p>
-              <div
-                v-else
-                class="flex items-center justify-between gap-2 rounded-xl border border-dashed bg-muted/30 px-3 py-2"
-              >
-                <span class="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
-                  {{ themeDesignerStore.sourceTheme ? themeDesignerStore.sourceTheme.name : '未保存的调整' }} ·
-                  {{ themeDesignerStore.modifiedCount }} 项生效中
-                </span>
-                <button
-                  type="button"
-                  class="shrink-0 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  @click="clearVisualOverrides"
-                >
-                  清除
-                </button>
-              </div>
-            </div>
           </div>
+
+          <ThemeDraftControls />
+        </TabsContent>
+
+        <TabsContent value="text" class="mt-4 space-y-4">
+          <div class="flex items-center justify-end">
+            <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="resetTextGroup">
+              重置本组
+            </Button>
+          </div>
+
+          <StyleQuickControls variant="full" />
 
           <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
             <div class="space-y-1">
               <h2 class="text-sm font-semibold">
-                3. 调整标题系统
+                标题装饰
               </h2>
               <p class="text-xs leading-5 text-muted-foreground">
-                标题样式会覆盖当前主题的原生标题装饰。可以单独调某一级，也可以一键同步到全部标题。
+                {{ headingStatusSummary }}，会覆盖当前版式自带的标题样式。
               </p>
             </div>
             <div class="grid gap-3">
@@ -897,29 +858,11 @@ watch(isOpen, () => {
               <span v-if="hasVisualHeadingOverride">可视化编辑器里的标题调整会覆盖这里的预设。</span>
             </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="text" class="mt-4 space-y-4">
-          <div class="flex items-start justify-between gap-3">
-            <div class="space-y-1">
-              <h2 class="text-sm font-semibold">
-                文字流
-              </h2>
-              <p class="text-xs leading-5 text-muted-foreground">
-                先把正文气质定下来，再补颜色和段落阅读方式。
-              </p>
-            </div>
-            <Button variant="ghost" size="sm" class="h-8 shrink-0 px-3 text-xs" @click="resetTextGroup">
-              重置本组
-            </Button>
-          </div>
-
-          <StyleQuickControls variant="full" />
 
           <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
             <div class="space-y-1">
               <h2 class="text-sm font-semibold">
-                3. 调整段落阅读方式
+                段落阅读方式
               </h2>
               <p class="text-xs leading-5 text-muted-foreground">
                 当前状态：{{ paragraphStatusSummary }}
@@ -968,19 +911,33 @@ watch(isOpen, () => {
               </div>
             </div>
           </div>
+
+          <div class="space-y-2">
+            <div class="px-1 text-xs font-medium text-muted-foreground">
+              精细调节
+            </div>
+            <ThemeDesignerGroupCard :group="getDesignerGroup('base')" />
+            <ThemeDesignerHeadingCard />
+            <ThemeDesignerGroupCard :group="getDesignerGroup('paragraph')" />
+            <ThemeDesignerGroupCard :group="getDesignerGroup('link')" />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="block" class="mt-4 space-y-2">
+          <p class="px-1 text-xs leading-5 text-muted-foreground">
+            引用、列表、表格这些内容块的外观，改完在右侧预览里即时可见。
+          </p>
+          <ThemeDesignerGroupCard :group="getDesignerGroup('blockquote')" />
+          <ThemeDesignerGroupCard :group="getDesignerGroup('list')" />
+          <ThemeDesignerGroupCard :group="getDesignerGroup('table')" />
+          <ThemeDesignerGroupCard :group="getDesignerGroup('divider')" />
+          <ThemeDesignerGroupCard :group="getDesignerGroup('image')" />
+          <ThemeDesignerGroupCard :group="getDesignerGroup('figcaption')" />
         </TabsContent>
 
         <TabsContent value="detail" class="mt-4 space-y-4">
-          <div class="flex items-start justify-between gap-3">
-            <div class="space-y-1">
-              <h2 class="text-sm font-semibold">
-                细节流
-              </h2>
-              <p class="text-xs leading-5 text-muted-foreground">
-                最后补代码块、图注和发布细节，让文章更适合真正发出去。
-              </p>
-            </div>
-            <Button variant="ghost" size="sm" class="h-8 shrink-0 px-3 text-xs" @click="resetDetailGroup">
+          <div class="flex items-center justify-end">
+            <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="resetDetailGroup">
               重置本组
             </Button>
           </div>
@@ -988,7 +945,7 @@ watch(isOpen, () => {
           <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
             <div class="space-y-1">
               <h2 class="text-sm font-semibold">
-                1. 代码块表现
+                代码块
               </h2>
               <p class="text-xs leading-5 text-muted-foreground">
                 当前状态：{{ codeStatusSummary }}
@@ -1053,10 +1010,18 @@ watch(isOpen, () => {
             </div>
           </div>
 
+          <div class="space-y-2">
+            <div class="px-1 text-xs font-medium text-muted-foreground">
+              精细调节
+            </div>
+            <ThemeDesignerGroupCard :group="getDesignerGroup('codeBlock')" />
+            <ThemeDesignerGroupCard :group="getDesignerGroup('inlineCode')" />
+          </div>
+
           <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
             <div class="space-y-1">
               <h2 class="text-sm font-semibold">
-                2. 发布与注释细节
+                发布与注释
               </h2>
               <p class="text-xs leading-5 text-muted-foreground">
                 当前状态：{{ publishStatusSummary }}
@@ -1095,6 +1060,27 @@ watch(isOpen, () => {
                     关
                   </Button>
                 </div>
+              </div>
+            </div>
+            <div class="rounded-xl border bg-muted/25 p-3">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <div class="text-sm font-medium">
+                    自定义 CSS
+                  </div>
+                  <div class="text-xs text-muted-foreground">
+                    上面调不到的，直接写样式表覆盖
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  class="h-8 shrink-0 px-3 text-xs"
+                  :class="{ 'border-black dark:border-white border-2': uiStore.isShowCssEditor }"
+                  @click="uiStore.toggleShowCssEditor()"
+                >
+                  <FileCode class="mr-1.5 size-3.5" />
+                  {{ uiStore.isShowCssEditor ? '已打开' : '打开' }}
+                </Button>
               </div>
             </div>
           </div>

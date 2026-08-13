@@ -229,7 +229,7 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
     <div class="space-y-3 rounded-2xl border bg-background/80 p-4">
       <div class="space-y-1">
         <h2 class="text-sm font-semibold">
-          1. 选择字体与字号
+          字体与字号
         </h2>
         <p class="text-xs leading-5 text-muted-foreground">
           先确定整体阅读气质，再用字号控制版面密度。
@@ -280,7 +280,7 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
       <div class="space-y-1">
         <div class="flex items-center justify-between gap-2">
           <h2 class="text-sm font-semibold">
-            2. 选择主题色
+            主题色
           </h2>
           <Button
             v-if="!isPrimaryColorFollowingTheme"

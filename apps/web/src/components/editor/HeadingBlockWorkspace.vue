@@ -30,6 +30,29 @@ const editingRange = ref<{ from: number, to: number } | null>(null)
 
 const selectedPreset = computed(() => presets.value.find(preset => preset.id === selectedPresetId.value) ?? presets.value[0])
 const previewMarkup = computed(() => buildBlockMarkup(selectedPreset.value, state, true))
+
+/**
+ * 缩略图直接渲染板块本体，再整体缩到栏宽。
+ *
+ * 之前这里是一个「色块 + 竖条 + 名字前四个字」的占位，20 个预设长得完全一样，
+ * 只有取自 palette 的颜色不同，挑样式只能靠读描述。
+ *
+ * 用 `zoom` 而不是 `transform: scale`：缩放要参与布局，否则外层留下原始高度的空白。
+ */
+const READER_WIDTH = 375
+const presetGrid = ref<HTMLElement | null>(null)
+const { width: gridWidth } = useElementSize(presetGrid)
+const thumbZoom = computed(() => {
+  const inner = gridWidth.value - 36
+  return inner > 0 ? Math.min(1, Number((inner / READER_WIDTH).toFixed(3))) : 0.6
+})
+
+const thumbnails = computed(() => new Map(
+  presets.value.map(preset => [
+    preset.id,
+    buildBlockMarkup(preset, category.value.createDefaultState(preset), true),
+  ]),
+))
 const content = computed(() => postStore.currentPost?.content ?? editorStore.getContent())
 const existingBlocks = computed(() => parseBlockEntries(content.value).filter(block => block.category === category.value.id))
 
@@ -198,26 +221,25 @@ function applyBlock() {
         <span class="heading-block-count">{{ presets.length }} 种</span>
       </div>
 
-      <div class="heading-block-preset-grid">
+      <div ref="presetGrid" class="heading-block-preset-grid">
         <button
           v-for="preset in presets"
           :key="preset.id"
           type="button"
           class="heading-block-preset"
           :class="{ 'heading-block-preset--active': preset.id === selectedPresetId }"
+          :title="preset.description"
           @click="selectPreset(preset)"
         >
-          <div class="heading-block-preset__thumb" :style="{ background: preset.thumbnail.background }">
-            <span :style="{ background: preset.thumbnail.accent }" />
-            <strong :style="{ color: preset.thumbnail.foreground }">{{ preset.name.slice(0, 4) }}</strong>
-            <i :style="{ background: preset.thumbnail.foreground }" />
+          <div class="heading-block-preset__thumb">
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div class="heading-block-preset__canvas" :style="{ zoom: thumbZoom }" v-html="thumbnails.get(preset.id)" />
           </div>
-          <div class="heading-block-preset__copy">
+          <div class="heading-block-preset__meta">
             <strong>{{ preset.name }}</strong>
             <span>{{ preset.cue }}</span>
-            <p>{{ preset.description }}</p>
+            <Check v-if="preset.id === selectedPresetId" class="size-3.5 shrink-0" />
           </div>
-          <Check v-if="preset.id === selectedPresetId" class="size-4" />
         </button>
       </div>
     </section>
@@ -349,14 +371,13 @@ function applyBlock() {
 
 .heading-block-preset {
   display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem;
+  gap: 0.4rem;
+  padding: 0.4rem;
   border: 1px solid hsl(var(--border));
-  border-radius: 18px;
+  border-radius: 14px;
   text-align: left;
   background: hsl(var(--background));
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .heading-block-preset:hover,
@@ -366,53 +387,54 @@ function applyBlock() {
 }
 
 .heading-block-preset__thumb {
-  display: grid;
-  grid-template-columns: 0.4rem 1fr;
-  grid-template-rows: 1fr 0.2rem;
-  align-items: center;
-  gap: 0.35rem 0.5rem;
-  min-height: 3.6rem;
-  padding: 0.65rem;
-  border-radius: 13px;
+  position: relative;
+  max-height: 11rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  background: #ffffff;
   overflow: hidden;
 }
 
-.heading-block-preset__thumb span {
-  width: 0.4rem;
-  height: 1.8rem;
-  border-radius: 999px;
-  grid-row: 1 / 3;
+/* 裁掉高板块的下沿。不溢出时这层白到白的渐变看不出来，所以不用判断是否溢出 */
+.heading-block-preset__thumb::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1.6rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff);
+  pointer-events: none;
 }
 
-.heading-block-preset__thumb strong {
-  font-size: 0.68rem;
-  letter-spacing: 0.04em;
+.heading-block-preset__canvas {
+  width: 375px;
 }
 
-.heading-block-preset__thumb i {
-  width: 68%;
-  height: 1px;
-  opacity: 0.32;
+.heading-block-preset__canvas :deep(.md-block) {
+  margin: 0 !important;
 }
 
-.heading-block-preset__copy {
-  min-width: 0;
+.heading-block-preset__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.15rem;
 }
 
-.heading-block-preset__copy strong {
-  font-size: 0.82rem;
+.heading-block-preset__meta strong {
+  overflow: hidden;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.heading-block-preset__copy span {
-  margin-left: 0.45rem;
+.heading-block-preset__meta span {
+  overflow: hidden;
+  flex: 1;
   font-size: 0.66rem;
-  color: hsl(var(--muted-foreground));
-}
-
-.heading-block-preset__copy p {
-  margin: 0.2rem 0 0;
-  font-size: 0.7rem;
-  line-height: 1.42;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: hsl(var(--muted-foreground));
 }
 

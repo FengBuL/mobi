@@ -1516,7 +1516,7 @@ onUnmounted(() => {
                       </div>
                     </div>
 
-                    <ThemeQuickBar />
+                    <ThemeQuickBar v-if="isSimpleWorkspace" />
 
                     <div class="workspace-panel__body preview-panel__body">
                       <div
@@ -1529,10 +1529,6 @@ onUnmounted(() => {
                           class="w-full max-w-full preview-paper-stack"
                           :class="{ output_night: !backLight }"
                         >
-                          <div class="preview-paper-label">
-                            <span>{{ previewDeviceLabel }}</span>
-                            <span>发布视图</span>
-                          </div>
                           <div
                             class="preview mx-auto"
                             :class="[
@@ -1922,34 +1918,7 @@ onUnmounted(() => {
 .preview-paper-stack {
   position: relative;
   width: min(100%, 860px);
-  padding: 2.75rem 0.4rem 1.2rem;
-}
-
-.preview-paper-label {
-  position: absolute;
-  left: 50%;
-  top: 0.6rem;
-  z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  transform: translateX(-50%);
-  padding: 0.56rem 0.95rem;
-  border: 1px solid hsl(var(--border) / 0.82);
-  border-radius: 999px;
-  background: hsl(var(--background) / 0.88);
-  font-size: 0.76rem;
-  line-height: 1;
-  color: hsl(var(--muted-foreground));
-  box-shadow:
-    0 14px 30px hsl(var(--foreground) / 0.08),
-    inset 0 1px 0 hsl(var(--background));
-  backdrop-filter: blur(14px);
-}
-
-.preview-paper-label span:last-child {
-  font-weight: 600;
-  color: hsl(var(--foreground));
+  padding: 0.6rem 0.4rem 1.2rem;
 }
 
 .preview-panel :deep(#output-wrapper > .preview) {
@@ -2157,18 +2126,8 @@ onUnmounted(() => {
   }
 
   .workspace-panel__eyebrow,
-  .workspace-chip,
-  .preview-paper-label {
+  .workspace-chip {
     font-size: 0.7rem;
-  }
-
-  .preview-paper-label {
-    gap: 0.5rem;
-    padding: 0.5rem 0.78rem;
-  }
-
-  .preview-paper-stack {
-    padding-top: 2.4rem;
   }
 
   .preview-panel :deep(#output-wrapper > .preview) {

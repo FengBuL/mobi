@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ThemeName } from '@md/shared/configs'
-import { themeOptions, themeOptionsMap } from '@md/shared/configs'
+import { themeOptions } from '@md/shared/configs'
 import { ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-vue-next'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useEditorStore } from '@/stores/editor'
@@ -18,8 +18,6 @@ const themeCards = themeOptions.map(option => ({
   ...option,
   swatch: getThemeSwatch(option.value as ThemeName),
 }))
-
-const currentThemeLabel = computed(() => themeOptionsMap[theme.value as ThemeName]?.label ?? `未知主题`)
 
 const scroller = useTemplateRef<HTMLElement>(`scroller`)
 const canScrollLeft = ref(false)
@@ -82,11 +80,6 @@ watch(theme, revealActiveTheme)
 
 <template>
   <div class="theme-quick-bar">
-    <div class="theme-quick-bar__lead">
-      <span class="theme-quick-bar__title">主题</span>
-      <span class="theme-quick-bar__current">{{ currentThemeLabel }}</span>
-    </div>
-
     <div class="theme-quick-bar__track">
       <button
         v-show="canScrollLeft"
@@ -169,30 +162,6 @@ watch(theme, revealActiveTheme)
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid hsl(var(--border) / 0.7);
   background: hsl(var(--background) / 0.7);
-}
-
-.theme-quick-bar__lead {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  flex-shrink: 0;
-  line-height: 1.2;
-}
-
-.theme-quick-bar__title {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: hsl(var(--muted-foreground));
-}
-
-.theme-quick-bar__current {
-  max-width: 5rem;
-  overflow: hidden;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .theme-quick-bar__track {

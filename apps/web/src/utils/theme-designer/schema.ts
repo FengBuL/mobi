@@ -319,22 +319,6 @@ const paragraphGroup: ThemeGroup = {
     numberField(`marginTop`, `段前距`, `margin-top`, 1.25, { min: 0, max: 4, step: 0.05, unit: `em`, suffix: `em` }),
     numberField(`marginBottom`, `段后距`, `margin-bottom`, 1.25, { min: 0, max: 4, step: 0.05, unit: `em`, suffix: `em` }),
     numberField(`letterSpacing`, `字间距`, `letter-spacing`, 0, { min: -0.05, max: 0.4, step: 0.01, unit: `em`, suffix: `em` }),
-    {
-      key: `textIndent`,
-      label: `首行缩进`,
-      type: `switch`,
-      defaultValue: false,
-      hint: `会覆盖右侧样式面板里的首行缩进开关`,
-      emit: (value, ctx) => [rule(ctx.selector, decl(`text-indent`, value ? `2em` : `0`))],
-    },
-    {
-      key: `justify`,
-      label: `两端对齐`,
-      type: `switch`,
-      defaultValue: false,
-      hint: `会覆盖右侧样式面板里的两端对齐开关`,
-      emit: (value, ctx) => [rule(ctx.selector, decl(`text-align`, value ? `justify` : `left`))],
-    },
   ],
 }
 

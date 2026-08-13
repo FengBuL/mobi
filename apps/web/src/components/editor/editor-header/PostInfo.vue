@@ -304,8 +304,8 @@ onBeforeMount(() => {
 <template>
   <div v-bind="$attrs">
     <Dialog v-model:open="dialogVisible" @update:open="onUpdate">
-      <DialogTrigger>
-        <Button v-if="!isMobile" variant="outline" class="h-9">
+      <DialogTrigger v-if="!isMobile" as-child>
+        <Button variant="outline" class="h-9">
           <Send class="mr-2 h-4 w-4" />
           发布
         </Button>

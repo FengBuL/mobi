@@ -16,7 +16,6 @@ import FileDropdown from './FileDropdown.vue'
 import FormatDropdown from './FormatDropdown.vue'
 import HelpDropdown from './HelpDropdown.vue'
 import InsertDropdown from './InsertDropdown.vue'
-import StyleDropdown from './StyleDropdown.vue'
 
 const emit = defineEmits([`startCopy`, `endCopy`])
 
@@ -84,7 +83,6 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
         <EditDropdown @copy="handleCopy" />
         <FormatDropdown />
         <InsertDropdown />
-        <StyleDropdown />
         <HelpDropdown @open-about="handleOpenAbout" @open-fund="handleOpenFund" />
       </Menubar>
     </div>
@@ -103,7 +101,6 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
             <EditDropdown :as-sub="true" @copy="handleCopy" />
             <FormatDropdown :as-sub="true" />
             <InsertDropdown :as-sub="true" />
-            <StyleDropdown :as-sub="true" />
             <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-fund="handleOpenFund" />
           </MenubarContent>
         </MenubarMenu>
