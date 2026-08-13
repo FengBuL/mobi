@@ -3,6 +3,7 @@ import { toTypedSchema } from '@vee-validate/yup'
 import { UploadCloud } from 'lucide-vue-next'
 import { Field, Form } from 'vee-validate'
 import * as yup from 'yup'
+import { isDesktopRuntime } from '@/services/desktop/bridge'
 import { useUIStore } from '@/stores/ui'
 import { checkImage } from '@/utils'
 import { store } from '@/utils/storage'
@@ -179,9 +180,12 @@ const isCfWorkers = import.meta.env.CF_WORKERS === `1`
 // 插件模式运行（如 chrome-extension://）
 const isPluginMode = !isWebsite
 
-// 是否需要填写 proxyOrigin（只在 非插件 且 非CF页面 时需要）
+// 桌面版由主进程转发微信接口，不需要代理；开发时页面同样跑在 http 上，所以单独判断
+const isDesktopApp = isDesktopRuntime()
+
+// 是否需要填写 proxyOrigin（只在 非插件、非CF页面、非桌面版 时需要）
 const isProxyRequired = computed(() => {
-  return !isPluginMode && !isCfWorkers
+  return !isPluginMode && !isCfWorkers && !isDesktopApp
 })
 
 const mpPlaceholder = computed(() => {
@@ -1043,6 +1047,10 @@ function onTabScroll(e: WheelEvent) {
         <TabsContent value="mp" class="flex-1 flex flex-col overflow-hidden">
           <Form :validation-schema="mpSchema" :initial-values="mpConfig" class="flex flex-col flex-1 overflow-hidden" @submit="mpSubmit">
             <div class="flex-1 overflow-y-auto p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <p v-if="isDesktopApp" class="mb-3 text-xs leading-5 text-muted-foreground">
+                桌面版由本机直接转发微信接口，不用另开代理，填好 AppID 和 AppSecret 就能用。
+              </p>
+
               <!-- 只有在需要代理时才显示 proxyOrigin 字段 -->
               <Field
                 v-if="isProxyRequired"

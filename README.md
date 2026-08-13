@@ -96,11 +96,28 @@ http://127.0.0.1:8788
 
 代理说明见 [apps/mp-proxy/README.md](./apps/mp-proxy/README.md)。
 
+## 桌面版
+
+桌面版是同一套前端套了个 Electron 壳，页面代码和网页版完全共用。
+
+```bash
+pnpm desktop        # 开发模式，会复用已经起着的 dev server
+pnpm build:desktop  # 出产物到 apps/desktop/dist
+```
+
+它和网页版的区别只有一处：调微信接口这件事交给主进程做了。浏览器不能跨域访问
+`api.weixin.qq.com`，所以网页版必须绕 `mp-proxy`；主进程本身就是 Node，没有这层限制。
+所以**桌面版不需要开代理**，图床配置里也不会再让你填代理域名，AppID 和 AppSecret 填上就能用。
+
+这个差异收在 `apps/web/src/services/wechat/` 后面，上层代码不区分自己跑在哪儿。
+
 ## 常用命令
 
 ```bash
 pnpm start
 pnpm build:web
+pnpm desktop
+pnpm build:desktop
 pnpm proxy
 pnpm type-check
 ```
@@ -109,7 +126,8 @@ pnpm type-check
 
 ```text
 apps/web          网页编辑器
-apps/mp-proxy     公众号图片代理
+apps/desktop      桌面版 Electron 外壳
+apps/mp-proxy     公众号图片代理（网页版用，桌面版不需要）
 packages/core     Markdown 渲染与主题注入核心
 packages/shared   共享配置、样式与工具
 packages/config   TS 配置

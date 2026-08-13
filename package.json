@@ -10,9 +10,11 @@
   "scripts": {
     "start": "pnpm web dev",
     "build:web": "pnpm --filter @md/web build",
+    "build:desktop": "pnpm --filter @md/desktop build",
+    "desktop": "pnpm --filter @md/desktop dev",
     "proxy": "pnpm --filter @md/mp-proxy start",
     "web": "pnpm --filter @md/web",
-    "type-check": "pnpm --filter @md/web type-check",
+    "type-check": "pnpm --filter @md/web type-check && pnpm --filter @md/desktop type-check",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest run",

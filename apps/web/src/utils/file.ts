@@ -1,3 +1,4 @@
+import type { WechatUploadEndpoint } from '@md/shared/types/desktop'
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import fetch from '@md/shared/utils/fetch'
@@ -7,6 +8,7 @@ import Buffer from 'buffer-from'
 import CryptoJS from 'crypto-js'
 import * as qiniu from 'qiniu-js'
 import { v4 as uuidv4 } from 'uuid'
+import { getWechatTransport, normalizeMpProxyOrigin } from '@/services/wechat'
 import { store } from './storage'
 
 async function getConfig(platform: string) {
@@ -427,36 +429,12 @@ async function s3Upload(file: File) {
 // -----------------------------------------------------------------------
 // mp File Upload
 // -----------------------------------------------------------------------
-interface MpResponse {
-  access_token: string
-  expires_in: number
-  errcode: number
-  errmsg: string
-}
-
-function normalizeMpProxyOrigin(proxyOrigin: string) {
-  return proxyOrigin?.trim().replace(/\/+$/, ``) || ``
-}
-
-function isLoopbackHost(hostname: string) {
-  return [`127.0.0.1`, `localhost`, `::1`].includes(hostname.toLowerCase())
-}
-
-function assertReachableMpProxyOrigin(proxyOrigin: string) {
-  if (!proxyOrigin || !window.location.href.startsWith(`http`)) {
-    return
-  }
-
-  const pageHostname = window.location.hostname.toLowerCase()
-  const proxyHostname = new URL(proxyOrigin).hostname.toLowerCase()
-  if (!isLoopbackHost(pageHostname) && isLoopbackHost(proxyHostname)) {
-    throw new Error(`当前不是在本机浏览器访问，代理域名不能填 localhost / 127.0.0.1，请改成电脑局域网 IP`)
-  }
-}
 
 async function getMpToken(appID: string, appsecret: string, proxyOrigin: string) {
-  const normalizedProxyOrigin = normalizeMpProxyOrigin(proxyOrigin)
-  assertReachableMpProxyOrigin(normalizedProxyOrigin)
+  const transport = getWechatTransport()
+  // 配置自检要赶在缓存命中之前：代理填错时，拿旧 token 去传只会换来一条看不懂的网络错误
+  transport.assertConfigUsable(proxyOrigin)
+
   const data = await store.get(`mpToken:${appID}`)
   if (data) {
     const token = JSON.parse(data)
@@ -464,23 +442,12 @@ async function getMpToken(appID: string, appsecret: string, proxyOrigin: string)
       return token.access_token
     }
   }
-  const requestOptions = {
-    method: `POST`,
-    data: {
-      grant_type: `client_credential`,
-      appid: appID,
-      secret: appsecret,
-    },
-  }
-  let url = `https://api.weixin.qq.com/cgi-bin/stable_token`
-  if (normalizedProxyOrigin) {
-    url = `${normalizedProxyOrigin}/cgi-bin/stable_token`
-  }
-  const res = await fetch<any, MpResponse>(url, requestOptions)
+
+  const res = await transport.requestStableToken({ appID, appsecret, proxyOrigin })
   if (res.access_token) {
     const tokenInfo = {
       ...res,
-      expire: Date.now() + res.expires_in * 1000,
+      expire: Date.now() + (res.expires_in ?? 0) * 1000,
     }
     await store.setJSON(`mpToken:${appID}`, tokenInfo)
     return res.access_token
@@ -504,36 +471,28 @@ async function mpFileUpload(file: File) {
     throw new Error(`获取 access_token 失败`)
   }
 
-  const formdata = new FormData()
-  formdata.append(`media`, file, file.name)
-
-  const requestOptions = {
-    method: `POST`,
-    data: formdata,
-  }
-
-  let url = `https://api.weixin.qq.com/cgi-bin/material/add_material?access_token=${access_token}&type=image`
   const fileSizeInMB = file.size / (1024 * 1024)
   const fileType = file.type.toLowerCase()
-  if (fileSizeInMB < 1 && (fileType === `image/jpeg` || fileType === `image/png`)) {
-    url = `https://api.weixin.qq.com/cgi-bin/media/uploadimg?access_token=${access_token}`
-  }
-  if (proxyOrigin) {
-    url = url.replace(`https://api.weixin.qq.com`, proxyOrigin)
-  }
+  const endpoint: WechatUploadEndpoint
+    = fileSizeInMB < 1 && (fileType === `image/jpeg` || fileType === `image/png`)
+      ? `uploadimg`
+      : `add_material`
 
-  const res = await fetch<any, { url?: string, errmsg?: string }>(url, requestOptions)
+  const transport = getWechatTransport()
+  const res = await transport.uploadImage({
+    accessToken: access_token,
+    proxyOrigin,
+    endpoint,
+    file,
+  })
 
   if (!res.url) {
     throw new Error(res.errmsg || `上传失败，未获取到URL`)
   }
 
-  let imageUrl = res.url
-  if (proxyOrigin && window.location.href.startsWith(`http`)) {
-    imageUrl = `https://wsrv.nl?url=${encodeURIComponent(imageUrl)}`
-  }
-
-  return imageUrl
+  return transport.needsImageDisplayProxy(proxyOrigin)
+    ? `https://wsrv.nl?url=${encodeURIComponent(res.url)}`
+    : res.url
 }
 
 export async function hasMpUploadConfig() {
@@ -566,7 +525,8 @@ export async function getMpUploadConfig() {
     return {
       appID: appID || ``,
       appsecret: appsecret || ``,
-      proxyOrigin: normalizeMpProxyOrigin(proxyOrigin || ``),
+      // 复制链路拿这个值去回源抓图，桌面版换成主进程的自定义协议
+      proxyOrigin: getWechatTransport().resolveImageFetchOrigin(proxyOrigin || ``),
     }
   }
   catch {

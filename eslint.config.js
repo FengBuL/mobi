@@ -44,8 +44,13 @@ export default antfu(
     },
   },
   {
-    // 验证脚本和代理是命令行程序，打印就是它们的输出方式
-    files: ['scripts/**/*.mjs', 'apps/mp-proxy/**/*.mjs'],
+    // 验证脚本、代理和 Electron 主进程都是命令行程序，打印就是它们的输出方式
+    files: [
+      'scripts/**/*.mjs',
+      'apps/mp-proxy/**/*.mjs',
+      'apps/desktop/scripts/**/*.mjs',
+      'apps/desktop/src/main/**/*.ts',
+    ],
     rules: {
       'no-console': 'off',
     },
