@@ -1,7 +1,7 @@
 import type { MediaLayoutFormState, MediaLayoutImageSlot, MediaLayoutPreset } from '@/utils/image-layouts'
 import type { WeChatMediaPalette } from '@/utils/wechat-media'
-import { markedAlert, MDKatex } from '@md/core'
-import { prefix } from '@md/shared/configs'
+import { markedAlert, MDKatex } from '@mobi/core'
+import { prefix } from '@mobi/shared/configs'
 // 直接导入供本文件内部使用
 import {
   checkImage,
@@ -11,7 +11,7 @@ import {
   removeLeft,
   sanitizeTitle,
   toBase64,
-} from '@md/shared/utils'
+} from '@mobi/shared/utils'
 import imageCompression from 'browser-image-compression'
 import juice from 'juice'
 import { Marked } from 'marked'
@@ -49,7 +49,7 @@ export {
   modifyHtmlContent,
   postProcessHtml,
   renderMarkdown,
-} from '@md/core/utils'
+} from '@mobi/core/utils'
 
 export function addPrefix(str: string) {
   return `${prefix}__${str}`

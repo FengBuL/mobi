@@ -1,6 +1,6 @@
-import type { HeadingLevel, HeadingStyles, HeadingStyleType, ThemeName } from '@md/shared/configs'
-import { applyTheme } from '@md/core'
-import { defaultStyleConfig, getThemeDefaultPrimaryColor, resolveCodeBlockThemeUrl, resolveThemeName, widthOptions } from '@md/shared/configs'
+import type { HeadingLevel, HeadingStyles, HeadingStyleType, ThemeName } from '@mobi/shared/configs'
+import { applyTheme } from '@mobi/core'
+import { defaultStyleConfig, getThemeDefaultPrimaryColor, resolveCodeBlockThemeUrl, resolveThemeName, widthOptions } from '@mobi/shared/configs'
 import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'
@@ -138,17 +138,17 @@ export const useThemeStore = defineStore(`theme`, () => {
   const headingDecorationPosition = store.reactive<'left' | 'above' | 'below'>(addPrefix(`heading_decoration_position`), `above`)
 
   // ========== 收藏/隐藏/保存 ==========
-  const favoriteThemes = ref<string[]>(JSON.parse(localStorage.getItem(`md_favoriteThemes`) || `[]`))
-  const hiddenThemes = ref<string[]>(JSON.parse(localStorage.getItem(`md_hiddenThemes`) || `[]`))
-  const favoriteColors = ref<string[]>(JSON.parse(localStorage.getItem(`md_favoriteColors`) || `[]`))
-  const hiddenColors = ref<string[]>(JSON.parse(localStorage.getItem(`md_hiddenColors`) || `[]`))
-  const savedCustomColors = ref<string[]>(JSON.parse(localStorage.getItem(`md_savedCustomColors`) || `[]`))
+  const favoriteThemes = ref<string[]>(JSON.parse(localStorage.getItem(`mobi_favoriteThemes`) || `[]`))
+  const hiddenThemes = ref<string[]>(JSON.parse(localStorage.getItem(`mobi_hiddenThemes`) || `[]`))
+  const favoriteColors = ref<string[]>(JSON.parse(localStorage.getItem(`mobi_favoriteColors`) || `[]`))
+  const hiddenColors = ref<string[]>(JSON.parse(localStorage.getItem(`mobi_hiddenColors`) || `[]`))
+  const savedCustomColors = ref<string[]>(JSON.parse(localStorage.getItem(`mobi_savedCustomColors`) || `[]`))
 
-  watch(favoriteThemes, v => localStorage.setItem(`md_favoriteThemes`, JSON.stringify(v)), { deep: true })
-  watch(hiddenThemes, v => localStorage.setItem(`md_hiddenThemes`, JSON.stringify(v)), { deep: true })
-  watch(favoriteColors, v => localStorage.setItem(`md_favoriteColors`, JSON.stringify(v)), { deep: true })
-  watch(hiddenColors, v => localStorage.setItem(`md_hiddenColors`, JSON.stringify(v)), { deep: true })
-  watch(savedCustomColors, v => localStorage.setItem(`md_savedCustomColors`, JSON.stringify(v)), { deep: true })
+  watch(favoriteThemes, v => localStorage.setItem(`mobi_favoriteThemes`, JSON.stringify(v)), { deep: true })
+  watch(hiddenThemes, v => localStorage.setItem(`mobi_hiddenThemes`, JSON.stringify(v)), { deep: true })
+  watch(favoriteColors, v => localStorage.setItem(`mobi_favoriteColors`, JSON.stringify(v)), { deep: true })
+  watch(hiddenColors, v => localStorage.setItem(`mobi_hiddenColors`, JSON.stringify(v)), { deep: true })
+  watch(savedCustomColors, v => localStorage.setItem(`mobi_savedCustomColors`, JSON.stringify(v)), { deep: true })
 
   // 计算属性
   const fontSizeNumber = computed(() => Number(fontSize.value.replace(`px`, ``)))

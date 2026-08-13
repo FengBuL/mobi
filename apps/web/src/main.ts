@@ -1,9 +1,12 @@
-import { initializeMermaid } from '@md/core/utils'
+import { initializeMermaid } from '@mobi/core/utils'
+
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import App from './App.vue'
-
 import { setupComponents } from './utils/setup-components'
+
+// 必须最先执行：把旧前缀的本地存储迁到新前缀，赶在任何 store 读取之前
+import '@/utils/storageMigration'
 
 import 'vue-sonner/style.css'
 

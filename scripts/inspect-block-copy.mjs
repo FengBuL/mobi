@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import { existsSync, writeFileSync } from 'node:fs'
 
 const port = Number(process.env.MD_DEBUG_PORT || 9231)
-const url = process.env.MD_DEV_URL || `http://localhost:5173/md/`
+const url = process.env.MOBI_DEV_URL || `http://localhost:5173/mobi/`
 const chromePath = [
   process.env.CHROME_PATH,
   `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`,
@@ -114,8 +114,8 @@ try {
   })`)
 
   const result = await page.evaluate(`(async () => {
-    const registry = await import('/md/src/utils/blocks/registry.ts')
-    const utils = await import('/md/src/utils/index.ts')
+    const registry = await import('/mobi/src/utils/blocks/registry.ts')
+    const utils = await import('/mobi/src/utils/index.ts')
     const failures = []
     const categories = []
     const forbidden = [
@@ -157,7 +157,7 @@ try {
   })()`)
 
   const sourceMapping = await page.evaluate(`(async () => {
-    const { resolveMarkdownSourceRange } = await import('/md/src/utils/blocks/source-selection.ts')
+    const { resolveMarkdownSourceRange } = await import('/mobi/src/utils/blocks/source-selection.ts')
     const markdown = [
       '---',
       'title: 定位测试',
@@ -217,7 +217,7 @@ try {
   }
 
   await page.evaluate(`(async () => {
-    const registry = await import('/md/src/utils/blocks/registry.ts')
+    const registry = await import('/mobi/src/utils/blocks/registry.ts')
     const category = registry.blockCategories.find(item => item.id === 'heading')
     document.documentElement.style.background = '#e9ecef'
     document.body.innerHTML = '<main id="gallery" style="width:1200px;padding:28px;background:#e9ecef;box-sizing:border-box;"></main>'

@@ -2,7 +2,7 @@ import type {
   DesktopBridge,
   WechatStableTokenResult,
   WechatUploadImageResult,
-} from '@md/shared/types/desktop'
+} from '@mobi/shared/types/desktop'
 import type { StableTokenInput, UploadImageInput, WechatTransport } from './types'
 
 /** 桌面版由主进程直接去调微信，不经过 mp-proxy，也就没有代理地址这回事 */

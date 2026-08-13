@@ -10,7 +10,7 @@ import { hljsLocalPlugin } from './plugins/vite-plugin-hljs-local'
 import { mathjaxLocalPlugin } from './plugins/vite-plugin-mathjax-local'
 
 const PKG_NAME_SPECIAL_CHARS = /[^\w-]/g
-const LOCAL_BASE = `/md/`
+const LOCAL_BASE = `/mobi/`
 const DEFAULT_REPO_NAME = `mobi`
 
 const rootPackage = JSON.parse(

@@ -5,12 +5,12 @@ import type {
   WechatStableTokenResult,
   WechatUploadImageRequest,
   WechatUploadImageResult,
-} from '@md/shared/types/desktop'
+} from '@mobi/shared/types/desktop'
 import {
   DESKTOP_BRIDGE_KEY,
   DESKTOP_BRIDGE_VERSION,
   DESKTOP_IPC_CHANNELS,
-} from '@md/shared/types/desktop'
+} from '@mobi/shared/types/desktop'
 import { contextBridge, ipcRenderer } from 'electron'
 import { IMAGE_FETCH_ORIGIN } from '../shared/scheme'
 

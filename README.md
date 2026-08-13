@@ -76,7 +76,7 @@ Node.js `>= 22.16.0`，pnpm `>= 10`。
 
 ```bash
 pnpm install
-pnpm start      # 网页版开发服务器，http://localhost:5173/md/
+pnpm start      # 网页版开发服务器，http://localhost:5173/mobi/
 pnpm desktop    # 桌面版开发模式，会复用已经起着的 dev server
 ```
 

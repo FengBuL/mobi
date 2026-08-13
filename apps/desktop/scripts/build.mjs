@@ -12,7 +12,7 @@ async function main() {
   console.log(`[mobi] 构建渲染进程`)
   await run(`pnpm`, [
     `--filter`,
-    `@md/web`,
+    `@mobi/web`,
     `exec`,
     `vite`,
     `build`,
@@ -22,7 +22,7 @@ async function main() {
     `--emptyOutDir`,
   ], { cwd: repoRoot })
 
-  console.log(`[mobi] 完成，用 pnpm --filter @md/desktop start 启动`)
+  console.log(`[mobi] 完成，用 pnpm --filter @mobi/desktop start 启动`)
 }
 
 main().catch((error) => {

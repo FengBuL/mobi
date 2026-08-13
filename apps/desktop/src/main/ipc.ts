@@ -1,5 +1,5 @@
-import type { DesktopIpcResult } from '@md/shared/types/desktop'
-import { DESKTOP_IPC_CHANNELS } from '@md/shared/types/desktop'
+import type { DesktopIpcResult } from '@mobi/shared/types/desktop'
+import { DESKTOP_IPC_CHANNELS } from '@mobi/shared/types/desktop'
 import { ipcMain } from 'electron'
 import {
   describeTransferError,

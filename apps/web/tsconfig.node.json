@@ -1,4 +1,4 @@
 {
-  "extends": "@md/config/tsconfig.node.json",
+  "extends": "@mobi/config/tsconfig.node.json",
   "include": ["vite.config.ts", "plugins/**/*.ts"]
 }

@@ -1,7 +1,7 @@
 /**
  * 在真实 Chrome 里跑一遍「复制到公众号」链路，检查普通 Markdown 图片的产物。
  *
- * 依赖本地已在运行的 dev server（默认 http://localhost:5173/md/），
+ * 依赖本地已在运行的 dev server（默认 http://localhost:5173/mobi/），
  * 通过 Vite 直接加载 apps/web/src/utils/index.ts，调用真实的 processClipboardContent。
  *
  * 运行：node scripts/verify-wechat-image-copy.mjs
@@ -12,7 +12,7 @@ import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 
-const DEV_URL = process.env.MD_DEV_URL || `http://localhost:5173/md/`
+const DEV_URL = process.env.MOBI_DEV_URL || `http://localhost:5173/mobi/`
 const DEBUG_PORT = Number(process.env.MD_CDP_PORT || 9333)
 
 function findChromeBinary() {
@@ -163,9 +163,9 @@ async function main() {
       { timeout: 60000, label: `预览区渲染` },
     )
 
-    const corePath = `/md/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
+    const corePath = `/mobi/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
     const runTheme = themeName => page.evaluate(`(async () => {
-      const utils = await import(${JSON.stringify(`/md/src/utils/index.ts`)})
+      const utils = await import(${JSON.stringify(`/mobi/src/utils/index.ts`)})
       const core = await import(${JSON.stringify(corePath)})
       const output = document.querySelector('#output')
 

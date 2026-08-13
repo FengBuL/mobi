@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Template } from '@md/shared'
+import type { Template } from '@mobi/shared'
 import { Calendar, Clock, FileDown, FileInput, FileText, Package, Pencil, Plus, Search, Trash2 } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'

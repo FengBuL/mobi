@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import { existsSync, writeFileSync } from 'node:fs'
 
 const port = Number(process.env.MD_DEBUG_PORT || 9232)
-const url = process.env.MD_DEV_URL || `http://localhost:5173/md/`
+const url = process.env.MOBI_DEV_URL || `http://localhost:5173/mobi/`
 const chromePath = [
   process.env.CHROME_PATH,
   `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`,
@@ -138,10 +138,10 @@ try {
 
   const result = await page.evaluate(`(async () => {
     const [{ useEditorStore }, { usePostStore }, { useRenderStore }, registry] = await Promise.all([
-      import('/md/src/stores/editor.ts'),
-      import('/md/src/stores/post.ts'),
-      import('/md/src/stores/render.ts'),
-      import('/md/src/utils/blocks/registry.ts'),
+      import('/mobi/src/stores/editor.ts'),
+      import('/mobi/src/stores/post.ts'),
+      import('/mobi/src/stores/render.ts'),
+      import('/mobi/src/utils/blocks/registry.ts'),
     ])
     const editorStore = useEditorStore()
     const postStore = usePostStore()

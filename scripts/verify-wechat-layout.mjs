@@ -16,7 +16,7 @@ import { resolve } from 'node:path'
 import { launchPage } from './lib/wechat-cdp.mjs'
 
 const DEBUG_PORT = Number(process.env.MD_DEBUG_PORT || 9224)
-const DEV_URL = process.env.MD_DEV_URL || `http://localhost:5173/md/`
+const DEV_URL = process.env.MOBI_DEV_URL || `http://localhost:5173/mobi/`
 const THEME = process.env.MD_THEME || `default`
 const STAGE_WIDTHS = (process.env.MD_STAGE_WIDTHS || `375,677`).split(`,`).map(Number)
 // 公众号官方的文章结构校验接口，见「微信公众号文档 / 插件开发规范」。
@@ -425,11 +425,11 @@ async function main() {
   })
 
   try {
-    const corePath = `/md/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
+    const corePath = `/mobi/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
 
     const presets = await page.evaluate(`(async () => {
-      const layouts = await import('/md/src/utils/image-layouts.ts')
-      const utils = await import('/md/src/utils/index.ts')
+      const layouts = await import('/mobi/src/utils/image-layouts.ts')
+      const utils = await import('/mobi/src/utils/index.ts')
       const core = await import(${JSON.stringify(corePath)})
       await core.applyTheme({
         themeName: ${JSON.stringify(THEME)},

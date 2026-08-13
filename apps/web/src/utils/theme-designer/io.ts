@@ -3,7 +3,7 @@
  */
 
 import type { CustomTheme, CustomThemeFilePayload, ThemeTokens } from './types'
-import { downloadFile } from '@md/shared/utils'
+import { downloadFile } from '@mobi/shared/utils'
 import { generateThemeOverrideCSSWithComments } from './cssGenerator'
 import { sanitizeThemeTokens } from './tokens'
 

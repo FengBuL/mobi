@@ -1,4 +1,4 @@
-import type { CreateTemplateParams, Template, UpdateTemplateParams } from '@md/shared'
+import type { CreateTemplateParams, Template, UpdateTemplateParams } from '@mobi/shared'
 import { v4 as uuidv4 } from 'uuid'
 import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'

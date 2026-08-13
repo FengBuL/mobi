@@ -1,5 +1,5 @@
 {
-  "name": "@md/config",
+  "name": "@mobi/config",
   "type": "module",
   "private": true,
   "exports": {

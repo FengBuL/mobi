@@ -1,4 +1,4 @@
-import { initRenderer } from '@md/core'
+import { initRenderer } from '@mobi/core'
 import { postProcessHtml, renderMarkdown } from '@/utils'
 import { useThemeStore } from './theme'
 import { useUIStore } from './ui'

@@ -4,7 +4,7 @@ export interface RecentImageEntry {
   usedAt: number
 }
 
-const RECENT_IMAGE_STORAGE_KEY = `md__recent-images`
+const RECENT_IMAGE_STORAGE_KEY = `mobi__recent-images`
 const RECENT_IMAGE_LIMIT = 48
 
 function isHttpLikeUrl(value: string) {

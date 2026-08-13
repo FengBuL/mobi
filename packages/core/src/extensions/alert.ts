@@ -1,4 +1,4 @@
-import type { AlertOptions, AlertVariantItem } from '@md/shared/types'
+import type { AlertOptions, AlertVariantItem } from '@mobi/shared/types'
 import type { MarkedExtension, Tokens } from 'marked'
 import { ucfirst } from '../utils'
 

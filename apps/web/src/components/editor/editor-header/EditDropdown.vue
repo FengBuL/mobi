@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { altSign, ctrlSign, shiftSign } from '@md/shared/configs'
+import { altSign, ctrlSign, shiftSign } from '@mobi/shared/configs'
 import {
   Replace,
   Search,

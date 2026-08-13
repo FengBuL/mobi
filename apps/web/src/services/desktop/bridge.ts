@@ -1,5 +1,5 @@
-import type { DesktopBridge } from '@md/shared/types/desktop'
-import { DESKTOP_BRIDGE_KEY, DESKTOP_BRIDGE_VERSION } from '@md/shared/types/desktop'
+import type { DesktopBridge } from '@mobi/shared/types/desktop'
+import { DESKTOP_BRIDGE_KEY, DESKTOP_BRIDGE_VERSION } from '@mobi/shared/types/desktop'
 
 function readBridge(): DesktopBridge | null {
   if (typeof window === `undefined`) {

@@ -46,7 +46,7 @@ nsis:
 
 linux:
   category: Office
-  # 不写的话会从包名 @md/desktop 推出 @mddesktop，@ 在文件路径里非法，构建直接失败。
+  # 不写的话会从包名 @mobi/desktop 推出 @mddesktop，@ 在文件路径里非法，构建直接失败。
   # macOS 和 Windows 用的是 productName，所以只有这里需要显式给一个 ASCII 名字
   executableName: mobi
   # 让窗口能关联到桌面项，否则任务栏里认不出来是哪个应用

@@ -2,7 +2,7 @@ import type {
   WechatStableTokenResult,
   WechatUploadEndpoint,
   WechatUploadImageResult,
-} from '@md/shared/types/desktop'
+} from '@mobi/shared/types/desktop'
 
 export type WechatTransportKind = `browser` | `desktop`
 

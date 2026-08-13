@@ -5,8 +5,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, `./apps/web/src`),
-      '@md/shared': path.resolve(__dirname, `./packages/shared/src`),
-      '@md/core': path.resolve(__dirname, `./packages/core/src`),
+      '@mobi/shared': path.resolve(__dirname, `./packages/shared/src`),
+      '@mobi/core': path.resolve(__dirname, `./packages/core/src`),
     },
   },
   test: {

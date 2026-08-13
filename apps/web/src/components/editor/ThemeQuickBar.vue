@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ThemeName } from '@md/shared/configs'
-import { themeOptions } from '@md/shared/configs'
+import type { ThemeName } from '@mobi/shared/configs'
+import { themeOptions } from '@mobi/shared/configs'
 import { ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-vue-next'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useEditorStore } from '@/stores/editor'

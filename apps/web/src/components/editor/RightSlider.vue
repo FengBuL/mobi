@@ -5,7 +5,7 @@ import type {
   HeadingStyleType,
   IStylePreset,
   ThemeName,
-} from '@md/shared/configs'
+} from '@mobi/shared/configs'
 import type { CustomTheme } from '@/utils/theme-designer'
 import {
   codeBlockThemeOptions,
@@ -20,7 +20,7 @@ import {
   themeMap,
   themeOptions,
   themeOptionsMap,
-} from '@md/shared/configs'
+} from '@mobi/shared/configs'
 import { X } from 'lucide-vue-next'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useEditorStore } from '@/stores/editor'
@@ -109,7 +109,7 @@ watch(() => uiStore.styleFocusRequest, (request) => {
 })
 
 onBeforeUnmount(() => clearTimeout(focusFlashTimer))
-const STYLE_PRESET_STORAGE_KEY = `md_savedStylePresets`
+const STYLE_PRESET_STORAGE_KEY = `mobi_savedStylePresets`
 const CUSTOM_STYLE_PRESET_PLACEHOLDER = `__custom_style_preset__`
 const customStylePresets = ref<IStylePreset[]>(JSON.parse(localStorage.getItem(STYLE_PRESET_STORAGE_KEY) || `[]`))
 const selectedThemeMeta = computed(() => themeOptions.find(({ value }) => value === theme.value))

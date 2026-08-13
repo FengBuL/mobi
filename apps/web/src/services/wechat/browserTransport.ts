@@ -1,6 +1,6 @@
-import type { WechatStableTokenResult, WechatUploadImageResult } from '@md/shared/types/desktop'
+import type { WechatStableTokenResult, WechatUploadImageResult } from '@mobi/shared/types/desktop'
 import type { StableTokenInput, UploadImageInput, WechatTransport } from './types'
-import fetch from '@md/shared/utils/fetch'
+import fetch from '@mobi/shared/utils/fetch'
 import { assertReachableMpProxyOrigin, normalizeMpProxyOrigin } from './proxyOrigin'
 
 const WECHAT_API_ORIGIN = `https://api.weixin.qq.com`

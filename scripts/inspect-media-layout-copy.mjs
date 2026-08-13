@@ -6,7 +6,7 @@ import { existsSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const DEBUG_PORT = Number(process.env.MD_DEBUG_PORT || 9223)
-const DEV_URL = process.env.MD_DEV_URL || `http://localhost:5173/md/`
+const DEV_URL = process.env.MOBI_DEV_URL || `http://localhost:5173/mobi/`
 
 function findChromeBinary() {
   const candidates = [
@@ -157,7 +157,7 @@ async function main() {
       { timeout: 60000, label: `预览区渲染` },
     )
 
-    const corePath = `/md/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
+    const corePath = `/mobi/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
 
     // 应用的渲染管线是异步的，刚注入的 markup 会被默认示例文档覆盖回去。
     // 不等 #output 稳定，第一个被测预设量到的就是示例文档而不是产物。
@@ -173,8 +173,8 @@ async function main() {
     })`)
 
     const runPreset = presetId => page.evaluate(`(async () => {
-      const layouts = await import(${JSON.stringify(`/md/src/utils/image-layouts.ts`)})
-      const utils = await import(${JSON.stringify(`/md/src/utils/index.ts`)})
+      const layouts = await import(${JSON.stringify(`/mobi/src/utils/image-layouts.ts`)})
+      const utils = await import(${JSON.stringify(`/mobi/src/utils/index.ts`)})
       const core = await import(${JSON.stringify(corePath)})
       const output = document.querySelector('#output')
 

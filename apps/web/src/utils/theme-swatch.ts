@@ -1,5 +1,5 @@
-import type { ThemeName } from '@md/shared/configs'
-import { getThemeDefaultPrimaryColor, themeMap } from '@md/shared/configs'
+import type { ThemeName } from '@mobi/shared/configs'
+import { getThemeDefaultPrimaryColor, themeMap } from '@mobi/shared/configs'
 
 /**
  * 一套主题的缩略配色。

@@ -1,5 +1,5 @@
 {
-  "name": "@md/desktop",
+  "name": "@mobi/desktop",
   "type": "module",
   "version": "2.1.5",
   "private": true,
@@ -21,8 +21,8 @@
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "@md/config": "workspace:*",
-    "@md/shared": "workspace:*",
+    "@mobi/config": "workspace:*",
+    "@mobi/shared": "workspace:*",
     "@types/node": "^25.5.0",
     "electron": "^43.4.0",
     "electron-builder": "^26.15.3",

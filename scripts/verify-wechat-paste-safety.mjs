@@ -8,7 +8,7 @@
  *   2. 按公众号规则过滤后在 375px 宽的容器里真实渲染，测量图片盒子是否塌陷、
  *      是否互相重叠、是否出现无内容的巨大空隙。
  *
- * 依赖本地 dev server（默认 http://localhost:5173/md/）。
+ * 依赖本地 dev server（默认 http://localhost:5173/mobi/）。
  * 运行：node scripts/verify-wechat-paste-safety.mjs
  */
 
@@ -17,7 +17,7 @@ import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 
-const DEV_URL = process.env.MD_DEV_URL || `http://localhost:5173/md/`
+const DEV_URL = process.env.MOBI_DEV_URL || `http://localhost:5173/mobi/`
 const DEBUG_PORT = Number(process.env.MD_CDP_PORT || 9344)
 
 function findChromeBinary() {
@@ -162,11 +162,11 @@ async function main() {
       { timeout: 60000, label: `预览区渲染` },
     )
 
-    const corePath = `/md/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
+    const corePath = `/mobi/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
 
     const bootstrap = `(async () => {
-      const utils = await import('/md/src/utils/index.ts')
-      const layouts = await import('/md/src/utils/image-layouts.ts')
+      const utils = await import('/mobi/src/utils/index.ts')
+      const layouts = await import('/mobi/src/utils/image-layouts.ts')
       const core = await import(${JSON.stringify(corePath)})
       const samples = ${JSON.stringify(SAMPLES)}
 

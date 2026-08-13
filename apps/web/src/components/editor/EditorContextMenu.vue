@@ -1,8 +1,8 @@
 <script setup lang='ts'>
 import type { EditorView } from '@codemirror/view'
 import type { Format } from 'vue-pick-colors'
-import { altSign, headingLevels as baseHeadingLevels, ctrlKey, ctrlSign, shiftSign } from '@md/shared/configs'
-import { formatColor } from '@md/shared/editor'
+import { altSign, headingLevels as baseHeadingLevels, ctrlKey, ctrlSign, shiftSign } from '@mobi/shared/configs'
+import { formatColor } from '@mobi/shared/editor'
 import {
   Bold,
   ClipboardPaste,

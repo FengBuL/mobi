@@ -24,7 +24,7 @@ import { dirname, resolve } from 'node:path'
 import { launchPage } from './lib/wechat-cdp.mjs'
 
 const DEBUG_PORT = Number(process.env.MD_DEBUG_PORT || 9233)
-const DEV_URL = process.env.MD_DEV_URL || `http://localhost:5173/md/`
+const DEV_URL = process.env.MOBI_DEV_URL || `http://localhost:5173/mobi/`
 const jsonFlagIndex = process.argv.indexOf(`--json`)
 const JSON_OUT = jsonFlagIndex > -1 ? process.argv[jsonFlagIndex + 1] : `/tmp/theme-audit/contrast.json`
 const BASELINE = process.env.MD_BASELINE
@@ -360,9 +360,9 @@ async function main() {
   const results = []
 
   try {
-    const corePath = `/md/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
-    const themePath = `/md/@fs${resolve(process.cwd(), `packages/shared/src/configs/theme.ts`)}`
-    const stylePath = `/md/@fs${resolve(process.cwd(), `packages/shared/src/configs/style.ts`)}`
+    const corePath = `/mobi/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
+    const themePath = `/mobi/@fs${resolve(process.cwd(), `packages/shared/src/configs/theme.ts`)}`
+    const stylePath = `/mobi/@fs${resolve(process.cwd(), `packages/shared/src/configs/style.ts`)}`
 
     await page.evaluate(`(async () => {
       const output = document.querySelector('#output');
@@ -383,7 +383,7 @@ async function main() {
       const themeConfig = await import(${JSON.stringify(themePath)});
       const styleConfig = await import(${JSON.stringify(stylePath)});
       const core = await import(${JSON.stringify(corePath)});
-      const utils = await import('/md/src/utils/index.ts');
+      const utils = await import('/mobi/src/utils/index.ts');
       window.__cv.core = core;
       window.__cv.themeConfig = themeConfig;
       window.__cv.styleConfig = styleConfig;

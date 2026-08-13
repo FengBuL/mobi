@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ThemeName } from '@md/shared/configs'
-import { themeMap, themeOptionsMap } from '@md/shared/configs'
+import type { ThemeName } from '@mobi/shared/configs'
+import { themeMap, themeOptionsMap } from '@mobi/shared/configs'
 import { Download, GitCompareArrows, Palette, Redo2, RotateCcw, Save, TriangleAlert, Undo2, Upload } from 'lucide-vue-next'
 import { useThemeStore } from '@/stores/theme'
 import { useThemeDesignerStore } from '@/stores/themeDesigner'

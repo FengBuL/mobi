@@ -3,7 +3,7 @@
  * 根据配置动态生成 CSS 变量样式
  */
 
-import type { HeadingLevel, HeadingStyles, HeadingStyleType } from '@md/shared/configs'
+import type { HeadingLevel, HeadingStyles, HeadingStyleType } from '@mobi/shared/configs'
 
 export interface CSSVariableConfig {
   primaryColor: string

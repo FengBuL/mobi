@@ -2,7 +2,7 @@ import type { Plugin } from 'vite'
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
-import { codeBlockThemeIds } from '@md/shared/configs/code-block-themes'
+import { codeBlockThemeIds } from '@mobi/shared/configs/code-block-themes'
 
 /**
  * 把 highlight.js 的代码主题样式和语言包放进自己的产物，不走任何外部 CDN。

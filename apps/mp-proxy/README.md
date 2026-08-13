@@ -5,7 +5,7 @@
 ## 启动
 
 ```bash
-pnpm --filter @md/mp-proxy start
+pnpm --filter @mobi/mp-proxy start
 ```
 
 默认监听：

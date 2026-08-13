@@ -6,7 +6,7 @@ import {
   fontCategoryOptions,
   fontFamilyOptions,
   fontSizeOptions,
-} from '@md/shared/configs'
+} from '@mobi/shared/configs'
 import PickColors from 'vue-pick-colors'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useEditorStore } from '@/stores/editor'

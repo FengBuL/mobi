@@ -2,7 +2,7 @@ import process from 'node:process'
 import electronPath from 'electron'
 import { buildShell, repoRoot, spawnBackground, stopAll } from './shell.mjs'
 
-const DEV_SERVER_URL = process.env.MOBI_DEV_SERVER_URL || `http://localhost:5173/md/`
+const DEV_SERVER_URL = process.env.MOBI_DEV_SERVER_URL || `http://localhost:5173/mobi/`
 const READY_TIMEOUT_MS = 60_000
 
 async function isDevServerUp() {
@@ -35,7 +35,7 @@ async function main() {
   }
   else {
     console.log(`[mobi] 启动 web dev server`)
-    spawnBackground(`pnpm`, [`--filter`, `@md/web`, `dev`], { cwd: repoRoot })
+    spawnBackground(`pnpm`, [`--filter`, `@mobi/web`, `dev`], { cwd: repoRoot })
     await waitForDevServer()
   }
 

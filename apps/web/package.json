@@ -1,5 +1,5 @@
 {
-  "name": "@md/web",
+  "name": "@mobi/web",
   "type": "module",
   "private": true,
   "engines": {
@@ -17,8 +17,8 @@
     "@aws-sdk/client-s3": "^3.1020.0",
     "@aws-sdk/s3-request-presigner": "^3.1020.0",
     "@exercism/highlightjs-gdscript": "^0.0.1",
-    "@md/core": "workspace:*",
-    "@md/shared": "workspace:*",
+    "@mobi/core": "workspace:*",
+    "@mobi/shared": "workspace:*",
     "@ssttevee/multipart-parser": "^0.1.9",
     "@vee-validate/yup": "^4.15.1",
     "@vueuse/core": "^14.2.1",
@@ -51,7 +51,7 @@
     "yup": "^1.7.1"
   },
   "devDependencies": {
-    "@md/config": "workspace:*",
+    "@mobi/config": "workspace:*",
     "@tailwindcss/postcss": "^4.2.2",
     "@tailwindcss/vite": "^4.2.2",
     "@types/buffer-from": "^1.1.3",

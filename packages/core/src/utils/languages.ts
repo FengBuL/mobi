@@ -1,5 +1,5 @@
 import type { LanguageFn } from 'highlight.js'
-import { HLJS_ASSET_BASE, localAssetUrl } from '@md/shared/utils/localAsset'
+import { HLJS_ASSET_BASE, localAssetUrl } from '@mobi/shared/utils/localAsset'
 import bash from 'highlight.js/lib/languages/bash'
 import c from 'highlight.js/lib/languages/c'
 import cpp from 'highlight.js/lib/languages/cpp'

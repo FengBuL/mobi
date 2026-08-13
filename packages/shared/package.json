@@ -1,5 +1,5 @@
 {
-  "name": "@md/shared",
+  "name": "@mobi/shared",
   "type": "module",
   "version": "1.0.0",
   "private": true,
@@ -35,6 +35,6 @@
     "prettier": "2.8.8"
   },
   "devDependencies": {
-    "@md/config": "workspace:*"
+    "@mobi/config": "workspace:*"
   }
 }

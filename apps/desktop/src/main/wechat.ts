@@ -4,7 +4,7 @@ import type {
   WechatUploadEndpoint,
   WechatUploadImageRequest,
   WechatUploadImageResult,
-} from '@md/shared/types/desktop'
+} from '@mobi/shared/types/desktop'
 
 /**
  * 主进程版的微信接口转发，对应 apps/mp-proxy/server.mjs 的四条路径。

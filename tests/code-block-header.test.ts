@@ -1,4 +1,4 @@
-import { initRenderer, renderMarkdown } from '@md/core'
+import { initRenderer, renderMarkdown } from '@mobi/core'
 import { describe, expect, it } from 'vitest'
 
 /**

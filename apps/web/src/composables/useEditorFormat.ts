@@ -1,5 +1,5 @@
 import type { EditorView } from '@codemirror/view'
-import { ctrlKey } from '@md/shared/configs'
+import { ctrlKey } from '@mobi/shared/configs'
 import {
   applyHeading,
   formatBold,
@@ -9,7 +9,7 @@ import {
   formatOrderedList,
   formatStrikethrough,
   formatUnorderedList,
-} from '@md/shared/editor'
+} from '@mobi/shared/editor'
 import { unref } from 'vue'
 
 /**

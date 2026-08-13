@@ -3,9 +3,9 @@
  * 负责将主题样式应用到页面
  */
 
-import type { ThemeName } from '@md/shared/configs'
+import type { ThemeName } from '@mobi/shared/configs'
 import type { CSSVariableConfig } from './cssVariables'
-import { baseCSSContent, skeletonCSSContent, themeMap } from '@md/shared/configs'
+import { baseCSSContent, skeletonCSSContent, themeMap } from '@mobi/shared/configs'
 import { processCSS } from './cssProcessor'
 import { wrapCSSWithScope } from './cssScopeWrapper'
 import { generateCSSVariables, generateHeadingStyles } from './cssVariables'

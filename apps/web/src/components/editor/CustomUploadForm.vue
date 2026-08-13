@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { Compartment } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
-import { javascriptSetup, theme } from '@md/shared'
+import { javascriptSetup, theme } from '@mobi/shared'
 import { useUIStore } from '@/stores/ui'
 import { removeLeft } from '@/utils'
 import { store } from '@/utils/storage'

@@ -1,5 +1,5 @@
 {
-  "extends": "@md/config/tsconfig.base.json",
+  "extends": "@mobi/config/tsconfig.base.json",
   "compilerOptions": {
     "incremental": false,
     "composite": false,

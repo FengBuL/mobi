@@ -1,11 +1,11 @@
-import type { DesktopBridge } from '@md/shared/types/desktop'
+import type { DesktopBridge } from '@mobi/shared/types/desktop'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createBrowserWechatTransport } from '@/services/wechat/browserTransport'
 import { createDesktopWechatTransport } from '@/services/wechat/desktopTransport'
 
 const sentRequests: { url: string, options: any }[] = []
 
-vi.mock(`@md/shared/utils/fetch`, () => ({
+vi.mock(`@mobi/shared/utils/fetch`, () => ({
   default: (url: string, options: any) => {
     sentRequests.push({ url, options })
     return Promise.resolve({})

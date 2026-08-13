@@ -12,7 +12,7 @@
 import { launchPage } from './lib/wechat-cdp.mjs'
 
 const DEBUG_PORT = Number(process.env.MD_DEBUG_PORT || 9225)
-const DEV_URL = process.env.MD_DEV_URL || `http://localhost:5173/md/`
+const DEV_URL = process.env.MOBI_DEV_URL || `http://localhost:5173/mobi/`
 const THEME = process.env.MD_THEME || `default`
 const PRESETS = (process.env.MD_PRESETS || `scroll-window`).split(`,`).map(item => item.trim()).filter(Boolean)
 
@@ -45,13 +45,13 @@ async function main() {
 
   try {
     await page.evaluate(`(async () => {
-      const core = await import('/md/@fs${process.cwd()}/packages/core/src/index.ts')
+      const core = await import('/mobi/@fs${process.cwd()}/packages/core/src/index.ts')
       await core.applyTheme({
         themeName: ${JSON.stringify(THEME)},
         variables: { primaryColor: '#16a34a', fontFamily: 'Optima-Regular, sans-serif', fontSize: '15px' },
       })
-      window.__wxLayouts = await import('/md/src/utils/image-layouts.ts')
-      window.__wxUtils = await import('/md/src/utils/index.ts')
+      window.__wxLayouts = await import('/mobi/src/utils/image-layouts.ts')
+      window.__wxUtils = await import('/mobi/src/utils/index.ts')
       ${SETTLE_HELPER}
       return true
     })()`)

@@ -1,5 +1,5 @@
-import type { RendererAPI } from '@md/shared/types'
-import type { ReadTimeResults } from '@md/shared/utils/readingTime'
+import type { RendererAPI } from '@mobi/shared/types'
+import type { ReadTimeResults } from '@mobi/shared/utils/readingTime'
 import DOMPurify from 'isomorphic-dompurify'
 import { marked } from 'marked'
 

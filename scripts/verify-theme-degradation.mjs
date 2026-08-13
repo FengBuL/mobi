@@ -24,7 +24,7 @@ import { resolve } from 'node:path'
 import { launchPage } from './lib/wechat-cdp.mjs'
 
 const DEBUG_PORT = Number(process.env.MD_DEBUG_PORT || 9236)
-const DEV_URL = process.env.MD_DEV_URL || `http://localhost:5173/md/`
+const DEV_URL = process.env.MOBI_DEV_URL || `http://localhost:5173/mobi/`
 const OUT_DIR = `/tmp/theme-audit`
 
 // 剥属性的四档场景，从最可能发生到最狠
@@ -133,13 +133,13 @@ async function main() {
   })
 
   try {
-    const corePath = `/md/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
-    const stylePath = `/md/@fs${resolve(process.cwd(), `packages/shared/src/configs/style.ts`)}`
-    const themePath = `/md/@fs${resolve(process.cwd(), `packages/shared/src/configs/theme.ts`)}`
+    const corePath = `/mobi/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
+    const stylePath = `/mobi/@fs${resolve(process.cwd(), `packages/shared/src/configs/style.ts`)}`
+    const themePath = `/mobi/@fs${resolve(process.cwd(), `packages/shared/src/configs/theme.ts`)}`
 
     await page.evaluate(`(async () => {
       const core = await import(${JSON.stringify(corePath)});
-      const utils = await import('/md/src/utils/index.ts');
+      const utils = await import('/mobi/src/utils/index.ts');
       const styleConfig = await import(${JSON.stringify(stylePath)});
       const themeConfig = await import(${JSON.stringify(themePath)});
       window.__deg = { core, utils, themeConfig };

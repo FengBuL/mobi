@@ -14,7 +14,7 @@ import { resolve } from 'node:path'
 import { launchPage } from './lib/wechat-cdp.mjs'
 
 const DEBUG_PORT = Number(process.env.MD_DEBUG_PORT || 9231)
-const DEV_URL = process.env.MD_DEV_URL || `http://localhost:5173/md/`
+const DEV_URL = process.env.MOBI_DEV_URL || `http://localhost:5173/mobi/`
 const OUT_DIR = process.env.MD_AUDIT_DIR || `/tmp/theme-audit`
 const SHEET_DIR = `${OUT_DIR}/sheet`
 const COLUMN_WIDTH = 375
@@ -286,9 +286,9 @@ async function main() {
   const results = []
 
   try {
-    const corePath = `/md/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
-    const themePath = `/md/@fs${resolve(process.cwd(), `packages/shared/src/configs/theme.ts`)}`
-    const stylePath = `/md/@fs${resolve(process.cwd(), `packages/shared/src/configs/style.ts`)}`
+    const corePath = `/mobi/@fs${resolve(process.cwd(), `packages/core/src/index.ts`)}`
+    const themePath = `/mobi/@fs${resolve(process.cwd(), `packages/shared/src/configs/theme.ts`)}`
+    const stylePath = `/mobi/@fs${resolve(process.cwd(), `packages/shared/src/configs/style.ts`)}`
 
     // 应用启动后 #output 还会被异步渲染覆盖若干次，先等它自己安静下来。
     await page.evaluate(`(async () => {
@@ -310,7 +310,7 @@ async function main() {
       const themeConfig = await import(${JSON.stringify(themePath)});
       const styleConfig = await import(${JSON.stringify(stylePath)});
       const core = await import(${JSON.stringify(corePath)});
-      const utils = await import('/md/src/utils/index.ts');
+      const utils = await import('/mobi/src/utils/index.ts');
       window.__audit.core = core;
       window.__audit.utils = utils;
       window.__audit.themeConfig = themeConfig;
