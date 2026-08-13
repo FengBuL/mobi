@@ -9,7 +9,7 @@ import { mathjaxLocalPlugin } from './plugins/vite-plugin-mathjax-local'
 
 const PKG_NAME_SPECIAL_CHARS = /[^\w-]/g
 const LOCAL_BASE = `/md/`
-const DEFAULT_REPO_NAME = `md-editor-web-private`
+const DEFAULT_REPO_NAME = `mobi`
 
 function normalizeBase(value: string) {
   let next = value.trim()

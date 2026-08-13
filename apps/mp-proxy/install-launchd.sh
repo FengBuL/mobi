@@ -6,7 +6,7 @@ set -euo pipefail
 
 LABEL="com.md-editor.mp-proxy"
 SOURCE_DIR="${0:A:h}"
-APP_DIR="$HOME/Library/Application Support/md-editor-web-private/mp-proxy"
+APP_DIR="$HOME/Library/Application Support/mobi/mp-proxy"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 
 PORT="${PORT:-8788}"

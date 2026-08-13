@@ -72,3 +72,35 @@ jobs:
             apps/desktop/release/*.dmg
             apps/desktop/release/*.exe
             apps/desktop/release/*.AppImage
+
+  # 三个平台各自建 release 会打架，所以等全部构建完再统一发一个
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all installers
+        uses: actions/download-artifact@v4
+        with:
+          path: installers
+          merge-multiple: true
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: installers/*
+          body: |
+            下载对应系统的安装包即可，不想装的话可以直接用[网页版](https://fengbul.github.io/mobi/)。
+
+            | 系统 | 下载 |
+            | --- | --- |
+            | macOS（Apple 芯片） | `mobi-*-arm64.dmg` |
+            | macOS（Intel） | `mobi-*-x64.dmg` |
+            | Windows | `mobi-*-x64.exe` |
+            | Linux | `mobi-*-x64.AppImage` |
+
+            安装包还没有签名：macOS 首次打开要右键选「打开」，Windows 会弹一次 SmartScreen 警告。

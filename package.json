@@ -1,9 +1,9 @@
 {
-  "name": "md",
+  "name": "mobi",
   "type": "module",
   "version": "2.1.1",
   "private": true,
-  "description": "Local Markdown editor web app",
+  "description": "墨笔 · 写完就能贴进公众号的 Markdown 排版编辑器",
   "engines": {
     "node": ">=22.16.0"
   },

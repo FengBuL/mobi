@@ -55,7 +55,7 @@ zsh apps/mp-proxy/install-launchd.sh
 
 脚本会按**当前用户**生成 LaunchAgent，仓库里不保留任何人的家目录路径。它做三件事：
 
-1. 把 `server.mjs` 和 `start-launchd.sh` 复制到 `~/Library/Application Support/md-editor-web-private/mp-proxy`
+1. 把 `server.mjs` 和 `start-launchd.sh` 复制到 `~/Library/Application Support/mobi/mp-proxy`
 2. 在 `~/Library/LaunchAgents/com.md-editor.mp-proxy.plist` 生成配置
 3. 立即加载，之后每次登录自动启动
 

@@ -1,14 +1,14 @@
 #!/bin/zsh
 set -euo pipefail
 
-# 由 install-launchd.sh 复制到 ~/Library/Application Support/md-editor-web-private/mp-proxy 下运行。
+# 由 install-launchd.sh 复制到 ~/Library/Application Support/mobi/mp-proxy 下运行。
 # 这里不写死任何用户目录：launchd 会带上 HOME，手动执行时也能从当前环境拿到。
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 export HOST="${HOST:-0.0.0.0}"
 export PORT="${PORT:-8788}"
 export ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-*}"
 
-APP_DIR="${MP_PROXY_DIR:-$HOME/Library/Application Support/md-editor-web-private/mp-proxy}"
+APP_DIR="${MP_PROXY_DIR:-$HOME/Library/Application Support/mobi/mp-proxy}"
 
 NODE_BIN="$(command -v node || true)"
 if [[ -z "$NODE_BIN" ]]; then
