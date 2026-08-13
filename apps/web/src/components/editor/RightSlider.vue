@@ -44,6 +44,7 @@ const {
   isShowCodeLanguage,
   isShowLineNumber,
   isCiteStatus,
+  isCountStatus,
   isUseIndent,
   isUseJustify,
   headingStyles,
@@ -372,6 +373,7 @@ function resetDetailGroup() {
   themeStore.isShowCodeLanguage = defaultStyleConfig.isShowCodeLanguage
   themeStore.isShowLineNumber = defaultStyleConfig.isShowLineNumber
   themeStore.isCiteStatus = defaultStyleConfig.isCiteStatus
+  themeStore.isCountStatus = defaultStyleConfig.isCountStatus
   editorRefresh()
 }
 
@@ -539,6 +541,21 @@ function setUseJustify(enabled: boolean) {
     useJustifyChanged()
 }
 
+// 公众号渲染开关：原「格式」菜单里的两项，挪进细节页后带上可见的开关状态
+function setCiteStatus(enabled: boolean) {
+  if (themeStore.isCiteStatus === enabled)
+    return
+  themeStore.isCiteStatus = enabled
+  editorRefresh()
+}
+
+function setCountStatus(enabled: boolean) {
+  if (themeStore.isCountStatus === enabled)
+    return
+  themeStore.isCountStatus = enabled
+  editorRefresh()
+}
+
 // 控制是否启用动画
 const enableAnimation = ref(false)
 
@@ -650,7 +667,7 @@ watch(isOpen, () => {
       <Tabs v-model="activeStylePanel" class="w-full">
         <TabsList class="grid w-full grid-cols-4">
           <TabsTrigger value="template">
-            模板
+            版式
           </TabsTrigger>
           <TabsTrigger value="text">
             文字
@@ -1024,6 +1041,59 @@ watch(isOpen, () => {
                       开
                     </Button>
                     <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isShowLineNumber }" @click="setShowLineNumber(false)">
+                      关
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="style-card space-y-3">
+            <div class="space-y-1">
+              <h2 class="text-sm font-semibold">
+                公众号细节
+              </h2>
+              <p class="text-xs leading-5 text-muted-foreground">
+                这两项会跟着内容一起复制进公众号。
+              </p>
+            </div>
+            <div class="grid gap-3">
+              <div class="rounded-xl border p-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <div class="text-sm font-medium">
+                      微信外链转底部引用
+                    </div>
+                    <div class="text-xs text-muted-foreground">
+                      正文外链改成编号，链接列在文末
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isCiteStatus }" @click="setCiteStatus(true)">
+                      开
+                    </Button>
+                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isCiteStatus }" @click="setCiteStatus(false)">
+                      关
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div class="rounded-xl border p-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <div class="text-sm font-medium">
+                      字数与阅读时间
+                    </div>
+                    <div class="text-xs text-muted-foreground">
+                      在文章开头展示字数和预计阅读时长
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isCountStatus }" @click="setCountStatus(true)">
+                      开
+                    </Button>
+                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isCountStatus }" @click="setCountStatus(false)">
                       关
                     </Button>
                   </div>

@@ -13,7 +13,6 @@ import { useEditorCopyActions } from '@/composables/useEditorCopyActions'
 import { useUIStore } from '@/stores/ui'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
-import FormatDropdown from './FormatDropdown.vue'
 import HelpDropdown from './HelpDropdown.vue'
 import InsertDropdown from './InsertDropdown.vue'
 
@@ -37,15 +36,10 @@ const copyFormats = [
 
 // 对话框状态
 const aboutDialogVisible = ref(false)
-const editorStateDialogVisible = ref(false)
 
 // 处理帮助菜单事件
 function handleOpenAbout() {
   aboutDialogVisible.value = true
-}
-
-function handleOpenEditorState() {
-  editorStateDialogVisible.value = true
 }
 
 function handleOpenMediaLayout() {
@@ -74,9 +68,8 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
     <!-- 桌面端左侧菜单 -->
     <div class="space-x-1 hidden md:flex">
       <Menubar class="menubar border-0">
-        <FileDropdown @open-editor-state="handleOpenEditorState" />
-        <EditDropdown @copy="handleCopy" />
-        <FormatDropdown />
+        <FileDropdown />
+        <EditDropdown />
         <InsertDropdown />
         <HelpDropdown @open-about="handleOpenAbout" />
       </Menubar>
@@ -92,9 +85,8 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
             </Button>
           </MenubarTrigger>
           <MenubarContent align="start">
-            <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
-            <EditDropdown :as-sub="true" @copy="handleCopy" />
-            <FormatDropdown :as-sub="true" />
+            <FileDropdown :as-sub="true" />
+            <EditDropdown :as-sub="true" />
             <InsertDropdown :as-sub="true" />
             <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" />
           </MenubarContent>
@@ -143,9 +135,9 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
         </DropdownMenu>
       </div>
 
-      <!-- 板块库，只在专业模式常驻 -->
+      <!-- 板块库：桌面端常驻，简洁模式下作为右侧抽屉打开 -->
       <Button
-        v-if="workspaceMode === 'professional' && !isMobile"
+        v-if="!isMobile"
         variant="outline"
         class="h-9"
         :class="{ 'border-foreground/45 bg-foreground/[0.06] text-foreground': isOpenBlockWorkspace }"
@@ -170,7 +162,6 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
 
   <!-- 对话框组件，嵌套菜单无法正常挂载，需要提取层级 -->
   <AboutDialog :visible="aboutDialogVisible" @close="aboutDialogVisible = false" />
-  <EditorStateDialog :visible="editorStateDialogVisible" @close="editorStateDialogVisible = false" />
 </template>
 
 <style lang="less" scoped>

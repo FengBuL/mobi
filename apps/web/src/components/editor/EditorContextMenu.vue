@@ -1,5 +1,8 @@
 <script setup lang='ts'>
+import type { EditorView } from '@codemirror/view'
+import type { Format } from 'vue-pick-colors'
 import { altSign, headingLevels as baseHeadingLevels, ctrlKey, ctrlSign, shiftSign } from '@md/shared/configs'
+import { formatColor } from '@md/shared/editor'
 import {
   Bold,
   ClipboardPaste,
@@ -24,6 +27,7 @@ import {
   Link2,
   List,
   ListOrdered,
+  Paintbrush,
   RefreshCw,
   RotateCcw,
   Strikethrough,
@@ -31,6 +35,7 @@ import {
   Trash2,
   Wand2,
 } from 'lucide-vue-next'
+import PickColors from 'vue-pick-colors'
 import DEFAULT_CONTENT from '@/assets/example/markdown.md?raw'
 import ImageQuickInsertDialog from '@/components/editor/ImageQuickInsertDialog.vue'
 import { useEditorFormat } from '@/composables/useEditorFormat'
@@ -45,7 +50,7 @@ const editorStore = useEditorStore()
 const postStore = usePostStore()
 const exportStore = useExportStore()
 const uiStore = useUIStore()
-const { isMobile } = storeToRefs(uiStore)
+const { isMobile, isOpenBlockWorkspace } = storeToRefs(uiStore)
 
 const {
   toggleShowInsertFormDialog,
@@ -60,6 +65,21 @@ const { open: openQuickInsert } = useImageQuickInsert()
 
 const { addFormat } = useEditorFormat(editor)
 
+// 文字颜色：给选中文本包一层带 color 的 span
+const pickColorsContainer = useTemplateRef(`pickColorsContainer`)
+const colorState = reactive({
+  format: `rgb` as Format,
+  formatOptions: [`rgb`] as Format[],
+  textColor: `rgba(0, 0, 0, 1)`,
+})
+
+function textColorChanged(color: string) {
+  colorState.textColor = color
+  if (!editor.value)
+    return
+  formatColor(editor.value as EditorView, color)
+}
+
 const headingIcons = [Heading1, Heading2, Heading3, Heading4, Heading5, Heading6]
 const headingLevels = baseHeadingLevels.map((item, index) => ({
   ...item,
@@ -72,7 +92,7 @@ function openMediaLayout() {
     return
   }
 
-  toast.success(`板块库已经固定在第二栏`)
+  isOpenBlockWorkspace.value = true
 }
 
 // 格式化文档
@@ -226,6 +246,25 @@ function downloadAsCardImage() {
               <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">E</kbd>
             </ContextMenuShortcut>
           </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>
+              <Paintbrush class="mr-2 h-4 w-4" />
+              文字颜色
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent class="w-min">
+              <div ref="pickColorsContainer" class="p-1">
+                <PickColors
+                  v-model:value="colorState.textColor"
+                  show-alpha
+                  :format="colorState.format" :format-options="colorState.formatOptions"
+                  :theme="uiStore.isDark ? 'dark' : 'light'"
+                  :popup-container="pickColorsContainer!"
+                  @change="textColorChanged"
+                />
+              </div>
+            </ContextMenuSubContent>
+          </ContextMenuSub>
         </ContextMenuSubContent>
       </ContextMenuSub>
 

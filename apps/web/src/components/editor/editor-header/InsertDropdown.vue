@@ -54,7 +54,8 @@ function openMediaLayout() {
         <History class="mr-2 h-4 w-4" />
         最近使用的图片
       </MenubarItem>
-      <MenubarItem @click="openMediaLayout">
+      <!-- 桌面端板块库走顶栏常驻按钮，菜单入口只留给移动端 -->
+      <MenubarItem v-if="isMobile" @click="openMediaLayout">
         <Image class="mr-2 h-4 w-4" />
         板块库
       </MenubarItem>
@@ -91,7 +92,8 @@ function openMediaLayout() {
         <History class="mr-2 h-4 w-4" />
         最近使用的图片
       </MenubarItem>
-      <MenubarItem @click="openMediaLayout">
+      <!-- 桌面端板块库走顶栏常驻按钮，菜单入口只留给移动端 -->
+      <MenubarItem v-if="isMobile" @click="openMediaLayout">
         <Image class="mr-2 h-4 w-4" />
         板块库
       </MenubarItem>

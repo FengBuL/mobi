@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download, FileCode, FileCog, FileText, FolderKanban, FolderOpen, Package, Upload } from 'lucide-vue-next'
+import { Download, FileCode, FileText, FolderKanban, FolderOpen, Package, Upload } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
 import { useUIStore } from '@/stores/ui'
@@ -10,8 +10,6 @@ const props = withDefaults(defineProps<{
   asSub: false,
 })
 
-const emit = defineEmits([`openEditorState`])
-
 const { asSub } = toRefs(props)
 
 const editorStore = useEditorStore()
@@ -20,10 +18,6 @@ const uiStore = useUIStore()
 
 const { isOpenPostSlider, isOpenFolderPanel } = storeToRefs(uiStore)
 const { toggleShowTemplateDialog, toggleShowImportMdDialog } = uiStore
-
-function openEditorStateDialog() {
-  emit(`openEditorState`)
-}
 
 function openTemplateDialog() {
   toggleShowTemplateDialog(true)
@@ -66,19 +60,11 @@ function exportEditorContent2PDF() {
 
       <MenubarSeparator />
 
-      <!-- 导入子菜单 -->
-      <MenubarSub>
-        <MenubarSubTrigger>
-          <Upload class="mr-2 size-4" />
-          导入
-        </MenubarSubTrigger>
-        <MenubarSubContent class="w-56">
-          <MenubarItem @click="toggleShowImportMdDialog(true)">
-            <FileText class="mr-2 size-4" />
-            导入 Markdown
-          </MenubarItem>
-        </MenubarSubContent>
-      </MenubarSub>
+      <!-- 导入 -->
+      <MenubarItem @click="toggleShowImportMdDialog(true)">
+        <Upload class="mr-2 size-4" />
+        导入 Markdown
+      </MenubarItem>
 
       <!-- 导出子菜单 -->
       <MenubarSub>
@@ -114,24 +100,16 @@ function exportEditorContent2PDF() {
 
       <MenubarSeparator />
 
-      <!-- 模板管理 -->
+      <!-- 正文模板 -->
       <MenubarItem @click="openTemplateDialog()">
         <Package class="mr-2 size-4" />
-        模板管理
+        正文模板
       </MenubarItem>
 
       <!-- 内容管理 -->
       <MenubarItem @click="isOpenPostSlider = !isOpenPostSlider">
         <FolderKanban class="mr-2 size-4" />
         内容管理
-      </MenubarItem>
-
-      <MenubarSeparator />
-
-      <!-- 项目配置 -->
-      <MenubarItem @click="openEditorStateDialog()">
-        <FileCog class="mr-2 size-4" />
-        项目配置
       </MenubarItem>
     </MenubarSubContent>
   </MenubarSub>
@@ -150,19 +128,11 @@ function exportEditorContent2PDF() {
 
       <MenubarSeparator />
 
-      <!-- 导入子菜单 -->
-      <MenubarSub>
-        <MenubarSubTrigger>
-          <Upload class="mr-2 size-4" />
-          导入
-        </MenubarSubTrigger>
-        <MenubarSubContent class="w-56">
-          <MenubarItem @click="toggleShowImportMdDialog(true)">
-            <FileText class="mr-2 size-4" />
-            导入 Markdown
-          </MenubarItem>
-        </MenubarSubContent>
-      </MenubarSub>
+      <!-- 导入 -->
+      <MenubarItem @click="toggleShowImportMdDialog(true)">
+        <Upload class="mr-2 size-4" />
+        导入 Markdown
+      </MenubarItem>
 
       <!-- 导出子菜单 -->
       <MenubarSub>
@@ -198,24 +168,16 @@ function exportEditorContent2PDF() {
 
       <MenubarSeparator />
 
-      <!-- 模板管理 -->
+      <!-- 正文模板 -->
       <MenubarItem @click="openTemplateDialog()">
         <Package class="mr-2 size-4" />
-        模板管理
+        正文模板
       </MenubarItem>
 
       <!-- 内容管理 -->
       <MenubarItem @click="isOpenPostSlider = !isOpenPostSlider">
         <FolderKanban class="mr-2 size-4" />
         内容管理
-      </MenubarItem>
-
-      <MenubarSeparator />
-
-      <!-- 项目配置 -->
-      <MenubarItem @click="openEditorStateDialog()">
-        <FileCog class="mr-2 size-4" />
-        项目配置
       </MenubarItem>
     </MenubarContent>
   </MenubarMenu>

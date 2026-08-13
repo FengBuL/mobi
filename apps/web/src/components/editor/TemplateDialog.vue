@@ -178,10 +178,10 @@ function onUpdate(val: boolean) {
       <DialogHeader class="px-6 pt-6 pb-4 border-b">
         <DialogTitle class="flex items-center gap-2">
           <Package class="size-5" />
-          模板管理
+          正文模板
         </DialogTitle>
         <DialogDescription>
-          保存和管理您的 Markdown 模板，快速复用常用内容
+          保存常用的 Markdown 正文片段，写作时快速套用。整套版式预设在「样式」面板里。
         </DialogDescription>
       </DialogHeader>
 
