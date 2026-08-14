@@ -11,11 +11,15 @@
 export const DESKTOP_BRIDGE_KEY = `mobiDesktop`
 
 /** 契约有破坏性改动时 +1，渲染进程据此决定要不要信任挂进来的 bridge */
-export const DESKTOP_BRIDGE_VERSION = 1
+export const DESKTOP_BRIDGE_VERSION = 2
 
 export const DESKTOP_IPC_CHANNELS = {
   wechatStableToken: `mobi:wechat:stable-token`,
   wechatUploadImage: `mobi:wechat:upload-image`,
+  updateCheck: `mobi:update:check`,
+  updateDownload: `mobi:update:download`,
+  updateInstall: `mobi:update:install`,
+  updateState: `mobi:update:state`,
 } as const
 
 export interface WechatStableTokenRequest {
@@ -58,6 +62,22 @@ export type DesktopIpcResult<T>
   = | { ok: true, data: T }
     | { ok: false, message: string }
 
+export type DesktopUpdateState
+  = | { status: `idle` }
+    | { status: `checking` }
+    | { status: `available`, version: string, releaseNotes: string }
+    | { status: `not-available`, version: string }
+    | {
+      status: `downloading`
+      version: string
+      percent: number
+      transferred: number
+      total: number
+      bytesPerSecond: number
+    }
+    | { status: `downloaded`, version: string, releaseNotes: string }
+    | { status: `error`, message: string }
+
 export interface DesktopBridge {
   readonly version: number
   readonly platform: string
@@ -69,5 +89,11 @@ export interface DesktopBridge {
   readonly wechat: {
     requestStableToken: (payload: WechatStableTokenRequest) => Promise<WechatStableTokenResult>
     uploadImage: (payload: WechatUploadImageRequest) => Promise<WechatUploadImageResult>
+  }
+  readonly updates: {
+    check: () => Promise<void>
+    download: () => Promise<void>
+    install: () => Promise<void>
+    onState: (listener: (state: DesktopUpdateState) => void) => () => void
   }
 }

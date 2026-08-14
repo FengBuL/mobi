@@ -17,6 +17,7 @@ import juice from 'juice'
 import { Marked } from 'marked'
 
 import { convertBlocksForWeChat } from '@/utils/blocks/registry'
+import { cropImageFileToAspectRatio, parseClipboardCropAspect, resolveCenterCrop, resolveClipboardImageUploadPlan } from '@/utils/clipboard-image-crop'
 import {
 
   mediaLayoutPresets,
@@ -597,6 +598,9 @@ function unwrapMpHostedUrl(url: string) {
 async function uploadClipboardImagesToMp(clipboardDiv: HTMLElement) {
   const hasConfig = await hasMpUploadConfig()
   if (!hasConfig) {
+    clipboardDiv.querySelectorAll(`[data-mobi-crop-aspect]`).forEach(element =>
+      element.removeAttribute(`data-mobi-crop-aspect`),
+    )
     return
   }
 
@@ -608,32 +612,51 @@ async function uploadClipboardImagesToMp(clipboardDiv: HTMLElement) {
 
   for (const image of images) {
     const src = image.getAttribute(`data-src`)?.trim() || image.getAttribute(`src`)?.trim() || ``
-    if (!src || src.includes(`mmbiz.qpic.cn`) || src.includes(`mmbiz.qlogo.cn`) || src.includes(`res.wx.qq.com`)) {
+    const cropAspect = parseClipboardCropAspect(image.getAttribute(`data-mobi-crop-aspect`))
+    const uploadPlan = resolveClipboardImageUploadPlan(src, cropAspect)
+    if (!uploadPlan.shouldUpload) {
+      image.removeAttribute(`data-mobi-crop-aspect`)
       continue
     }
 
-    if (cachedEntries[src]) {
+    if (cachedEntries[uploadPlan.cacheKey]) {
       // 旧缓存里可能存着套了 wsrv.nl 壳的地址，读出来时一并剥掉
-      const cached = unwrapMpHostedUrl(cachedEntries[src])
-      cachedEntries[src] = cached
+      const cached = unwrapMpHostedUrl(cachedEntries[uploadPlan.cacheKey])
+      cachedEntries[uploadPlan.cacheKey] = cached
       image.setAttribute(`src`, cached)
       image.setAttribute(`data-src`, cached)
       image.removeAttribute(`data-mp-upload-error`)
+      if (cropAspect !== `auto`) {
+        image.removeAttribute(`data-w`)
+        const crop = resolveCenterCrop(1000, 1000, cropAspect)
+        if (crop) {
+          image.setAttribute(`data-ratio`, formatClipboardRatio(1 / crop.ratio))
+        }
+      }
+      image.removeAttribute(`data-mobi-crop-aspect`)
       continue
     }
 
     try {
-      const file = await convertImageUrlToFile(src, proxyOrigin)
-      const uploadedUrl = unwrapMpHostedUrl(await uploadFileToMp(file))
+      const sourceFile = await convertImageUrlToFile(src, proxyOrigin)
+      const cropped = await cropImageFileToAspectRatio(sourceFile, cropAspect)
+      const uploadedUrl = unwrapMpHostedUrl(await uploadFileToMp(cropped.file))
       if (uploadedUrl) {
-        cachedEntries[src] = uploadedUrl
+        cachedEntries[uploadPlan.cacheKey] = uploadedUrl
         image.setAttribute(`src`, uploadedUrl)
         image.setAttribute(`data-src`, uploadedUrl)
+        if (cropped.width > 0 && cropped.height > 0) {
+          image.setAttribute(`data-ratio`, formatClipboardRatio(cropped.height / cropped.width))
+          image.setAttribute(`data-w`, String(cropped.width))
+        }
         image.removeAttribute(`data-mp-upload-error`)
       }
     }
     catch (error) {
       image.setAttribute(`data-mp-upload-error`, normalizeClipboardErrorMessage(error))
+    }
+    finally {
+      image.removeAttribute(`data-mobi-crop-aspect`)
     }
   }
 
@@ -788,10 +811,14 @@ function resolveWeChatImageType(url: string) {
 function renderWeChatImageMetricAttrs(slot: MediaLayoutImageSlot, metrics?: ClipboardImageMetrics) {
   const url = escapeClipboardHtml(slot.url.trim())
   const type = resolveWeChatImageType(slot.url)
+  const cropAttribute = slot.aspectRatio === `auto`
+    ? ``
+    : ` data-mobi-crop-aspect="${slot.aspectRatio}"`
   if (!metrics?.naturalWidth || !metrics?.naturalHeight) {
     return [
       ` data-src="${url}"`,
       ` data-type="${type}"`,
+      cropAttribute,
     ].join(``)
   }
 
@@ -800,6 +827,7 @@ function renderWeChatImageMetricAttrs(slot: MediaLayoutImageSlot, metrics?: Clip
     ` data-type="${type}"`,
     ` data-ratio="${formatClipboardRatio(metrics.naturalHeight / metrics.naturalWidth)}"`,
     ` data-w="${Math.round(metrics.naturalWidth)}"`,
+    cropAttribute,
   ].join(``)
 }
 

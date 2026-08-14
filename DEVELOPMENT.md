@@ -39,6 +39,12 @@ pnpm start
 
 `pnpm start` 会同时启动网页开发服务器和 `mp-proxy`。只调试页面且不使用公众号图床时，可以运行 `pnpm start:web`。
 
+开发环境的公众号代理默认为 `http://127.0.0.1:8788`。验证其他部署时可以覆盖：
+
+```bash
+VITE_MP_PROXY_ORIGIN=https://api.example.com pnpm start:web
+```
+
 桌面端开发使用两个终端：
 
 ```bash
@@ -60,6 +66,8 @@ pnpm build:desktop
 ```
 
 当前 lint 基线允许既有 warning，新增代码不得增加 error。
+
+桌面发布还要确认 `apps/desktop/release` 包含对应平台的 `latest*.yml`、macOS ZIP 和 blockmap；只有安装包无法支持应用内更新。
 
 ## 4. 常用任务
 

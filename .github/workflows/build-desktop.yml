@@ -77,8 +77,11 @@ jobs:
           retention-days: 14
           path: |
             apps/desktop/release/*.dmg
+            apps/desktop/release/*.zip
             apps/desktop/release/*.exe
             apps/desktop/release/*.AppImage
+            apps/desktop/release/*.yml
+            apps/desktop/release/*.blockmap
 
   # 三个平台各自建 release 会打架，所以等全部构建完再统一发一个
   release:
@@ -111,3 +114,5 @@ jobs:
             | Linux | `mobi-*-x64.AppImage` |
 
             安装包还没有签名：macOS 首次打开要右键选「打开」，Windows 会弹一次 SmartScreen 警告。
+
+            本版本包含应用内更新元数据。正式启用 macOS 自动安装前仍需 Developer ID 签名与公证。

@@ -117,6 +117,12 @@ docs              板块系统、主题、公众号排版的设计与验收文�
 差异收在 `apps/web/src/services/wechat/` 后面：网页走 `mp-proxy`，桌面走 IPC 交给主进程。
 上层代码不需要知道自己跑在哪儿。
 
+生产构建默认使用 `https://api.mobieditor.cn` 作为公众号代理，普通用户无需填写代理地址。开发环境默认使用 `http://127.0.0.1:8788`；私有部署可以通过 `VITE_MP_PROXY_ORIGIN` 覆盖，或在公众号图床的高级设置中填写自定义代理。
+
+`api.mobieditor.cn` 上线前必须完成 HTTPS、固定出口 IP、公众号 IP 白名单、来源限制、限流和日志脱敏。健康检查返回 `{ "ok": true, "service": "mp-proxy" }` 后，才能发布使用该默认值的 Web 版本。
+
+v2.2.0 开始使用公开仓库 `FengBuL/mobi` 的 GitHub Release 执行应用内更新。发现新版时由用户选择下载、稍后提醒或忽略该版本；下载完成后可以立即重启安装，也可以退出应用时安装。
+
 ### 发布
 
 代码在私有仓库 `mobi-src`，对外分发走公开仓库 [`mobi`](https://github.com/FengBuL/mobi)——
@@ -127,3 +133,5 @@ docs              板块系统、主题、公众号排版的设计与验收文�
 桌面版：打 `v*` 开头的 tag，本仓库的 CI 在三个平台各构建一次，汇总成一个草稿 Release；
 下载这些安装包后在公开仓库发正式 Release（`gh release create vX.Y.Z --repo FengBuL/mobi 安装包...`）。
 打包只能在目标系统上做，本机 `pnpm package:desktop` 只出当前系统的包。
+
+应用内更新还要求公开 Release 包含 `latest*.yml`、macOS ZIP 和对应的 blockmap。macOS 正式启用自动安装前需要 Developer ID 签名与公证，Windows 建议配置代码签名。

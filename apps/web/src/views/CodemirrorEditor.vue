@@ -27,6 +27,7 @@ import { resolveMarkdownSourceRange } from '@/utils/blocks/source-selection'
 import { fileUpload } from '@/utils/file'
 import { repairIndentedMediaLayoutBlocks } from '@/utils/image-layouts'
 import { store } from '@/utils/storage'
+import { resolveWechatPreviewFrame } from '@/utils/wechat-preview'
 
 const blockSelectionStore = useBlockSelectionStore()
 const editorStore = useEditorStore()
@@ -176,12 +177,10 @@ function syncEditorPreviewPanelLayout() {
 
 watch([viewMode, mainAreaDefaultSize], syncEditorPreviewPanelLayout)
 
-// 预览区域宽度样式（受设备切换影响）
-const effectivePreviewWidth = computed(() => {
-  if (isMobile.value)
-    return `w-full`
-  return previewDevice.value === `mobile` ? `w-[375px]` : `w-full`
-})
+const previewFrameStyle = computed(() => resolveWechatPreviewFrame({
+  device: isMobile.value ? `mobile` : previewDevice.value,
+  compactViewport: isMobile.value,
+}))
 
 function formatRelativeTime(date?: Date | string | null) {
   if (!date)
@@ -1616,10 +1615,8 @@ onUnmounted(() => {
                         >
                           <div
                             class="preview mx-auto"
-                            :class="[
-                              effectivePreviewWidth,
-                              effectivePreviewWidth === 'w-[375px]' ? 'max-w-full' : '',
-                            ]"
+                            :class="{ 'w-full': !previewFrameStyle }"
+                            :style="previewFrameStyle"
                             @pointermove="handlePreviewPointerMove"
                             @pointerleave="clearHoveredBlock"
                           >

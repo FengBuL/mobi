@@ -1,6 +1,7 @@
 import type {
   DesktopBridge,
   DesktopIpcResult,
+  DesktopUpdateState,
   WechatStableTokenRequest,
   WechatStableTokenResult,
   WechatUploadImageRequest,
@@ -33,6 +34,16 @@ const bridge: DesktopBridge = {
       invoke<WechatStableTokenResult>(DESKTOP_IPC_CHANNELS.wechatStableToken, payload),
     uploadImage: (payload: WechatUploadImageRequest) =>
       invoke<WechatUploadImageResult>(DESKTOP_IPC_CHANNELS.wechatUploadImage, payload),
+  },
+  updates: {
+    check: () => invoke<void>(DESKTOP_IPC_CHANNELS.updateCheck, undefined),
+    download: () => invoke<void>(DESKTOP_IPC_CHANNELS.updateDownload, undefined),
+    install: () => invoke<void>(DESKTOP_IPC_CHANNELS.updateInstall, undefined),
+    onState: (listener: (state: DesktopUpdateState) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, state: DesktopUpdateState) => listener(state)
+      ipcRenderer.on(DESKTOP_IPC_CHANNELS.updateState, handler)
+      return () => ipcRenderer.removeListener(DESKTOP_IPC_CHANNELS.updateState, handler)
+    },
   },
 }
 

@@ -90,8 +90,11 @@ function resolveImageType(url: string) {
 function renderImageMetricAttrs(slot: MediaLayoutImageSlot, metrics?: ExtendedWeChatImageMetrics) {
   const url = escapeHtml(slot.url.trim())
   const type = resolveImageType(slot.url)
+  const cropAttribute = slot.aspectRatio === `auto`
+    ? ``
+    : ` data-mobi-crop-aspect="${slot.aspectRatio}"`
   if (!metrics?.naturalWidth || !metrics?.naturalHeight) {
-    return ` data-src="${url}" data-type="${type}"`
+    return ` data-src="${url}" data-type="${type}"${cropAttribute}`
   }
 
   return [
@@ -99,6 +102,7 @@ function renderImageMetricAttrs(slot: MediaLayoutImageSlot, metrics?: ExtendedWe
     ` data-type="${type}"`,
     ` data-ratio="${formatRatio(metrics.naturalHeight / metrics.naturalWidth)}"`,
     ` data-w="${Math.round(metrics.naturalWidth)}"`,
+    cropAttribute,
   ].join(``)
 }
 

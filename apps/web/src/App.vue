@@ -2,16 +2,12 @@
 import { onMounted } from 'vue'
 import { Toaster } from '@/components/ui/sonner'
 import { useUIStore } from '@/stores/ui'
-import { scheduleUpdateCheck } from '@/utils/updateCheck'
 import CodemirrorEditor from '@/views/CodemirrorEditor.vue'
 
 const uiStore = useUIStore()
 const { isDark } = storeToRefs(uiStore)
 
 onMounted(() => {
-  // 桌面版没有自动更新通道，启动后查一次新版本
-  scheduleUpdateCheck()
-
   // 若 URL 带有 open 参数（Markdown 链接），打开导入对话框并自动导入
   const params = new URLSearchParams(window.location.search)
   const openUrl = params.get(`open`)
@@ -28,6 +24,7 @@ onMounted(() => {
 
 <template>
   <CodemirrorEditor />
+  <DesktopUpdateDialog />
 
   <Toaster
     rich-colors

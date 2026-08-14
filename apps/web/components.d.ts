@@ -42,6 +42,7 @@ declare module 'vue' {
     ContextMenuSubTrigger: typeof import('./src/components/ui/context-menu/ContextMenuSubTrigger.vue')['default']
     ContextMenuTrigger: typeof import('./src/components/ui/context-menu/ContextMenuTrigger.vue')['default']
     CustomUploadForm: typeof import('./src/components/editor/CustomUploadForm.vue')['default']
+    DesktopUpdateDialog: typeof import('./src/components/DesktopUpdateDialog.vue')['default']
     Dialog: typeof import('./src/components/ui/dialog/Dialog.vue')['default']
     DialogClose: typeof import('./src/components/ui/dialog/DialogClose.vue')['default']
     DialogContent: typeof import('./src/components/ui/dialog/DialogContent.vue')['default']

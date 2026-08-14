@@ -3,7 +3,12 @@ import { getDesktopBridge } from '@/services/desktop/bridge'
 import { createBrowserWechatTransport } from './browserTransport'
 import { createDesktopWechatTransport } from './desktopTransport'
 
-export { normalizeMpProxyOrigin } from './proxyOrigin'
+export {
+  DEFAULT_MP_PROXY_ORIGIN,
+  normalizeMpProxyOrigin,
+  OFFICIAL_MP_PROXY_ORIGIN,
+  selectMpProxyOrigin,
+} from './proxyOrigin'
 export type { StableTokenInput, UploadImageInput, WechatTransport, WechatTransportKind } from './types'
 
 let transport: WechatTransport | null = null

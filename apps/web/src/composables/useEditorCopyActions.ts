@@ -4,6 +4,7 @@ import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 import { addPrefix, generatePureHTML, processClipboardContent } from '@/utils'
+import { isBlockingClipboardImageFailure, isUnsafeClipboardImage } from '@/utils/clipboard-image-status'
 import { hasMpUploadConfig } from '@/utils/file'
 import { store } from '@/utils/storage'
 import { trackEvent } from '@/utils/telemetry'
@@ -36,8 +37,6 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
   const finish = () => options.onEnd?.()
   const start = () => options.onStart?.()
   const normalizeErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error))
-  const isWechatHostedImage = (src: string) => /mmbiz\.q(pic|logo)\.cn|res\.wx\.qq\.com/i.test(src)
-
   // 复制中止时只报一个数字，用户根本不知道是哪张图卡住了。
   // 长图版式尤其容易踩：一张几 MB 的长海报会被公众号图床接口拒收，
   // 于是「滚动图复制不成功」，而提示语只说「仍是外链或本地地址」。
@@ -62,7 +61,7 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
   const getUnsafeClipboardImages = (root: HTMLElement) => {
     return Array.from(root.querySelectorAll<HTMLImageElement>(`img`))
       .map(describeClipboardImage)
-      .filter(item => item.src && !isWechatHostedImage(item.src))
+      .filter(item => item.src && isUnsafeClipboardImage(item.src, item.error))
   }
 
   function editorRefresh() {
@@ -193,6 +192,17 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
             const longHint = remoteImages.some(item => item.isLong)
               ? `长图容易超过公众号图床的体积上限，可以先压缩或裁短。`
               : ``
+            if (isBlockingClipboardImageFailure(blocker.error, hasConfig)) {
+              clipboardDiv.innerHTML = output.value
+              window.getSelection()?.removeAllRanges()
+              editorRefresh()
+              toast.error(
+                `图片裁剪或上传失败，已停止复制。卡在${blocker.label}，原因：${blocker.error}。请检查网络和公众号图片代理服务后重试。`,
+                { duration: 12000 },
+              )
+              finish()
+              return
+            }
             if (hasConfig) {
               toast.warning(
                 `${remoteImages.length} 张图片没能转成公众号地址，卡在${blocker.label}。${blocker.error ? `原因：${blocker.error}。` : ``}已按外链复制，粘贴后请确认图片是否显示。${longHint}`,

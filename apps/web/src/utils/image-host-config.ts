@@ -1,5 +1,32 @@
+import { normalizeMpProxyOrigin, selectMpProxyOrigin } from '@/services/wechat/proxyOrigin'
+
 interface WritableRef<T> {
   value: T
+}
+
+export function prepareMpProxySubmission<T extends { proxyOrigin?: string }>(
+  formValues: T,
+  options: { requiresProxy: boolean, officialOrigin: string },
+) {
+  const configuredOrigin = normalizeMpProxyOrigin(formValues.proxyOrigin || ``)
+  return {
+    requestOrigin: selectMpProxyOrigin(configuredOrigin, options),
+    storedValues: {
+      ...formValues,
+      proxyOrigin: configuredOrigin,
+    },
+  }
+}
+
+export function sanitizeStoredMpProxyOrigin(
+  configuredOrigin: string | undefined,
+  internalOrigins: string[],
+) {
+  const normalizedOrigin = normalizeMpProxyOrigin(configuredOrigin || ``)
+  const isInternalOrigin = internalOrigins.some(origin =>
+    normalizeMpProxyOrigin(origin) === normalizedOrigin,
+  )
+  return isInternalOrigin ? `` : normalizedOrigin
 }
 
 interface ProxyHealthResult {

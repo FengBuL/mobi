@@ -15,10 +15,20 @@ npmRebuild: false
 # 产物名走 ASCII：productName 是中文，直接进文件名会给下载和 CI 制品带来一堆转义问题
 artifactName: mobi-${version}-${arch}.${ext}
 
+publish:
+  provider: github
+  owner: FengBuL
+  repo: mobi
+  releaseType: release
+
 mac:
   category: public.app-category.productivity
   target:
     - target: dmg
+      arch:
+        - arm64
+        - x64
+    - target: zip
       arch:
         - arm64
         - x64
