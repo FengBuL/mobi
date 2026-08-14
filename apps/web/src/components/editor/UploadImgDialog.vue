@@ -6,6 +6,7 @@ import * as yup from 'yup'
 import { isDesktopRuntime } from '@/services/desktop/bridge'
 import { useUIStore } from '@/stores/ui'
 import { checkImage } from '@/utils'
+import { saveAndSelectImageHost, validateMpProxyBeforeSave } from '@/utils/image-host-config'
 import { store } from '@/utils/storage'
 import { trackEvent } from '@/utils/telemetry'
 
@@ -14,6 +15,7 @@ const emit = defineEmits([`uploadImage`])
 const uiStore = useUIStore()
 const { enableImageReupload } = storeToRefs(uiStore)
 const { toggleImageReupload } = uiStore
+const imgHost = store.reactive(`imgHost`, `default`)
 
 // github
 const githubSchema = toTypedSchema(yup.object({
@@ -212,9 +214,18 @@ const mpConfig = store.reactive(`mpConfig`, {
 })
 
 async function mpSubmit(formValues: any) {
-  Object.assign(mpConfig.value, formValues)
-  trackEvent(`mp_config_saved`)
-  toast.success(`保存成功`)
+  try {
+    await validateMpProxyBeforeSave({
+      requiresProxy: isProxyRequired.value,
+      proxyOrigin: formValues.proxyOrigin || ``,
+    })
+    saveAndSelectImageHost(`mp`, mpConfig, imgHost, formValues)
+    trackEvent(`mp_config_saved`)
+    toast.success(`保存成功，公众号图床已启用`)
+  }
+  catch (error) {
+    toast.error((error as Error).message || `公众号图床配置检查失败`)
+  }
 }
 
 // Cloudflare R2
@@ -350,7 +361,6 @@ const options = [
   },
 ]
 
-const imgHost = store.reactive(`imgHost`, `default`)
 const useCompression = store.reactive(`useCompression`, false)
 const activeName = ref(`upload`)
 

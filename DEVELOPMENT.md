@@ -7,7 +7,7 @@
 - macOS、Windows 或 Linux；
 - Git；
 - Node.js 22.16.0 或更高的 Node.js 22 版本；
-- pnpm 10。
+- pnpm 10（仓库已通过 Corepack 固定版本）。
 
 项目提供 `.nvmrc`：
 
@@ -37,6 +37,8 @@ pnpm start
 
 <http://localhost:5173/mobi/>
 
+`pnpm start` 会同时启动网页开发服务器和 `mp-proxy`。只调试页面且不使用公众号图床时，可以运行 `pnpm start:web`。
+
 桌面端开发使用两个终端：
 
 ```bash
@@ -63,7 +65,8 @@ pnpm build:desktop
 
 | 任务 | 命令 |
 | --- | --- |
-| 网页开发 | `pnpm start` |
+| 网页开发（含公众号代理） | `pnpm start` |
+| 仅网页开发服务器 | `pnpm start:web` |
 | 桌面开发 | `pnpm desktop` |
 | 网页构建 | `pnpm build:web` |
 | 桌面构建 | `pnpm build:desktop` |

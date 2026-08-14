@@ -1,0 +1,70 @@
+import { describe, expect, it } from 'vitest'
+import { saveAndSelectImageHost, validateMpProxyBeforeSave } from '@/utils/image-host-config'
+
+describe(`图床配置保存`, () => {
+  it(`保存公众号配置后将公众号图床设为当前图床`, () => {
+    const config = { value: { appID: ``, appsecret: `` } }
+    const activeHost = { value: `default` }
+
+    saveAndSelectImageHost(`mp`, config, activeHost, {
+      appID: `wx-test`,
+      appsecret: `secret-test`,
+    })
+
+    expect(config.value).toEqual({
+      appID: `wx-test`,
+      appsecret: `secret-test`,
+    })
+    expect(activeHost.value).toBe(`mp`)
+  })
+})
+
+describe(`公众号图床配置自检`, () => {
+  it(`桌面端跳过网页代理检查`, async () => {
+    let called = false
+
+    await validateMpProxyBeforeSave({
+      requiresProxy: false,
+      proxyOrigin: ``,
+      requestHealth: async () => {
+        called = true
+        throw new Error(`桌面端不应请求代理`)
+      },
+    })
+
+    expect(called).toBe(false)
+  })
+
+  it(`网页端保存前确认代理健康`, async () => {
+    let requestedUrl = ``
+
+    await validateMpProxyBeforeSave({
+      requiresProxy: true,
+      proxyOrigin: `http://127.0.0.1:8788/`,
+      requestHealth: async (url) => {
+        requestedUrl = url
+        return { ok: true, status: 200, data: { ok: true, service: `mp-proxy` } }
+      },
+    })
+
+    expect(requestedUrl).toBe(`http://127.0.0.1:8788/health`)
+  })
+
+  it(`网页端代理无法连接时给出可执行提示`, async () => {
+    await expect(validateMpProxyBeforeSave({
+      requiresProxy: true,
+      proxyOrigin: `http://127.0.0.1:8788`,
+      requestHealth: async () => {
+        throw new TypeError(`Failed to fetch`)
+      },
+    })).rejects.toThrow(`无法连接公众号代理 http://127.0.0.1:8788，请先启动 mp-proxy`)
+  })
+
+  it(`网页端代理路径错误时显示 HTTP 状态`, async () => {
+    await expect(validateMpProxyBeforeSave({
+      requiresProxy: true,
+      proxyOrigin: `http://127.0.0.1:5173/mobi`,
+      requestHealth: async () => ({ ok: false, status: 404, data: null }),
+    })).rejects.toThrow(`代理地址返回 HTTP 404`)
+  })
+})
