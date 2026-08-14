@@ -3,11 +3,13 @@
  *
  * 端点：
  *   POST /ingest        客户端批量上报，body 为 text/plain 的 JSON（避开 CORS 预检）
- *   GET  /stats?key=xx  聚合查询，key 必须等于环境变量 ADMIN_KEY，可选 days（默认 30）
+ *   GET  /stats?key=xx  聚合查询，key 必须等于管理密钥，可选 days（默认 30）
  *   GET  /health        探活
  *
  * 数据里没有任何文章内容和身份信息：anonId 是客户端随机生成的 UUID。
  */
+
+import { dashboardResponse } from './dashboard.js'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': `*`,
@@ -17,6 +19,15 @@ const CORS_HEADERS = {
 
 const MAX_EVENTS_PER_BATCH = 50
 const MAX_STRING_LENGTH = 120
+const TRACKED_EVENTS = [
+  `copy`,
+  `theme_change`,
+  `style_preset_apply`,
+  `block_apply`,
+  `image_layout_apply`,
+  `export`,
+  `mp_config_saved`,
+]
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
@@ -27,6 +38,13 @@ function json(data, status = 200) {
 
 function clip(value) {
   return String(value ?? ``).slice(0, MAX_STRING_LENGTH)
+}
+
+function completeEventCounts(rows) {
+  const counts = new Map(rows.map(row => [row.event, Number(row.count) || 0]))
+  return TRACKED_EVENTS
+    .map(event => ({ event, count: counts.get(event) ?? 0 }))
+    .sort((a, b) => b.count - a.count)
 }
 
 async function handleIngest(request, env) {
@@ -71,14 +89,19 @@ async function handleIngest(request, env) {
 async function handleStats(request, env) {
   const url = new URL(request.url)
 
-  if (!env.ADMIN_KEY || url.searchParams.get(`key`) !== env.ADMIN_KEY) {
+  const authorization = request.headers.get(`authorization`) ?? ``
+  const bearerKey = authorization.startsWith(`Bearer `) ? authorization.slice(7) : ``
+  const queryKey = url.searchParams.get(`key`) ?? ``
+  const adminKey = env.ADMIN_KEY_SECRET ?? env.ADMIN_KEY
+
+  if (!adminKey || (bearerKey !== adminKey && queryKey !== adminKey)) {
     return json({ error: `unauthorized` }, 401)
   }
 
   const days = Math.min(365, Math.max(1, Number(url.searchParams.get(`days`)) || 30))
   const since = Date.now() - days * 24 * 60 * 60 * 1000
 
-  const [byEvent, byDetail, activeUsers, byPlatform] = await Promise.all([
+  const [byEvent, byDetail, activeUsers, byPlatform, byDay, byVersion] = await Promise.all([
     env.DB.prepare(`SELECT event, COUNT(*) AS count FROM events WHERE ts >= ? GROUP BY event ORDER BY count DESC`)
       .bind(since)
       .all(),
@@ -91,14 +114,22 @@ async function handleStats(request, env) {
     env.DB.prepare(`SELECT platform, COUNT(DISTINCT anon_id) AS users, COUNT(*) AS events FROM events WHERE ts >= ? GROUP BY platform`)
       .bind(since)
       .all(),
+    env.DB.prepare(`SELECT strftime('%Y-%m-%d', ts / 1000, 'unixepoch') AS day, COUNT(DISTINCT anon_id) AS users, COUNT(*) AS events FROM events WHERE ts >= ? GROUP BY day ORDER BY day ASC`)
+      .bind(since)
+      .all(),
+    env.DB.prepare(`SELECT version, COUNT(DISTINCT anon_id) AS users, COUNT(*) AS events FROM events WHERE ts >= ? GROUP BY version ORDER BY events DESC`)
+      .bind(since)
+      .all(),
   ])
 
   return json({
     days,
     activeUsers: activeUsers.results?.[0]?.users ?? 0,
     byPlatform: byPlatform.results ?? [],
-    byEvent: byEvent.results ?? [],
+    byEvent: completeEventCounts(byEvent.results ?? []),
     topDetails: byDetail.results ?? [],
+    byDay: byDay.results ?? [],
+    byVersion: byVersion.results ?? [],
   })
 }
 
@@ -116,6 +147,14 @@ export default {
 
     if (request.method === `GET` && url.pathname === `/stats`) {
       return handleStats(request, env)
+    }
+
+    if (request.method === `GET` && (url.pathname === `/dashboard` || url.pathname === `/dashboard/`)) {
+      return dashboardResponse()
+    }
+
+    if (request.method === `GET` && url.pathname === `/`) {
+      return Response.redirect(new URL(`/dashboard`, url), 302)
     }
 
     if (request.method === `GET` && url.pathname === `/health`) {

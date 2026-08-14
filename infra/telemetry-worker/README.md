@@ -18,7 +18,10 @@ npx wrangler d1 create mobi-telemetry
 # 3. 建表
 npx wrangler d1 execute mobi-telemetry --remote --file=schema.sql
 
-# 4. 改 wrangler.toml 里的 ADMIN_KEY（换成长随机串），然后部署
+# 4. 把管理密钥保存为 Cloudflare Secret，避免写进仓库
+npx wrangler secret put ADMIN_KEY_SECRET
+
+# 5. 部署
 npx wrangler deploy
 ```
 
@@ -37,6 +40,23 @@ export const TELEMETRY_ENDPOINT = `https://mobi-telemetry.<子域>.workers.dev`
 
 ## 看数据
 
+浏览器打开可视化看板：
+
+```text
+https://mobi-telemetry.<子域>.workers.dev/dashboard
+```
+
+看板会提示输入管理密钥，并通过 `Authorization` 请求头读取数据。密钥仅保存在当前浏览器会话中。
+
+命令行查询推荐使用请求头：
+
+```bash
+curl -H "Authorization: Bearer <ADMIN_KEY>" \
+  "https://mobi-telemetry.<子域>.workers.dev/stats?days=30"
+```
+
+旧的查询参数形式暂时保留兼容：
+
 ```bash
 curl "https://mobi-telemetry.<子域>.workers.dev/stats?key=<ADMIN_KEY>&days=30"
 ```
@@ -47,6 +67,8 @@ curl "https://mobi-telemetry.<子域>.workers.dev/stats?key=<ADMIN_KEY>&days=30"
 - `byPlatform`：桌面版 / 网页版分布
 - `byEvent`：各事件总次数（copy / theme_change / block_apply / image_layout_apply / export / style_preset_apply / mp_config_saved）
 - `topDetails`：细分明细，例如哪个板块预设、哪套主题用得最多
+- `byDay`：每日活跃设备数与操作次数
+- `byVersion`：客户端版本分布
 
 ## 客户端埋点一览
 
