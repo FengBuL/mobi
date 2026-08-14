@@ -24,6 +24,7 @@ import { useUIStore } from '@/stores/ui'
 import { checkImage, toBase64 } from '@/utils'
 import { blockCategories, parseBlockEntries } from '@/utils/blocks/registry'
 import { resolveMarkdownSourceRange } from '@/utils/blocks/source-selection'
+import { embeddedContentVisibility, stripEmbeddedContent } from '@/utils/editor-content-visibility'
 import { fileUpload } from '@/utils/file'
 import { repairIndentedMediaLayoutBlocks } from '@/utils/image-layouts'
 import { store } from '@/utils/storage'
@@ -209,10 +210,11 @@ function formatRelativeTime(date?: Date | string | null) {
 
 const currentPostTitle = computed(() => currentPost.value?.title?.trim() || `未命名内容`)
 const currentPostUpdateLabel = computed(() => formatRelativeTime(currentPost.value?.updateDatetime))
+const editorVisibleContent = computed(() => stripEmbeddedContent(currentPost.value?.content ?? ``))
 const editorLineCount = computed(() => {
-  return Math.max(1, currentPost.value?.content?.split(/\r?\n/).length || 1)
+  return Math.max(1, editorVisibleContent.value.split(/\r?\n/).length)
 })
-const editorCharCount = computed(() => currentPost.value?.content?.length || 0)
+const editorCharCount = computed(() => editorVisibleContent.value.length)
 const viewModeLabel = computed(() => {
   if (viewMode.value === `split`)
     return `双栏对照`
@@ -1187,6 +1189,7 @@ function createFormTextArea(dom: HTMLDivElement) {
         onSearch: openSearchWithSelection,
         onReplace: openReplaceWithSelection,
       }),
+      embeddedContentVisibility,
       themeCompartment.of(theme(isDark.value)),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
