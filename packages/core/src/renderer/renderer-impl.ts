@@ -264,7 +264,7 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
       if (isFigureImage || isEmpty) {
         return text
       }
-      return styledContent(`p`, text)
+      return styledContent(`p`, text, undefined, buildSourceAttrs(`paragraph`))
     },
 
     blockquote({ tokens }: Tokens.Blockquote): string {
@@ -295,7 +295,7 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
       }
       const code = `<code class="language-${lang}"${pendingAttr}>${highlighted}</code>`
 
-      return `<pre class="hljs code__pre">${span}${code}</pre>`
+      return `<pre class="hljs code__pre"${buildSourceAttrs(`code`)}>${span}${code}</pre>`
     },
 
     codespan({ text }: Tokens.Codespan): string {
@@ -407,7 +407,7 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
         })
         .join(``)
       return `
-        <section style="max-width: 100%; overflow: auto">
+        <section style="max-width: 100%; overflow: auto"${buildSourceAttrs(`table`)}>
           <table class="preview-table">
             <thead>${headerRow}</thead>
             <tbody>${body}</tbody>

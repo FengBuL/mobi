@@ -89,6 +89,7 @@ declare module 'vue' {
     InsertFormDialog: typeof import('./src/components/editor/InsertFormDialog.vue')['default']
     InsertMpCardDialog: typeof import('./src/components/editor/InsertMpCardDialog.vue')['default']
     Label: typeof import('./src/components/ui/label/Label.vue')['default']
+    MarkdownToolbar: typeof import('./src/components/editor/MarkdownToolbar.vue')['default']
     Menubar: typeof import('./src/components/ui/menubar/Menubar.vue')['default']
     MenubarCheckboxItem: typeof import('./src/components/ui/menubar/MenubarCheckboxItem.vue')['default']
     MenubarContent: typeof import('./src/components/ui/menubar/MenubarContent.vue')['default']
