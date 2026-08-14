@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   blockCategories,
+  buildBlockMarkup,
   convertBlocksForWeChat,
   getBlockPreset,
   parseBlockEntries,
@@ -35,6 +36,17 @@ describe(`板块预设`, () => {
 })
 
 describe(`build / parse 往返`, () => {
+  it(`统一字号比例会写入板块并能够回填`, () => {
+    const preset = getBlockPreset(`heading-signal-banner`)!
+    const state = { ...blockCategories.find(item => item.id === `heading`)!.createDefaultState(preset), fontScale: 1.2 }
+    const markup = buildBlockMarkup(preset, state)
+    const parsed = parseBlockMarkup(markup)
+
+    expect(markup).toContain(`data-block-font-scale="1.2"`)
+    expect(markup).toContain(`font-size:26.4px`)
+    expect(parsed?.state.fontScale).toBe(1.2)
+  })
+
   it.each(allPresets)(`$preset.id 能还原全部字段`, ({ category, preset }) => {
     const state = category.createDefaultState(preset)
     const parsed = category.parse(category.build(preset, state))
@@ -118,6 +130,18 @@ describe(`正文扫描`, () => {
 })
 
 describe(`公众号导出产物`, () => {
+  it(`组件字号比例会进入公众号导出产物`, () => {
+    const preset = getBlockPreset(`heading-signal-banner`)!
+    const category = blockCategories.find(item => item.id === `heading`)!
+    const holder = document.createElement(`div`)
+    holder.innerHTML = buildBlockMarkup(preset, { ...category.createDefaultState(preset), fontScale: 0.9 })
+
+    convertBlocksForWeChat(holder)
+
+    expect(holder.innerHTML).toContain(`font-size:19.8px`)
+    expect(holder.innerHTML).not.toContain(`data-block-font-scale`)
+  })
+
   const forbidden: Array<[string, RegExp]> = [
     [`position`, /position\s*:/i],
     [`display:grid`, /display\s*:\s*grid/i],

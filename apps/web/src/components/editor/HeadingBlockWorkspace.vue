@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import type { BlockPreset, BlockState, ParsedBlock } from '@/utils/blocks/types'
-import { Check, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-vue-next'
+import { Check, Minus, Pencil, Plus, RotateCcw, Trash2, Type } from 'lucide-vue-next'
 import { useBlockSelectionStore } from '@/stores/blockSelection'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
 import {
+  BLOCK_FONT_SCALE_OPTIONS,
   blockCategories,
   buildBlockMarkup,
+  DEFAULT_BLOCK_FONT_SCALE,
   parseBlockEntries,
 } from '@/utils/blocks/registry'
 import { trackEvent } from '@/utils/telemetry'
@@ -26,11 +28,18 @@ const { selection: blockSelection } = storeToRefs(blockSelectionStore)
 const category = computed(() => blockCategories.find(item => item.id === props.categoryId) ?? blockCategories[0])
 const presets = computed(() => category.value.presets)
 const selectedPresetId = ref(presets.value[0].id)
-const state = reactive<BlockState>(category.value.createDefaultState(presets.value[0]))
+const state = reactive<BlockState>({
+  ...category.value.createDefaultState(presets.value[0]),
+  fontScale: DEFAULT_BLOCK_FONT_SCALE,
+})
 const editingRange = ref<{ from: number, to: number } | null>(null)
 
 const selectedPreset = computed(() => presets.value.find(preset => preset.id === selectedPresetId.value) ?? presets.value[0])
 const previewMarkup = computed(() => buildBlockMarkup(selectedPreset.value, state, true))
+const fontScale = computed({
+  get: () => Number(state.fontScale ?? DEFAULT_BLOCK_FONT_SCALE),
+  set: value => state.fontScale = value,
+})
 
 /**
  * 缩略图直接渲染板块本体，再整体缩到栏宽。
@@ -70,7 +79,7 @@ watch([category, blockSelection], ([nextCategory, selection]) => {
   if (!selection || selection.category !== nextCategory.id) {
     const preset = nextCategory.presets[0]
     selectedPresetId.value = preset.id
-    Object.assign(state, nextCategory.createDefaultState(preset))
+    Object.assign(state, nextCategory.createDefaultState(preset), { fontScale: DEFAULT_BLOCK_FONT_SCALE })
     editingRange.value = null
     return
   }
@@ -110,7 +119,14 @@ function selectPreset(preset: BlockPreset) {
 }
 
 function resetState() {
-  Object.assign(state, category.value.createDefaultState(selectedPreset.value))
+  Object.assign(state, category.value.createDefaultState(selectedPreset.value), { fontScale: DEFAULT_BLOCK_FONT_SCALE })
+}
+
+function stepFontScale(direction: -1 | 1) {
+  const currentIndex = BLOCK_FONT_SCALE_OPTIONS.findIndex(value => value === fontScale.value)
+  const safeIndex = currentIndex >= 0 ? currentIndex : 2
+  const nextIndex = Math.min(BLOCK_FONT_SCALE_OPTIONS.length - 1, Math.max(0, safeIndex + direction))
+  fontScale.value = BLOCK_FONT_SCALE_OPTIONS[nextIndex]
 }
 
 function editBlock(block: ParsedBlock) {
@@ -276,6 +292,33 @@ function applyBlock() {
         </div>
       </div>
 
+      <div class="heading-block-type-scale">
+        <div class="heading-block-type-scale__label">
+          <Type class="size-4" />
+          <span>
+            <strong>组件字号</strong>
+            <small>同时调整组件内部文字，装饰比例保持协调</small>
+          </span>
+        </div>
+        <div class="heading-block-type-scale__control">
+          <button type="button" title="缩小组件文字" @click="stepFontScale(-1)">
+            <Minus class="size-3.5" />
+          </button>
+          <button
+            v-for="option in BLOCK_FONT_SCALE_OPTIONS"
+            :key="option"
+            type="button"
+            :class="{ active: option === fontScale }"
+            @click="fontScale = option"
+          >
+            {{ Math.round(option * 100) }}%
+          </button>
+          <button type="button" title="放大组件文字" @click="stepFontScale(1)">
+            <Plus class="size-3.5" />
+          </button>
+        </div>
+      </div>
+
       <div class="heading-block-preview">
         <div v-html="previewMarkup" />
       </div>
@@ -364,6 +407,70 @@ function applyBlock() {
   font-size: 0.7rem;
   white-space: nowrap;
   color: hsl(var(--muted-foreground));
+}
+
+.heading-block-type-scale {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.9rem;
+  padding: 0.8rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 14px;
+  background: hsl(var(--secondary) / 0.35);
+}
+
+.heading-block-type-scale__label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: hsl(var(--foreground));
+}
+
+.heading-block-type-scale__label span {
+  display: grid;
+}
+
+.heading-block-type-scale__label strong {
+  font-size: 0.78rem;
+}
+
+.heading-block-type-scale__label small {
+  margin-top: 0.15rem;
+  font-size: 0.65rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.heading-block-type-scale__control {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  background: hsl(var(--background));
+}
+
+.heading-block-type-scale__control button {
+  display: inline-flex;
+  flex: 1;
+  min-width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-left: 1px solid hsl(var(--border));
+  background: transparent;
+  font-size: 0.66rem;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+}
+
+.heading-block-type-scale__control button:first-child {
+  border-left: 0;
+}
+
+.heading-block-type-scale__control button:hover,
+.heading-block-type-scale__control button.active {
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
 }
 
 .heading-block-preset-grid {

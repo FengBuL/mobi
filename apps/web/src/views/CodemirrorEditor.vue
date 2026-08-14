@@ -34,6 +34,7 @@ import {
   findEmbeddedContentRanges,
   stripEmbeddedContent,
 } from '@/utils/editor-content-visibility'
+import { shouldSyncPreviewFromEditorUpdate } from '@/utils/editor-preview-sync'
 import { fileUpload } from '@/utils/file'
 import { repairIndentedMediaLayoutBlocks } from '@/utils/image-layouts'
 import { store } from '@/utils/storage'
@@ -1341,7 +1342,7 @@ function createFormTextArea(dom: HTMLDivElement) {
           }, 300)
         }
 
-        if (update.selectionSet || update.docChanged) {
+        if (shouldSyncPreviewFromEditorUpdate(update)) {
           scheduleSyncPreviewToEditorCursor()
         }
       }),
@@ -1692,6 +1693,7 @@ onUnmounted(() => {
                         </div>
                       </div>
                     </div>
+                    <MarkdownToolbar />
                     <div class="workspace-panel__body editor-panel__body">
                       <SearchTab v-if="codeMirrorView" ref="searchTabRef" :editor-view="codeMirrorView as any" />
 

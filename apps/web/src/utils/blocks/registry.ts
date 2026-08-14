@@ -19,6 +19,35 @@ const presetMap = new Map<string, BlockPreset>(
   blockCategories.flatMap(category => category.presets.map(preset => [preset.id, preset] as const)),
 )
 
+export const DEFAULT_BLOCK_FONT_SCALE = 1
+export const BLOCK_FONT_SCALE_OPTIONS = [0.8, 0.9, 1, 1.1, 1.2] as const
+
+function normalizeBlockFontScale(value: unknown) {
+  const scale = Number(value)
+  if (!Number.isFinite(scale)) {
+    return DEFAULT_BLOCK_FONT_SCALE
+  }
+  return Math.min(1.2, Math.max(0.8, scale))
+}
+
+function scaleBlockFontSizes(markup: string, scale: number) {
+  if (scale === DEFAULT_BLOCK_FONT_SCALE) {
+    return markup
+  }
+  return markup.replace(/font-size:([\d.]+)px/gu, (_, size: string) => {
+    const scaled = Number((Number(size) * scale).toFixed(2))
+    return `font-size:${scaled}px`
+  })
+}
+
+function applyBlockTypography(markup: string, state: BlockState, withMetadata: boolean) {
+  const scale = normalizeBlockFontScale(state.fontScale)
+  const scaled = scaleBlockFontSizes(markup, scale)
+  return withMetadata
+    ? scaled.replace(`<section `, `<section data-block-font-scale="${scale}" `)
+    : scaled
+}
+
 export function getBlockCategory(categoryId: string) {
   return categoryMap.get(categoryId)
 }
@@ -29,12 +58,20 @@ export function getBlockPreset(presetId: string) {
 
 export function buildBlockMarkup(preset: BlockPreset, state: BlockState, preview = false) {
   const category = getBlockCategory(preset.category)
-  return category?.build(preset, state, { mode: preview ? `preview` : `editor` }) ?? ``
+  const markup = category?.build(preset, state, { mode: preview ? `preview` : `editor` }) ?? ``
+  return applyBlockTypography(markup, state, true)
 }
 
 export function parseBlockMarkup(raw: string) {
   const categoryId = raw.match(/\bdata-block-category="([^"]+)"/u)?.[1] ?? ``
-  return getBlockCategory(categoryId)?.parse(raw) ?? null
+  const parsed = getBlockCategory(categoryId)?.parse(raw) ?? null
+  if (!parsed) {
+    return null
+  }
+  parsed.state.fontScale = normalizeBlockFontScale(
+    raw.match(/\bdata-block-font-scale="([^"]+)"/u)?.[1],
+  )
+  return parsed
 }
 
 export function parseBlockEntries(content: string): ParsedBlock[] {
@@ -154,7 +191,7 @@ export function convertBlocksForWeChat(root: HTMLElement) {
     if (!category || !preset) {
       return
     }
-    const markup = category.toWeChat(preset, parsed.state)
+    const markup = applyBlockTypography(category.toWeChat(preset, parsed.state), parsed.state, false)
     if (!markup) {
       return
     }
