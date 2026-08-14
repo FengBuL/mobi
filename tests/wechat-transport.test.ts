@@ -4,10 +4,14 @@ import { createBrowserWechatTransport } from '@/services/wechat/browserTransport
 import { createDesktopWechatTransport } from '@/services/wechat/desktopTransport'
 
 const sentRequests: { url: string, options: any }[] = []
+let requestFailure: unknown = null
 
 vi.mock(`@mobi/shared/utils/fetch`, () => ({
   default: (url: string, options: any) => {
     sentRequests.push({ url, options })
+    if (requestFailure) {
+      return Promise.reject(requestFailure)
+    }
     return Promise.resolve({})
   },
 }))
@@ -24,6 +28,7 @@ function fakeFile(name = `shot.png`, type = `image/png`) {
 
 beforeEach(() => {
   sentRequests.length = 0
+  requestFailure = null
 })
 
 /**
@@ -48,6 +53,26 @@ describe(`浏览器传输：保持 mp-proxy 的老行为`, () => {
     await transport.requestStableToken({ appID: `wxid`, appsecret: `secret`, proxyOrigin: `` })
 
     expect(lastRequest().url).toBe(`https://api.weixin.qq.com/cgi-bin/stable_token`)
+  })
+
+  it(`代理无法连接时给出启动提示`, async () => {
+    requestFailure = new TypeError(`Network Error`)
+
+    await expect(transport.requestStableToken({
+      appID: `wxid`,
+      appsecret: `secret`,
+      proxyOrigin: PROXY,
+    })).rejects.toThrow(`无法连接公众号代理 ${PROXY}，请确认 mp-proxy 正在运行`)
+  })
+
+  it(`代理路径返回 404 时给出配置提示`, async () => {
+    requestFailure = { response: { status: 404 } }
+
+    await expect(transport.requestStableToken({
+      appID: `wxid`,
+      appsecret: `secret`,
+      proxyOrigin: PROXY,
+    })).rejects.toThrow(`公众号代理返回 HTTP 404，请检查代理域名`)
   })
 
   it(`代理地址结尾的斜杠会被吃掉`, async () => {
@@ -78,6 +103,17 @@ describe(`浏览器传输：保持 mp-proxy 的老行为`, () => {
     })
 
     expect(lastRequest().url).toBe(`${PROXY}/cgi-bin/material/add_material?access_token=tok&type=image`)
+  })
+
+  it(`上传阶段代理断开时同样给出启动提示`, async () => {
+    requestFailure = new TypeError(`Network Error`)
+
+    await expect(transport.uploadImage({
+      accessToken: `tok`,
+      proxyOrigin: PROXY,
+      endpoint: `uploadimg`,
+      file: fakeFile(),
+    })).rejects.toThrow(`无法连接公众号代理 ${PROXY}，请确认 mp-proxy 正在运行`)
   })
 
   it(`回源抓图用的就是用户填的代理`, () => {

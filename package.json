@@ -1,14 +1,16 @@
 {
   "name": "mobi",
   "type": "module",
-  "version": "2.1.7",
+  "version": "2.1.8",
   "private": true,
+  "packageManager": "pnpm@10.34.5",
   "description": "墨笔 · 写完就能贴进公众号的 Markdown 排版编辑器",
   "engines": {
     "node": ">=22.16.0"
   },
   "scripts": {
-    "start": "pnpm web dev",
+    "start": "pnpm --parallel --filter @mobi/web --filter @mobi/mp-proxy start",
+    "start:web": "pnpm web dev",
     "build:web": "pnpm --filter @mobi/web build",
     "build:desktop": "pnpm --filter @mobi/desktop build",
     "package:desktop": "pnpm --filter @mobi/desktop package",

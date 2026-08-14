@@ -4,13 +4,13 @@
 
 ## 当前基线
 
-- 产品版本：`2.1.7`
+- 产品版本：`2.1.8`
 - Git 分支：`main`
-- 基线提交：`68fff5266e0eb56f1abda12e6f7bca531e8bcd17`
+- 发布基线：`v2.1.8`
 - 私有源码：<https://github.com/FengBuL/mobi-src>
 - 公开分发：<https://github.com/FengBuL/mobi>
 - 网页版：<https://fengbul.github.io/mobi/>
-- 公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.1.7>
+- 公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.1.8>
 - 数据观测台：<https://mobi-telemetry.shovy-mobi.workers.dev/dashboard>
 
 ## 项目组成
@@ -31,11 +31,11 @@ patches                     pnpm 依赖补丁
 
 ## 已知质量基线
 
-- Vitest：6 个测试文件、365 项测试；
+- Vitest：以当前完整测试输出为准；
 - TypeScript：网页端和桌面端类型检查；
 - ESLint：0 error，存在既有 warning；
 - CI：macOS、Windows、Linux 桌面构建；
-- v2.1.7 公开 Release：macOS、Windows、Linux 四个平台资产。
+- v2.1.8 公开 Release：macOS、Windows、Linux 四个平台资产。
 
 每次交接或发布前都要重新运行验证命令，本文记录不能代替当前测试结果。
 

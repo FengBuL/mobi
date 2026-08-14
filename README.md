@@ -78,23 +78,24 @@ pnpm proxy   # 默认监听 http://127.0.0.1:8788
 
 ## 开发
 
-Node.js `>= 22.16.0`，pnpm `>= 10`。
+Node.js `>= 22.16.0`，pnpm `10`（仓库已通过 Corepack 固定版本）。
 
 ```bash
 pnpm install
-pnpm start      # 网页版开发服务器，http://localhost:5173/mobi/
+pnpm start      # 同时启动网页版和公众号代理，http://localhost:5173/mobi/
 pnpm desktop    # 桌面版开发模式，会复用已经起着的 dev server
 ```
 
 ### 常用命令
 
 ```bash
-pnpm start            # 网页版 dev server
+pnpm start            # 网页版 dev server + 公众号图片代理
+pnpm start:web        # 只启动网页版 dev server
 pnpm desktop          # 桌面版 dev
 pnpm build:web        # 构建网页版
 pnpm build:desktop    # 构建桌面版产物
 pnpm package:desktop  # 打当前系统的安装包到 apps/desktop/release
-pnpm proxy            # 公众号图片代理
+pnpm proxy            # 单独启动公众号图片代理
 pnpm type-check
 pnpm lint
 pnpm test
