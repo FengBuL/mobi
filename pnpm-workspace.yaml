@@ -1,6 +1,25 @@
+allowBuilds:
+  core-js: set this to true or false
+  electron-winstaller: set this to true or false
+  esbuild: set this to true or false
+  vue-demi: set this to true or false
+
 shellEmulator: true
 
+supportedArchitectures:
+  cpu:
+    - arm64
+    - x64
+  libc:
+    - glibc
+    - musl
+  os:
+    - darwin
+    - linux
+    - win32
+
 trustPolicy: no-downgrade
+
 packages:
   - apps/desktop
   - apps/mp-proxy

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { HelpCircle, MessageSquare, Tag } from 'lucide-vue-next'
+import { formatVersionHistoryLabel } from '@/utils/version-label'
 
 const props = withDefaults(defineProps<{
   asSub?: boolean
@@ -12,6 +13,8 @@ const emit = defineEmits([`openAbout`])
 const { asSub } = toRefs(props)
 
 const REPO_URL = `https://github.com/FengBuL/mobi`
+const appVersion = typeof __APP_VERSION__ !== `undefined` ? __APP_VERSION__ : `dev`
+const versionHistoryLabel = formatVersionHistoryLabel(appVersion)
 
 function openAboutDialog() {
   emit(`openAbout`)
@@ -39,7 +42,7 @@ function openReleases() {
       </MenubarItem>
       <MenubarItem @click="openReleases()">
         <Tag class="mr-2 h-4 w-4" />
-        版本历史
+        {{ versionHistoryLabel }}
       </MenubarItem>
       <MenubarItem @click="openAboutDialog()">
         <HelpCircle class="mr-2 h-4 w-4" />
@@ -58,7 +61,7 @@ function openReleases() {
       </MenubarItem>
       <MenubarItem @click="openReleases()">
         <Tag class="mr-2 h-4 w-4" />
-        版本历史
+        {{ versionHistoryLabel }}
       </MenubarItem>
       <MenubarItem @click="openAboutDialog()">
         <HelpCircle class="mr-2 h-4 w-4" />

@@ -7,6 +7,7 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url))
 
 const nodeExternals = [
   `electron`,
+  `electron-updater`,
   ...builtinModules,
   ...builtinModules.map(name => `node:${name}`),
 ]

@@ -2,6 +2,21 @@ export function normalizeMpProxyOrigin(proxyOrigin: string) {
   return proxyOrigin?.trim().replace(/\/+$/, ``) || ``
 }
 
+export const OFFICIAL_MP_PROXY_ORIGIN = `https://api.mobieditor.cn`
+export const DEFAULT_MP_PROXY_ORIGIN = normalizeMpProxyOrigin(import.meta.env.VITE_MP_PROXY_ORIGIN || ``)
+  || (import.meta.env.DEV ? `http://127.0.0.1:8788` : OFFICIAL_MP_PROXY_ORIGIN)
+
+export function selectMpProxyOrigin(
+  configuredOrigin: string,
+  options: { requiresProxy: boolean, officialOrigin: string },
+) {
+  if (!options.requiresProxy) {
+    return normalizeMpProxyOrigin(configuredOrigin)
+  }
+  return normalizeMpProxyOrigin(configuredOrigin)
+    || normalizeMpProxyOrigin(options.officialOrigin)
+}
+
 function isLoopbackHost(hostname: string) {
   return [`127.0.0.1`, `localhost`, `::1`].includes(hostname.toLowerCase())
 }

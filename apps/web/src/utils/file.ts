@@ -8,7 +8,7 @@ import Buffer from 'buffer-from'
 import CryptoJS from 'crypto-js'
 import * as qiniu from 'qiniu-js'
 import { v4 as uuidv4 } from 'uuid'
-import { getWechatTransport, normalizeMpProxyOrigin } from '@/services/wechat'
+import { DEFAULT_MP_PROXY_ORIGIN, getWechatTransport, selectMpProxyOrigin } from '@/services/wechat'
 import { store } from './storage'
 
 async function getConfig(platform: string) {
@@ -461,11 +461,7 @@ const isCfWorkers = import.meta.env.CF_WORKERS === `1`
 async function mpFileUpload(file: File) {
   const configStr = await store.get(`mpConfig`)
   let { appID, appsecret, proxyOrigin } = JSON.parse(configStr!)
-  proxyOrigin = normalizeMpProxyOrigin(proxyOrigin)
-  // 未填写代理域名且是 Cloudflare Workers 环境时，使用当前域名作为代理域名
-  if (!proxyOrigin && isCfWorkers) {
-    proxyOrigin = window.location.origin
-  }
+  proxyOrigin = resolveMpProxyOriginForRuntime(proxyOrigin)
   const access_token = await getMpToken(appID, appsecret, proxyOrigin)
   if (!access_token) {
     throw new Error(`获取 access_token 失败`)
@@ -493,6 +489,18 @@ async function mpFileUpload(file: File) {
   return transport.needsImageDisplayProxy(proxyOrigin)
     ? `https://wsrv.nl?url=${encodeURIComponent(res.url)}`
     : res.url
+}
+
+function resolveMpProxyOriginForRuntime(configuredOrigin: string) {
+  let proxyOrigin = selectMpProxyOrigin(configuredOrigin, {
+    requiresProxy: window.location.protocol.startsWith(`http`) && !isCfWorkers,
+    officialOrigin: DEFAULT_MP_PROXY_ORIGIN,
+  })
+  // 未填写代理域名且是 Cloudflare Workers 环境时，使用当前域名作为代理域名
+  if (!proxyOrigin && isCfWorkers) {
+    proxyOrigin = window.location.origin
+  }
+  return proxyOrigin
 }
 
 export async function hasMpUploadConfig() {
@@ -526,7 +534,9 @@ export async function getMpUploadConfig() {
       appID: appID || ``,
       appsecret: appsecret || ``,
       // 复制链路拿这个值去回源抓图，桌面版换成主进程的自定义协议
-      proxyOrigin: getWechatTransport().resolveImageFetchOrigin(proxyOrigin || ``),
+      proxyOrigin: getWechatTransport().resolveImageFetchOrigin(
+        resolveMpProxyOriginForRuntime(proxyOrigin || ``),
+      ),
     }
   }
   catch {

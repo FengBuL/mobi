@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { saveAndSelectImageHost, validateMpProxyBeforeSave } from '@/utils/image-host-config'
+import { selectMpProxyOrigin } from '@/services/wechat/proxyOrigin'
+import { prepareMpProxySubmission, sanitizeStoredMpProxyOrigin, saveAndSelectImageHost, validateMpProxyBeforeSave } from '@/utils/image-host-config'
 
 describe(`图床配置保存`, () => {
   it(`保存公众号配置后将公众号图床设为当前图床`, () => {
@@ -66,5 +67,57 @@ describe(`公众号图床配置自检`, () => {
       proxyOrigin: `http://127.0.0.1:5173/mobi`,
       requestHealth: async () => ({ ok: false, status: 404, data: null }),
     })).rejects.toThrow(`代理地址返回 HTTP 404`)
+  })
+})
+
+describe(`公众号官方代理`, () => {
+  it(`普通网页用户未自定义代理时使用官方地址`, () => {
+    expect(selectMpProxyOrigin(``, {
+      requiresProxy: true,
+      officialOrigin: `https://api.mobieditor.cn`,
+    })).toBe(`https://api.mobieditor.cn`)
+  })
+
+  it(`高级用户填写的自定义代理优先`, () => {
+    expect(selectMpProxyOrigin(`https://self.example.com/`, {
+      requiresProxy: true,
+      officialOrigin: `https://api.mobieditor.cn`,
+    })).toBe(`https://self.example.com`)
+  })
+
+  it(`桌面端不注入网页代理`, () => {
+    expect(selectMpProxyOrigin(``, {
+      requiresProxy: false,
+      officialOrigin: `https://api.mobieditor.cn`,
+    })).toBe(``)
+  })
+
+  it(`官方代理只参与请求且不写入用户配置`, () => {
+    expect(prepareMpProxySubmission({
+      proxyOrigin: ``,
+      appID: `wx-test`,
+      appsecret: `secret-test`,
+    }, {
+      requiresProxy: true,
+      officialOrigin: `https://api.mobieditor.cn`,
+    })).toEqual({
+      requestOrigin: `https://api.mobieditor.cn`,
+      storedValues: {
+        proxyOrigin: ``,
+        appID: `wx-test`,
+        appsecret: `secret-test`,
+      },
+    })
+  })
+
+  it(`清理测试版曾写入本地配置的官方代理地址`, () => {
+    expect(sanitizeStoredMpProxyOrigin(`https://api.mobieditor.cn/`, [
+      `https://api.mobieditor.cn`,
+      `http://127.0.0.1:8788`,
+    ])).toBe(``)
+    expect(sanitizeStoredMpProxyOrigin(`https://self.example.com/`, [
+      `https://api.mobieditor.cn`,
+      `http://127.0.0.1:8788`,
+    ])).toBe(`https://self.example.com`)
   })
 })

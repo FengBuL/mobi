@@ -5,6 +5,7 @@ import { registerWechatIpc } from './ipc'
 import { installApplicationMenu } from './menu'
 import { installPermissionHandlers } from './permissions'
 import { handleAppProtocol, registerAppScheme } from './protocol'
+import { initializeDesktopUpdates } from './updates'
 import { createMainWindow, hardenWebContents } from './window'
 
 app.setName(`墨笔`)
@@ -37,7 +38,8 @@ else {
     installCrossOriginRelaxations()
     installApplicationMenu()
     registerWechatIpc()
-    createMainWindow()
+    const mainWindow = createMainWindow()
+    initializeDesktopUpdates(mainWindow)
 
     app.on(`activate`, () => {
       if (BrowserWindow.getAllWindows().length === 0) {

@@ -4,9 +4,10 @@ import { UploadCloud } from 'lucide-vue-next'
 import { Field, Form } from 'vee-validate'
 import * as yup from 'yup'
 import { isDesktopRuntime } from '@/services/desktop/bridge'
+import { DEFAULT_MP_PROXY_ORIGIN, OFFICIAL_MP_PROXY_ORIGIN } from '@/services/wechat'
 import { useUIStore } from '@/stores/ui'
 import { checkImage } from '@/utils'
-import { saveAndSelectImageHost, validateMpProxyBeforeSave } from '@/utils/image-host-config'
+import { prepareMpProxySubmission, sanitizeStoredMpProxyOrigin, saveAndSelectImageHost, validateMpProxyBeforeSave } from '@/utils/image-host-config'
 import { store } from '@/utils/storage'
 import { trackEvent } from '@/utils/telemetry'
 
@@ -191,17 +192,10 @@ const isProxyRequired = computed(() => {
   return !isPluginMode && !isCfWorkers && !isDesktopApp
 })
 
-const mpPlaceholder = computed(() => {
-  if (isProxyRequired.value) {
-    return `如：http://proxy.example.com`
-  }
-  return `可不填`
-})
+const showCustomMpProxy = ref(false)
 const mpSchema = computed(() =>
   toTypedSchema(yup.object({
-    proxyOrigin: isProxyRequired.value
-      ? yup.string().required(`代理域名不能为空`)
-      : yup.string().optional(),
+    proxyOrigin: yup.string().optional(),
     appID: yup.string().required(`AppID 不能为空`),
     appsecret: yup.string().required(`AppSecret 不能为空`),
   })),
@@ -212,14 +206,27 @@ const mpConfig = store.reactive(`mpConfig`, {
   appID: ``,
   appsecret: ``,
 })
+const storedMpProxyOrigin = mpConfig.value.proxyOrigin
+const sanitizedMpProxyOrigin = sanitizeStoredMpProxyOrigin(storedMpProxyOrigin, [
+  OFFICIAL_MP_PROXY_ORIGIN,
+  DEFAULT_MP_PROXY_ORIGIN,
+])
+if (sanitizedMpProxyOrigin !== storedMpProxyOrigin) {
+  mpConfig.value.proxyOrigin = sanitizedMpProxyOrigin
+  void store.setJSON(`mpConfig`, mpConfig.value)
+}
 
 async function mpSubmit(formValues: any) {
   try {
+    const { requestOrigin, storedValues } = prepareMpProxySubmission(formValues, {
+      requiresProxy: isProxyRequired.value,
+      officialOrigin: DEFAULT_MP_PROXY_ORIGIN,
+    })
     await validateMpProxyBeforeSave({
       requiresProxy: isProxyRequired.value,
-      proxyOrigin: formValues.proxyOrigin || ``,
+      proxyOrigin: requestOrigin,
     })
-    saveAndSelectImageHost(`mp`, mpConfig, imgHost, formValues)
+    saveAndSelectImageHost(`mp`, mpConfig, imgHost, storedValues)
     trackEvent(`mp_config_saved`)
     toast.success(`保存成功，公众号图床已启用`)
   }
@@ -1074,20 +1081,30 @@ function onTabScroll(e: WheelEvent) {
                 桌面版由本机直接转发微信接口，不用另开代理，填好 AppID 和 AppSecret 就能用。
               </p>
 
-              <!-- 只有在需要代理时才显示 proxyOrigin 字段 -->
+              <div v-if="isProxyRequired" class="mb-3">
+                <Button
+                  type="button"
+                  variant="link"
+                  class="h-auto p-0 text-xs"
+                  @click="showCustomMpProxy = !showCustomMpProxy"
+                >
+                  {{ showCustomMpProxy ? '收起自定义代理' : '自定义代理' }}
+                </Button>
+              </div>
+
               <Field
-                v-if="isProxyRequired"
+                v-if="isProxyRequired && showCustomMpProxy"
                 v-slot="{ field, errorMessage }"
                 name="proxyOrigin"
               >
-                <FormItem label="代理域名" required :error="errorMessage">
+                <FormItem label="自定义代理地址" :error="errorMessage">
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    :placeholder="mpPlaceholder"
+                    placeholder="如：https://proxy.example.com"
                   />
                   <p class="mt-2 text-xs leading-5 text-muted-foreground">
-                    本地代理可直接填 `http://127.0.0.1:8788`；线上建议填你自己的 HTTPS 域名。
+                    留空使用默认服务；本地开发可填 `http://127.0.0.1:8788`。
                   </p>
                 </FormItem>
               </Field>
