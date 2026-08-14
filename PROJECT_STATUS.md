@@ -4,14 +4,14 @@
 
 ## 当前基线
 
-- 产品版本：`2.2.0`
-- 当前公开版本：`2.2.0`
+- 产品版本：`2.2.1`
+- 当前公开版本：`2.2.1`
 - Git 分支：`main`
-- 当前发布基线：`v2.2.0`
+- 当前发布基线：`v2.2.1`
 - 私有源码：<https://github.com/FengBuL/mobi-src>
 - 公开分发：<https://github.com/FengBuL/mobi>
 - 网页版：<https://fengbul.github.io/mobi/>
-- 当前公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.2.0>
+- 当前公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.2.1>
 - 数据观测台：<https://mobi-telemetry.shovy-mobi.workers.dev/dashboard>
 
 ## 项目组成
@@ -37,6 +37,7 @@ patches                     pnpm 依赖补丁
 - ESLint：0 error，存在既有 warning；
 - CI：macOS、Windows、Linux 桌面构建；
 - v2.2.0：桌面应用内选择性更新、`api.mobieditor.cn` 官方代理默认值、公众号图片比例实体化与移动端预览尺寸校准；
+- v2.2.1：修复桌面主进程加载 `electron-updater` 时因 CommonJS 默认导入互操作错误导致的启动闪退；
 - v2.1.8 公开 Release：macOS、Windows、Linux 四个平台资产。
 
 每次交接或发布前都要重新运行验证命令，本文记录不能代替当前测试结果。
