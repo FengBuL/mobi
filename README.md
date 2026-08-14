@@ -1,4 +1,5 @@
-# 墨笔
+# 墨笔     <img width="40" height="40" alt="icon" src="https://github.com/user-attachments/assets/17a4be69-bb73-4c93-b2c4-29ce65fe59c9" />
+
 
 写完就能贴进公众号的 Markdown 排版编辑器。
 
