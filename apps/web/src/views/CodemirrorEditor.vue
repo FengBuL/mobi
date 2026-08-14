@@ -24,7 +24,11 @@ import { useUIStore } from '@/stores/ui'
 import { checkImage, toBase64 } from '@/utils'
 import { blockCategories, parseBlockEntries } from '@/utils/blocks/registry'
 import { resolveMarkdownSourceRange } from '@/utils/blocks/source-selection'
-import { embeddedContentVisibility, stripEmbeddedContent } from '@/utils/editor-content-visibility'
+import {
+  embeddedContentProjectionTheme,
+  embeddedContentVisibility,
+  stripEmbeddedContent,
+} from '@/utils/editor-content-visibility'
 import { fileUpload } from '@/utils/file'
 import { repairIndentedMediaLayoutBlocks } from '@/utils/image-layouts'
 import { store } from '@/utils/storage'
@@ -1190,6 +1194,7 @@ function createFormTextArea(dom: HTMLDivElement) {
         onReplace: openReplaceWithSelection,
       }),
       embeddedContentVisibility,
+      embeddedContentProjectionTheme,
       themeCompartment.of(theme(isDark.value)),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {

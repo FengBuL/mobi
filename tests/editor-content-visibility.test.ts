@@ -45,6 +45,26 @@ describe(`编辑区嵌入内容隐藏`, () => {
     expect(stripEmbeddedContent(content)).toBe(`开头\n结尾`)
   })
 
+  it(`把章节标题组件投影成正文中的大标题和副标题`, () => {
+    const content = [
+      `<section class="md-block md-block--heading" data-block-category="heading" data-block-preset="heading-ceremony-rules">`,
+      `<div>`,
+      `<p data-block-field="title" data-block-value="研究 &amp; 方法">研究 &amp; 方法</p>`,
+      `<p data-block-field="subtitle" data-block-value="从问题出发">从问题出发</p>`,
+      `</div>`,
+      `</section>`,
+      ``,
+      `正文第一段。`,
+    ].join(`\n`)
+
+    expect(stripEmbeddedContent(content)).toBe([
+      `# 研究 & 方法`,
+      `从问题出发`,
+      ``,
+      `正文第一段。`,
+    ].join(`\n`))
+  })
+
   it(`行内图片只隐藏图片语法并保留两侧文字`, () => {
     const content = `前文 ![说明](https://example.com/a.png "标题") 后文`
 
@@ -108,6 +128,7 @@ describe(`编辑区嵌入内容隐藏`, () => {
     )
 
     expect(editorSource).toContain(`embeddedContentVisibility,`)
+    expect(editorSource).toContain(`embeddedContentProjectionTheme,`)
     expect(editorSource).toContain(`stripEmbeddedContent(currentPost.value?.content ?? \`\`)`)
   })
 })
