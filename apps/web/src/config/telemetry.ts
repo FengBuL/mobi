@@ -7,4 +7,4 @@
  *   export const TELEMETRY_ENDPOINT = `https://mobi-telemetry.xxx.workers.dev`
  * 填上并发版后，统计才会真正生效；用户仍可在「关于墨笔」里一键关闭。
  */
-export const TELEMETRY_ENDPOINT = ``
+export const TELEMETRY_ENDPOINT = `https://mobi-telemetry.shovy-mobi.workers.dev`

@@ -73,7 +73,6 @@ declare module 'vue' {
     FolderSourcePanel: typeof import('./src/components/editor/FolderSourcePanel.vue')['default']
     FolderTree: typeof import('./src/components/editor/FolderTree.vue')['default']
     Footer: typeof import('./src/components/editor/Footer.vue')['default']
-    FormatDropdown: typeof import('./src/components/editor/editor-header/FormatDropdown.vue')['default']
     FormItem: typeof import('./src/components/editor/FormItem.vue')['default']
     HeadingBlockWorkspace: typeof import('./src/components/editor/HeadingBlockWorkspace.vue')['default']
     HelpDropdown: typeof import('./src/components/editor/editor-header/HelpDropdown.vue')['default']
