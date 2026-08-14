@@ -2,7 +2,7 @@ import type { DesktopIpcResult, DesktopUpdateState } from '@mobi/shared/types/de
 import type { BrowserWindow } from 'electron'
 import { DESKTOP_IPC_CHANNELS } from '@mobi/shared/types/desktop'
 import { app, ipcMain } from 'electron'
-import electronUpdater from 'electron-updater'
+import { autoUpdater } from 'electron-updater'
 import { createDesktopUpdateController } from './updateController'
 
 const STARTUP_CHECK_DELAY_MS = 8000
@@ -22,7 +22,6 @@ async function toResult(run: () => Promise<void> | void): Promise<DesktopIpcResu
 }
 
 export function initializeDesktopUpdates(mainWindow: BrowserWindow): void {
-  const { autoUpdater } = electronUpdater
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = true
   autoUpdater.allowPrerelease = false
