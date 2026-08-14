@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { BlockPreset, BlockState, ParsedBlock } from '@/utils/blocks/types'
-import { Check, Minus, Pencil, Plus, RotateCcw, Trash2, Type } from 'lucide-vue-next'
+import { Check, Minus, Plus, RotateCcw, Trash2, Type } from 'lucide-vue-next'
 import { useBlockSelectionStore } from '@/stores/blockSelection'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
@@ -120,6 +120,7 @@ function selectPreset(preset: BlockPreset) {
 
 function resetState() {
   Object.assign(state, category.value.createDefaultState(selectedPreset.value), { fontScale: DEFAULT_BLOCK_FONT_SCALE })
+  persistEditingBlock()
 }
 
 function stepFontScale(direction: -1 | 1) {
@@ -127,6 +128,23 @@ function stepFontScale(direction: -1 | 1) {
   const safeIndex = currentIndex >= 0 ? currentIndex : 2
   const nextIndex = Math.min(BLOCK_FONT_SCALE_OPTIONS.length - 1, Math.max(0, safeIndex + direction))
   fontScale.value = BLOCK_FONT_SCALE_OPTIONS[nextIndex]
+  persistEditingBlock()
+}
+
+function setFontScale(value: number) {
+  fontScale.value = value
+  persistEditingBlock()
+}
+
+function updateField(key: string, value: string | number) {
+  state[key] = String(value ?? ``)
+  persistEditingBlock()
+}
+
+function persistEditingBlock() {
+  if (editingRange.value) {
+    writeBlock(selectedPreset.value)
+  }
 }
 
 function editBlock(block: ParsedBlock) {
@@ -190,10 +208,12 @@ function persistContent(nextContent: string) {
   renderStore.render(nextContent)
 }
 
-function writeBlock(preset: BlockPreset, message: string) {
+function writeBlock(preset: BlockPreset, message?: string) {
   const markup = buildBlockMarkup(preset, state)
   const current = editorStore.getContent()
-  trackEvent(`block_apply`, { category: preset.category, preset: preset.id })
+  if (message) {
+    trackEvent(`block_apply`, { category: preset.category, preset: preset.id })
+  }
 
   if (editingRange.value) {
     const { from, to } = editingRange.value
@@ -207,7 +227,9 @@ function writeBlock(preset: BlockPreset, message: string) {
       state: { ...state },
       title: String(state.title ?? state.quote ?? state.item1 ?? preset.name),
     })
-    toast.success(message)
+    if (message) {
+      toast.success(message)
+    }
     return
   }
 
@@ -220,11 +242,9 @@ function writeBlock(preset: BlockPreset, message: string) {
 
   const from = nextContent.indexOf(markup)
   editingRange.value = from === -1 ? null : { from, to: from + markup.length }
-  toast.success(message)
-}
-
-function applyBlock() {
-  writeBlock(selectedPreset.value, `${category.value.name}板块已更新`)
+  if (message) {
+    toast.success(message)
+  }
 }
 </script>
 
@@ -266,7 +286,7 @@ function applyBlock() {
       <div class="heading-block-section__head">
         <div>
           <h3>{{ editingRange ? '编辑当前板块' : '填写内容' }}</h3>
-          <p>{{ editingRange ? '改完点下方按钮更新，换样式会原地替换。' : '点上方任意样式即可直接生成。' }}</p>
+          <p>{{ editingRange ? '文字和字号会实时同步到正文与预览。' : '点上方任意样式即可直接生成。' }}</p>
         </div>
         <Button variant="ghost" size="sm" @click="resetState">
           <RotateCcw class="mr-2 size-3.5" />
@@ -280,14 +300,16 @@ function applyBlock() {
           <Textarea
             v-if="field.type === 'textarea'"
             :id="`heading-block-${field.key}`"
-            v-model="state[field.key] as string"
+            :model-value="state[field.key] as string"
             :placeholder="field.placeholder"
+            @update:model-value="updateField(field.key, $event)"
           />
           <Input
             v-else
             :id="`heading-block-${field.key}`"
-            v-model="state[field.key] as string"
+            :model-value="state[field.key] as string"
             :placeholder="field.placeholder"
+            @update:model-value="updateField(field.key, $event)"
           />
         </div>
       </div>
@@ -309,7 +331,7 @@ function applyBlock() {
             :key="option"
             type="button"
             :class="{ active: option === fontScale }"
-            @click="fontScale = option"
+            @click="setFontScale(option)"
           >
             {{ Math.round(option * 100) }}%
           </button>
@@ -323,15 +345,10 @@ function applyBlock() {
         <div v-html="previewMarkup" />
       </div>
 
-      <div class="heading-block-actions">
-        <Button class="flex-1" :disabled="!editingRange" @click="applyBlock">
-          <Pencil v-if="editingRange" class="mr-2 size-4" />
-          <Plus v-else class="mr-2 size-4" />
-          {{ editingRange ? '更新到正文' : '点上方样式即可生成' }}
-        </Button>
-        <Button v-if="editingRange" variant="outline" @click="deleteSelected">
+      <div v-if="editingRange" class="heading-block-actions">
+        <Button class="flex-1" variant="outline" @click="deleteSelected">
           <Trash2 class="mr-2 size-4" />
-          删除
+          删除当前板块
         </Button>
       </div>
     </section>

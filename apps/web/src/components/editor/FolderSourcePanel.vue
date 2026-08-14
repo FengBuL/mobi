@@ -8,7 +8,6 @@ import {
   PanelLeftClose,
   RefreshCw,
 } from 'lucide-vue-next'
-import { useFolderFileSync } from '@/composables/useFolderFileSync'
 import { useFolderSourceStore } from '@/stores/folderSource'
 import { usePostStore } from '@/stores/post'
 import { useUIStore } from '@/stores/ui'
@@ -17,7 +16,6 @@ import FolderTree from './FolderTree.vue'
 const folderSourceStore = useFolderSourceStore()
 const postStore = usePostStore()
 const uiStore = useUIStore()
-const { setCurrentFilePath } = useFolderFileSync()
 
 const {
   currentFolderHandle,
@@ -80,10 +78,7 @@ async function handleOpenFile(node: any) {
     postStore.addPost(title)
     postStore.updatePostContent(postStore.currentPostId, content)
 
-    // 记录当前文件路径以便自动同步
-    setCurrentFilePath(node.path)
-
-    toast.success(`已加载文件: ${node.name}`)
+    toast.success(`已导入副本: ${node.name}，编辑不会修改本地文件`)
   }
   catch (error) {
     console.error(`打开文件失败:`, error)

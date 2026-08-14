@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Download, FileCode, FileText, FolderKanban, FolderOpen, Package, Upload } from 'lucide-vue-next'
+import { Download, FileCode, FileText, FolderKanban, FolderOpen, History, Package, Upload } from 'lucide-vue-next'
+import { useImageQuickInsert } from '@/composables/useImageQuickInsert'
 import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
 import { useUIStore } from '@/stores/ui'
@@ -15,6 +16,7 @@ const { asSub } = toRefs(props)
 const editorStore = useEditorStore()
 const exportStore = useExportStore()
 const uiStore = useUIStore()
+const { open: openQuickInsert } = useImageQuickInsert()
 
 const { isOpenPostSlider, isOpenFolderPanel } = storeToRefs(uiStore)
 const { toggleShowTemplateDialog, toggleShowImportMdDialog } = uiStore
@@ -64,6 +66,10 @@ function exportEditorContent2PDF() {
       <MenubarItem @click="toggleShowImportMdDialog(true)">
         <Upload class="mr-2 size-4" />
         导入 Markdown
+      </MenubarItem>
+      <MenubarItem @click="openQuickInsert('recent')">
+        <History class="mr-2 size-4" />
+        最近使用的图片
       </MenubarItem>
 
       <!-- 导出子菜单 -->
@@ -132,6 +138,10 @@ function exportEditorContent2PDF() {
       <MenubarItem @click="toggleShowImportMdDialog(true)">
         <Upload class="mr-2 size-4" />
         导入 Markdown
+      </MenubarItem>
+      <MenubarItem @click="openQuickInsert('recent')">
+        <History class="mr-2 size-4" />
+        最近使用的图片
       </MenubarItem>
 
       <!-- 导出子菜单 -->

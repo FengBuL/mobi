@@ -26,7 +26,7 @@ interface RuntimeFolderInfo {
 
 /**
  * 本地文件夹源 Store
- * 负责管理本地文件夹的访问、文件树结构和文件读写
+ * 负责以只读方式管理本地文件夹、文件树和文档导入
  */
 export const useFolderSourceStore = defineStore(`folderSource`, () => {
   // 内存中的运行时文件夹信息（不持久化）
@@ -84,12 +84,12 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
       loadError.value = ``
 
       const handle = await window.showDirectoryPicker({
-        mode: `readwrite`,
+        mode: `read`,
         startIn: `documents`,
       })
 
       // 请求权限
-      const permission = await handle.requestPermission({ mode: `readwrite` })
+      const permission = await handle.requestPermission({ mode: `read` })
       if (permission !== `granted`) {
         toast.error(`未授予文件夹访问权限`)
         return
@@ -192,7 +192,7 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
     }
 
     try {
-      const permission = await mostRecent.handle.queryPermission({ mode: `readwrite` })
+      const permission = await mostRecent.handle.queryPermission({ mode: `read` })
       if (permission !== `granted`) {
         return
       }
@@ -305,46 +305,6 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
   }
 
   /**
-   * 写入文件内容
-   */
-  async function writeFile(filePath: string, content: string): Promise<void> {
-    if (!currentRuntimeFolder.value) {
-      throw new Error(`未选择文件夹`)
-    }
-
-    try {
-      // 解析路径，找到对应的目录句柄
-      const pathParts = filePath.split(`/`).slice(1) // 移除第一部分（文件夹名）
-      let currentHandle = currentRuntimeFolder.value.handle as FileSystemDirectoryHandle
-
-      // 遍历路径，创建不存在的目录
-      for (let i = 0; i < pathParts.length - 1; i++) {
-        const dirName = pathParts[i]
-        try {
-          currentHandle = await currentHandle.getDirectoryHandle(dirName)
-        }
-        catch {
-          // 目录不存在，创建它
-          currentHandle = await currentHandle.getDirectoryHandle(dirName, { create: true })
-        }
-      }
-
-      // 获取或创建文件句柄
-      const fileName = pathParts[pathParts.length - 1]
-      const fileHandle = await currentHandle.getFileHandle(fileName, { create: true })
-
-      // 写入内容
-      const writable = await fileHandle.createWritable()
-      await writable.write(content)
-      await writable.close()
-    }
-    catch (error: any) {
-      console.error(`保存文件失败: ${error.message}`)
-      throw error
-    }
-  }
-
-  /**
    * 在文件树中查找节点
    */
   function findNodeByPath(nodes: FileSystemNode[], path: string): FileSystemNode | null {
@@ -402,7 +362,6 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
     removeFolder,
     loadFileTree,
     readFile,
-    writeFile,
     findNodeByPath,
     getAllMarkdownFiles,
   }

@@ -3,6 +3,7 @@ import type { MarkdownToolbarCommand } from '@/utils/markdown-toolbar'
 import {
   Bold,
   Code2,
+  Contact,
   Heading1,
   Heading2,
   Heading3,
@@ -13,13 +14,16 @@ import {
   ListOrdered,
   Quote,
   Strikethrough,
+  Table,
 } from 'lucide-vue-next'
+import { useImageQuickInsert } from '@/composables/useImageQuickInsert'
 import { useEditorStore } from '@/stores/editor'
 import { useUIStore } from '@/stores/ui'
 import { applyMarkdownCommand } from '@/utils/markdown-toolbar'
 
 const editorStore = useEditorStore()
 const uiStore = useUIStore()
+const { open: openQuickInsert } = useImageQuickInsert()
 
 const groups: Array<Array<{
   command: MarkdownToolbarCommand
@@ -67,6 +71,22 @@ function runCommand(command: MarkdownToolbarCommand) {
 function insertImage() {
   uiStore.openUploadImgDialog()
 }
+
+function insertImageBatch() {
+  openQuickInsert(`upload`)
+}
+
+function insertImageByLink() {
+  openQuickInsert(`link`)
+}
+
+function insertTable() {
+  uiStore.toggleShowInsertFormDialog(true)
+}
+
+function insertMpCard() {
+  uiStore.toggleShowInsertMpCardDialog(true)
+}
 </script>
 
 <template>
@@ -90,7 +110,7 @@ function insertImage() {
           <component :is="item.icon" class="size-4" />
         </button>
       </div>
-      <div class="markdown-toolbar__group">
+      <div class="markdown-toolbar__group markdown-toolbar__group--insert">
         <button
           type="button"
           class="markdown-toolbar__button markdown-toolbar__button--image"
@@ -100,7 +120,47 @@ function insertImage() {
           @click="insertImage"
         >
           <ImagePlus class="size-4" />
-          <span>图片</span>
+          <span>插入图片</span>
+        </button>
+        <button
+          type="button"
+          class="markdown-toolbar__button"
+          title="批量插入图片"
+          @mousedown.prevent
+          @click="insertImageBatch"
+        >
+          <ImagePlus class="size-4" />
+          <span>批量图片</span>
+        </button>
+        <button
+          type="button"
+          class="markdown-toolbar__button"
+          title="按链接插入图片"
+          @mousedown.prevent
+          @click="insertImageByLink"
+        >
+          <Link2 class="size-4" />
+          <span>图片链接</span>
+        </button>
+        <button
+          type="button"
+          class="markdown-toolbar__button"
+          title="插入表格"
+          @mousedown.prevent
+          @click="insertTable"
+        >
+          <Table class="size-4" />
+          <span>表格</span>
+        </button>
+        <button
+          type="button"
+          class="markdown-toolbar__button"
+          title="公众号名片"
+          @mousedown.prevent
+          @click="insertMpCard"
+        >
+          <Contact class="size-4" />
+          <span>名片</span>
         </button>
       </div>
     </div>
@@ -199,7 +259,7 @@ function insertImage() {
   color: hsl(var(--primary));
 }
 
-.markdown-toolbar__button--image span {
+.markdown-toolbar__group--insert span {
   font-size: 0.68rem;
   font-weight: 700;
 }
