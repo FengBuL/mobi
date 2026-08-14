@@ -65,6 +65,15 @@ describe(`编辑区嵌入内容隐藏`, () => {
     ].join(`\n`))
   })
 
+  it(`章节标题投影会收起边界处累积的多余空行`, () => {
+    const markup = `<section class="md-block md-block--heading" data-block-category="heading"><p data-block-field="title" data-block-value="章节">章节</p></section>`
+    const content = `\n\n\n${markup}\n\n\n\n正文`
+    const [range] = findEmbeddedContentRanges(content)
+
+    expect(range.from).toBe(0)
+    expect(content.slice(range.to)).toBe(`正文`)
+  })
+
   it(`行内图片只隐藏图片语法并保留两侧文字`, () => {
     const content = `前文 ![说明](https://example.com/a.png "标题") 后文`
 
@@ -118,7 +127,7 @@ describe(`编辑区嵌入内容隐藏`, () => {
     })
 
     expect(state.doc.toString()).toBe(content)
-    expect(state.field(embeddedContentVisibility).size).toBe(1)
+    expect(state.field(embeddedContentVisibility).decorations.size).toBe(1)
   })
 
   it(`正文编辑器启用隐藏扩展并用可见内容统计`, () => {

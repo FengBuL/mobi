@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 
-import { Compartment, EditorState } from '@codemirror/state'
-import { EditorView } from '@codemirror/view'
+import { Compartment, EditorState, StateEffect, StateField } from '@codemirror/state'
+import { Decoration, EditorView } from '@codemirror/view'
 import { highlightPendingBlocks, hljs } from '@mobi/core'
 import { markdownSetup, theme } from '@mobi/shared/editor'
 import imageCompression from 'browser-image-compression'
@@ -23,10 +23,15 @@ import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 import { checkImage, toBase64 } from '@/utils'
 import { blockCategories, parseBlockEntries } from '@/utils/blocks/registry'
-import { resolveMarkdownSourceRange } from '@/utils/blocks/source-selection'
+import {
+  resolveMarkdownSourceAtPosition,
+  resolveMarkdownSourceRange,
+} from '@/utils/blocks/source-selection'
 import {
   embeddedContentProjectionTheme,
   embeddedContentVisibility,
+  embeddedProjectionFlashEffect,
+  findEmbeddedContentRanges,
   stripEmbeddedContent,
 } from '@/utils/editor-content-visibility'
 import { fileUpload } from '@/utils/file'
@@ -42,6 +47,26 @@ const themeStore = useThemeStore()
 const uiStore = useUIStore()
 const { selection: blockSelection } = storeToRefs(blockSelectionStore)
 const { upload } = useImageUploader()
+
+const editorSourceFlashEffect = StateEffect.define<{ from: number, to: number } | null>()
+const editorSourceFlashField = StateField.define({
+  create: () => Decoration.none,
+  update(decorations, transaction) {
+    let next = decorations.map(transaction.changes)
+    for (const effect of transaction.effects) {
+      if (!effect.is(editorSourceFlashEffect))
+        continue
+      const range = effect.value
+      next = range && range.to > range.from
+        ? Decoration.set([
+            Decoration.mark({ class: `cm-source-sync-flash` }).range(range.from, range.to),
+          ])
+        : Decoration.none
+    }
+    return next
+  },
+  provide: field => EditorView.decorations.from(field),
+})
 
 const { editor } = storeToRefs(editorStore)
 const { output, readingTime } = storeToRefs(renderStore)
@@ -237,11 +262,14 @@ const readingTimeLabel = computed(() => {
 
 const previewRef = useTemplateRef<HTMLDivElement>(`previewRef`)
 const mainSectionRef = useTemplateRef<HTMLDivElement>(`mainSectionRef`)
+const editorRef = useTemplateRef<HTMLDivElement>(`editorRef`)
 
 const codeMirrorView = ref<EditorView | null>(null)
 const themeCompartment = new Compartment()
 const cursorSyncTimer = ref<NodeJS.Timeout>()
 const skipCursorDrivenPreviewSync = ref(false)
+let editorFlashTimer: ReturnType<typeof setTimeout> | undefined
+let previewFlashTimer: ReturnType<typeof setTimeout> | undefined
 
 function getCurrentEditorContent() {
   return currentPost.value?.content ?? posts.value[currentPostIndex.value]?.content ?? ``
@@ -447,6 +475,74 @@ function focusEditorAtPos(pos: number) {
   }, 180)
 }
 
+function flashEditorRange(from: number, to: number) {
+  const view = codeMirrorView.value
+  if (!view)
+    return
+
+  clearTimeout(editorFlashTimer)
+  view.dispatch({
+    effects: [
+      editorSourceFlashEffect.of({ from, to }),
+      embeddedProjectionFlashEffect.of({ from, to }),
+    ],
+  })
+  editorFlashTimer = setTimeout(() => {
+    codeMirrorView.value?.dispatch({
+      effects: [
+        editorSourceFlashEffect.of(null),
+        embeddedProjectionFlashEffect.of(null),
+      ],
+    })
+  }, 2400)
+}
+
+function flashPreviewElement(element: HTMLElement) {
+  clearTimeout(previewFlashTimer)
+  previewRef.value?.querySelectorAll(`.preview-source-sync-flash`).forEach((node) => {
+    node.classList.remove(`preview-source-sync-flash`)
+  })
+  // 同一段连续点击时也要重新播放动画。
+  void element.offsetWidth
+  element.classList.add(`preview-source-sync-flash`)
+  previewFlashTimer = setTimeout(() => {
+    element.classList.remove(`preview-source-sync-flash`)
+  }, 2400)
+}
+
+function findPreviewSourceElement(kind: string, ordinal: number) {
+  return previewRef.value?.querySelector<HTMLElement>(
+    `#output [data-src-kind="${kind}"][data-src-ordinal="${ordinal}"]`,
+  ) ?? null
+}
+
+function flashPreviewForEditorPosition(position: number) {
+  const content = getCurrentEditorContent()
+  const entries = parseBlockEntries(content)
+  let blockIndex = entries.findIndex(entry => position >= entry.from && position <= entry.to)
+
+  if (blockIndex < 0) {
+    const projection = findEmbeddedContentRanges(content).find(range => (
+      Boolean(range.replacement) && position >= range.from && position <= range.to
+    ))
+    if (projection) {
+      blockIndex = entries.findIndex(entry => entry.from >= projection.from && entry.to <= projection.to)
+    }
+  }
+
+  const element = blockIndex >= 0
+    ? previewRef.value?.querySelectorAll<HTMLElement>(`#output section.md-block`)[blockIndex]
+    : (() => {
+        const source = resolveMarkdownSourceAtPosition(content, position)
+        return source ? findPreviewSourceElement(source.kind, source.ordinal) : null
+      })()
+
+  if (element) {
+    scrollPreviewToElement(element)
+    flashPreviewElement(element)
+  }
+}
+
 function syncPreviewToEditorCursor() {
   if (skipCursorDrivenPreviewSync.value)
     return
@@ -493,7 +589,17 @@ function syncEditorToPreviewElement(el: HTMLElement) {
   const tag = el.tagName.toLowerCase()
   let pos: number | null = null
 
-  if (/^h[1-6]$/.test(tag)) {
+  const sourceKind = el.dataset.srcKind
+  const sourceOrdinal = Number(el.dataset.srcOrdinal)
+  const sourceRange = sourceKind && Number.isInteger(sourceOrdinal)
+    ? resolveMarkdownSourceRange(getCurrentEditorContent(), sourceKind, sourceOrdinal)
+    : null
+
+  if (sourceRange) {
+    pos = sourceRange.from
+    flashEditorRange(sourceRange.from, sourceRange.to)
+  }
+  else if (/^h[1-6]$/.test(tag)) {
     const level = Number(tag.slice(1))
     const title = normalizeText(el.textContent || ``)
     pos = findHeadingPosInEditor(title, level)
@@ -846,6 +952,11 @@ function handlePreviewContentClick(event: MouseEvent) {
       : null
 
   if (nextSelection) {
+    const existingBlockIndex = existingBlock
+      ? Array.from(previewRef.value?.querySelectorAll<HTMLElement>(`#output section.md-block`) ?? []).indexOf(existingBlock)
+      : -1
+    const nativeSourceKind = nativeBlock?.dataset.srcKind
+    const nativeSourceOrdinal = Number(nativeBlock?.dataset.srcOrdinal)
     if (isSameBlockSelection(blockSelection.value, nextSelection)) {
       blockSelectionStore.clear()
     }
@@ -854,7 +965,20 @@ function handlePreviewContentClick(event: MouseEvent) {
       // 再点一次是取消选中，那时候不该再把面板叫出来
       uiStore.focusBlockLibrary()
     }
+    flashEditorRange(nextSelection.from, nextSelection.to)
     focusEditorAtPos(nextSelection.from)
+    nextTick(() => {
+      const currentElement = existingBlockIndex >= 0
+        ? previewRef.value?.querySelectorAll<HTMLElement>(`#output section.md-block`)[existingBlockIndex]
+        : nativeSourceKind && Number.isInteger(nativeSourceOrdinal)
+          ? findPreviewSourceElement(nativeSourceKind, nativeSourceOrdinal)
+          : null
+      if (currentElement) {
+        flashPreviewElement(currentElement)
+      }
+      // 打开板块面板会让编辑器重新布局，投影节点可能随之重建，需要在布局完成后再补一次。
+      flashEditorRange(nextSelection.from, nextSelection.to)
+    })
     return
   }
 
@@ -872,10 +996,13 @@ function handlePreviewContentClick(event: MouseEvent) {
     uiStore.focusBlockLibrary(`image`)
   }
 
-  const block = target.closest(`h1,h2,h3,h4,h5,h6,p,li,blockquote,pre,td,th,img`) as HTMLElement | null
+  const sourceElement = target.closest<HTMLElement>(`[data-src-kind][data-src-ordinal]`)
+  const block = sourceElement
+    ?? target.closest(`h1,h2,h3,h4,h5,h6,p,li,blockquote,pre,td,th,img`) as HTMLElement | null
   if (!block)
     return
 
+  flashPreviewElement(block)
   syncEditorToPreviewElement(block)
 }
 
@@ -1181,7 +1308,6 @@ function mdLocalToRemote() {
 
 const changeTimer = ref<NodeJS.Timeout>()
 
-const editorRef = useTemplateRef<HTMLDivElement>(`editorRef`)
 const progressValue = ref(0)
 
 function createFormTextArea(dom: HTMLDivElement) {
@@ -1195,6 +1321,7 @@ function createFormTextArea(dom: HTMLDivElement) {
       }),
       embeddedContentVisibility,
       embeddedContentProjectionTheme,
+      editorSourceFlashField,
       themeCompartment.of(theme(isDark.value)),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
@@ -1219,6 +1346,19 @@ function createFormTextArea(dom: HTMLDivElement) {
         }
       }),
       EditorView.domEventHandlers({
+        click: (event, view) => {
+          const projection = (event.target as HTMLElement | null)?.closest(`.cm-embedded-content-projection`)
+          let position: number | null = null
+          if (projection) {
+            const sourceFrom = Number((projection as HTMLElement).dataset.sourceFrom)
+            position = Number.isInteger(sourceFrom) ? sourceFrom : null
+          }
+          position ??= view.posAtCoords({ x: event.clientX, y: event.clientY })
+          if (position != null) {
+            flashPreviewForEditorPosition(position)
+          }
+          return false
+        },
         paste: (event, view) => {
           // 1. 处理剪贴板中的文件 (截图/复制文件)
           if (event.clipboardData?.items && [...event.clipboardData.items].some(item => item.kind === `file`)) {
@@ -1476,6 +1616,8 @@ onUnmounted(() => {
   clearTimeout(historyTimer.value)
   clearTimeout(changeTimer.value)
   clearTimeout(cursorSyncTimer.value)
+  clearTimeout(editorFlashTimer)
+  clearTimeout(previewFlashTimer)
 
   cancelHoverHide()
 
@@ -2114,6 +2256,29 @@ onUnmounted(() => {
 :deep(#output [data-src-kind]),
 :deep(#output section.md-block) {
   cursor: pointer;
+}
+
+:deep(.cm-source-sync-flash),
+:deep(.cm-projection-source-sync-flash) {
+  animation: source-sync-flash 2.4s ease-out;
+  border-radius: 3px;
+}
+
+:deep(#output .preview-source-sync-flash) {
+  animation: source-sync-flash 2.4s ease-out;
+  border-radius: 6px;
+}
+
+@keyframes source-sync-flash {
+  0%, 35% {
+    background-color: hsl(var(--primary) / 0.24);
+    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.12);
+  }
+
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 
 .preview-block-remove {

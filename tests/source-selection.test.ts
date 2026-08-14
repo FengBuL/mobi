@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { resolveMarkdownSourceRange } from '@/utils/blocks/source-selection'
+import {
+  resolveMarkdownSourceAtPosition,
+  resolveMarkdownSourceRange,
+} from '@/utils/blocks/source-selection'
 
 const markdown = [
   `---`,
@@ -18,6 +21,9 @@ const markdown = [
   `- 一级 C`,
   ``,
   `---`,
+  ``,
+  `第一段正文，包含 **强调文字**。`,
+  `这一行仍属于第一段。`,
   ``,
   `结尾`,
 ].join(`\n`)
@@ -48,7 +54,7 @@ describe(`markdown 源码定位`, () => {
   it(`分隔线不会命中 front matter 的三横线`, () => {
     expect(slice(`divider`, 1)).toBe(`---`)
     const range = resolveMarkdownSourceRange(markdown, `divider`, 1)!
-    expect(range.from).toBeGreaterThan(markdown.indexOf(`结尾`) - 20)
+    expect(range.from).toBeGreaterThan(markdown.indexOf(`## 重复标题`))
   })
 
   it(`序号越界时返回 null，不会退而求其次`, () => {
@@ -59,5 +65,20 @@ describe(`markdown 源码定位`, () => {
   it(`未知类型返回 null`, () => {
     expect(resolveMarkdownSourceRange(markdown, `heading-9`, 1)).toBeNull()
     expect(resolveMarkdownSourceRange(markdown, `unknown-kind`, 1)).toBeNull()
+  })
+
+  it(`普通段落也能按序号稳定定位`, () => {
+    expect(slice(`paragraph`, 1)).toBe(`第一段正文，包含 **强调文字**。\n这一行仍属于第一段。`)
+    expect(slice(`paragraph`, 2)).toBe(`结尾`)
+  })
+
+  it(`按编辑器光标位置返回对应段落及预览标记`, () => {
+    const position = markdown.indexOf(`强调文字`)
+
+    expect(resolveMarkdownSourceAtPosition(markdown, position)).toMatchObject({
+      kind: `paragraph`,
+      ordinal: 1,
+      raw: `第一段正文，包含 **强调文字**。\n这一行仍属于第一段。`,
+    })
   })
 })

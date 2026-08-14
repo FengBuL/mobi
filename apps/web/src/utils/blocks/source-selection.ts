@@ -3,6 +3,9 @@ import { marked } from 'marked'
 
 export type MarkdownSourceKind
   = | `heading-${1 | 2 | 3 | 4 | 5 | 6}`
+    | 'paragraph'
+    | 'code'
+    | 'table'
     | 'quote'
     | 'list-ul'
     | 'list-ol'
@@ -12,6 +15,11 @@ export interface MarkdownSourceRange {
   from: number
   to: number
   raw: string
+}
+
+export interface LocatedMarkdownSource extends MarkdownSourceRange {
+  kind: MarkdownSourceKind
+  ordinal: number
 }
 
 function getMarkdownBody(content: string) {
@@ -27,6 +35,15 @@ function getTokenSourceKind(token: Token): MarkdownSourceKind | null {
   if (token.type === `heading`) {
     return `heading-${token.depth}` as MarkdownSourceKind
   }
+  if (token.type === `paragraph`) {
+    return `paragraph`
+  }
+  if (token.type === `code`) {
+    return `code`
+  }
+  if (token.type === `table`) {
+    return `table`
+  }
   if (token.type === `blockquote`) {
     return `quote`
   }
@@ -39,6 +56,31 @@ function getTokenSourceKind(token: Token): MarkdownSourceKind | null {
   return null
 }
 
+function listMarkdownSourceRanges(content: string): LocatedMarkdownSource[] {
+  const { body, offset: bodyOffset } = getMarkdownBody(content)
+  const counts = new Map<MarkdownSourceKind, number>()
+  const ranges: LocatedMarkdownSource[] = []
+  let offset = bodyOffset
+
+  for (const token of marked.lexer(body)) {
+    const kind = getTokenSourceKind(token)
+    if (kind) {
+      const ordinal = (counts.get(kind) ?? 0) + 1
+      counts.set(kind, ordinal)
+      const raw = token.raw.trimEnd()
+      ranges.push({
+        kind,
+        ordinal,
+        from: offset,
+        to: offset + raw.length,
+        raw,
+      })
+    }
+    offset += token.raw.length
+  }
+  return ranges
+}
+
 export function resolveMarkdownSourceRange(
   content: string,
   kind: string,
@@ -48,26 +90,20 @@ export function resolveMarkdownSourceRange(
     return null
   }
 
-  const { body, offset: bodyOffset } = getMarkdownBody(content)
-  const counts = new Map<MarkdownSourceKind, number>()
-  let offset = bodyOffset
+  return listMarkdownSourceRanges(content).find(range => (
+    range.kind === kind && range.ordinal === ordinal
+  )) ?? null
+}
 
-  for (const token of marked.lexer(body)) {
-    const sourceKind = getTokenSourceKind(token)
-    if (sourceKind) {
-      const nextOrdinal = (counts.get(sourceKind) ?? 0) + 1
-      counts.set(sourceKind, nextOrdinal)
-      if (sourceKind === kind && nextOrdinal === ordinal) {
-        const raw = token.raw.trimEnd()
-        return {
-          from: offset,
-          to: offset + raw.length,
-          raw,
-        }
-      }
-    }
-    offset += token.raw.length
+export function resolveMarkdownSourceAtPosition(
+  content: string,
+  position: number,
+): LocatedMarkdownSource | null {
+  if (!Number.isInteger(position) || position < 0 || position > content.length) {
+    return null
   }
 
-  return null
+  return listMarkdownSourceRanges(content).find(range => (
+    position >= range.from && position <= range.to
+  )) ?? null
 }

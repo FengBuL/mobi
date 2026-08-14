@@ -1,11 +1,12 @@
 import type { DecorationSet } from '@codemirror/view'
-import { RangeSetBuilder, StateField } from '@codemirror/state'
+import { RangeSetBuilder, StateEffect, StateField } from '@codemirror/state'
 import { Decoration, EditorView, WidgetType } from '@codemirror/view'
 
 export interface EditorHiddenRange {
   from: number
   to: number
   replacement?: string
+  preserveParagraphGap?: boolean
 }
 
 function collectMatches(content: string, pattern: RegExp): EditorHiddenRange[] {
@@ -95,14 +96,36 @@ function expandStandaloneLine(content: string, range: EditorHiddenRange): Editor
     return { ...range }
   }
 
+  // 组件源码可能经历多次插入、移动和删除，边界处会积累空行。装饰范围把这些
+  // 空行一起收起，底层 Markdown 仍保持原样，编辑视图不会出现大片空白。
+  let from = lineStart
+  while (from > 0) {
+    const previousLineBreak = from >= 2 ? content.lastIndexOf(`\n`, from - 2) : -1
+    const previousLineStart = previousLineBreak + 1
+    if (content.slice(previousLineStart, from - 1).trim()) {
+      break
+    }
+    from = previousLineStart
+  }
+
   let to = lineBreak === -1 ? content.length : lineBreak + 1
-  const nextLineBreak = content.indexOf(`\n`, to)
-  const nextLineEnd = nextLineBreak === -1 ? content.length : nextLineBreak
-  if (!content.slice(to, nextLineEnd).trim()) {
+  while (to < content.length) {
+    const nextLineBreak = content.indexOf(`\n`, to)
+    const nextLineEnd = nextLineBreak === -1 ? content.length : nextLineBreak
+    if (content.slice(to, nextLineEnd).trim()) {
+      break
+    }
     to = nextLineBreak === -1 ? content.length : nextLineBreak + 1
   }
 
-  return { ...range, from: lineStart, to }
+  return {
+    ...range,
+    from,
+    to,
+    preserveParagraphGap: lineStart >= 2
+      && content[lineStart - 1] === `\n`
+      && content[lineStart - 2] === `\n`,
+  }
 }
 
 function mergeRanges(ranges: EditorHiddenRange[]): EditorHiddenRange[] {
@@ -117,6 +140,7 @@ function mergeRanges(ranges: EditorHiddenRange[]): EditorHiddenRange[] {
     }
     previous.to = Math.max(previous.to, range.to)
     previous.replacement ||= range.replacement
+    previous.preserveParagraphGap ||= range.preserveParagraphGap
   }
 
   return merged
@@ -146,25 +170,45 @@ export function stripEmbeddedContent(content: string): string {
   let visible = content
   for (let index = ranges.length - 1; index >= 0; index -= 1) {
     const range = ranges[index]
-    const trailing = range.replacement && range.to < content.length ? `\n\n` : ``
-    visible = `${visible.slice(0, range.from)}${range.replacement ?? ``}${trailing}${visible.slice(range.to)}`
+    const before = visible.slice(0, range.from)
+    const after = visible.slice(range.to)
+    const separator = range.replacement
+      ? (after ? `\n\n` : ``)
+      : (range.preserveParagraphGap && before && after ? `\n` : ``)
+    visible = `${before}${range.replacement ?? ``}${separator}${after}`
   }
   return visible
 }
 
 class EmbeddedContentProjectionWidget extends WidgetType {
-  constructor(private readonly text: string) {
+  constructor(
+    private readonly text: string,
+    private readonly sourceFrom: number,
+    private readonly sourceTo: number,
+    private readonly flashing: boolean,
+  ) {
     super()
   }
 
   eq(other: EmbeddedContentProjectionWidget) {
     return other.text === this.text
+      && other.sourceFrom === this.sourceFrom
+      && other.sourceTo === this.sourceTo
+      && other.flashing === this.flashing
+  }
+
+  ignoreEvent() {
+    return false
   }
 
   toDOM() {
     const wrapper = document.createElement(`div`)
-    wrapper.className = `cm-embedded-content-projection`
+    wrapper.className = this.flashing
+      ? `cm-embedded-content-projection cm-projection-source-sync-flash`
+      : `cm-embedded-content-projection`
     wrapper.setAttribute(`aria-label`, `组件正文：${this.text.replace(/\n/g, `，`)}`)
+    wrapper.dataset.sourceFrom = String(this.sourceFrom)
+    wrapper.dataset.sourceTo = String(this.sourceTo)
 
     const [title, ...details] = this.text.split(`\n`)
     const heading = document.createElement(`div`)
@@ -182,11 +226,19 @@ class EmbeddedContentProjectionWidget extends WidgetType {
   }
 }
 
-function buildDecorations(content: string): DecorationSet {
+function buildDecorations(
+  content: string,
+  flashRange: { from: number, to: number } | null = null,
+): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>()
   for (const range of findEmbeddedContentRanges(content)) {
     const widget = range.replacement
-      ? new EmbeddedContentProjectionWidget(range.replacement)
+      ? new EmbeddedContentProjectionWidget(
+          range.replacement,
+          range.from,
+          range.to,
+          Boolean(flashRange && range.from <= flashRange.to && range.to >= flashRange.from),
+        )
       : undefined
     builder.add(
       range.from,
@@ -200,16 +252,37 @@ function buildDecorations(content: string): DecorationSet {
   return builder.finish()
 }
 
-export const embeddedContentVisibility = StateField.define<DecorationSet>({
+export const embeddedProjectionFlashEffect = StateEffect.define<{ from: number, to: number } | null>()
+
+interface EmbeddedContentVisibilityState {
+  decorations: DecorationSet
+  flashRange: { from: number, to: number } | null
+}
+
+export const embeddedContentVisibility = StateField.define<EmbeddedContentVisibilityState>({
   create(state) {
-    return buildDecorations(state.doc.toString())
+    return {
+      decorations: buildDecorations(state.doc.toString()),
+      flashRange: null,
+    }
   },
-  update(decorations, transaction) {
-    return transaction.docChanged
-      ? buildDecorations(transaction.newDoc.toString())
-      : decorations
+  update(value, transaction) {
+    let flashRange = transaction.docChanged ? null : value.flashRange
+    let flashChanged = transaction.docChanged
+    for (const effect of transaction.effects) {
+      if (effect.is(embeddedProjectionFlashEffect)) {
+        flashRange = effect.value
+        flashChanged = true
+      }
+    }
+    return flashChanged
+      ? {
+          decorations: buildDecorations(transaction.newDoc.toString(), flashRange),
+          flashRange,
+        }
+      : value
   },
-  provide: field => EditorView.decorations.from(field),
+  provide: field => EditorView.decorations.from(field, value => value.decorations),
 })
 
 export const embeddedContentProjectionTheme = EditorView.baseTheme({
