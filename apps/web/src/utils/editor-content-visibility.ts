@@ -87,6 +87,12 @@ function createBlockTextProjection(raw: string) {
   return [title ? `# ${title}` : ``, subtitle].filter(Boolean).join(`\n`)
 }
 
+function rootSectionHasClass(raw: string, className: string) {
+  const openingTag = raw.slice(0, raw.indexOf(`>`) + 1)
+  const classValue = openingTag.match(/\bclass\s*=\s*"([^"]*)"/u)?.[1] ?? ``
+  return classValue.split(/\s+/u).includes(className)
+}
+
 function expandStandaloneLine(content: string, range: EditorHiddenRange): EditorHiddenRange {
   const lineStart = content.lastIndexOf(`\n`, Math.max(0, range.from - 1)) + 1
   const lineBreak = content.indexOf(`\n`, range.to)
@@ -147,15 +153,20 @@ function mergeRanges(ranges: EditorHiddenRange[]): EditorHiddenRange[] {
 }
 
 export function findEmbeddedContentRanges(content: string): EditorHiddenRange[] {
-  const blockPattern = /<section\s+class="[^"]*\bmd-(?:block|media-block)\b[^"]*"[^>]*>[\s\S]*?<\/section>/gu
+  const sectionPattern = /<section(?:\s[^>]*)?>[\s\S]*?<\/section>/gu
   const markdownImagePattern = /!\[[^\]\n]*\]\([^\n)]*\)/gu
   const htmlImagePattern = /<img\b[^>]*>/giu
   const codeRanges = findMarkdownCodeRanges(content)
 
-  const blockRanges = collectMatches(content, blockPattern).map(range => ({
-    ...range,
-    replacement: createBlockTextProjection(content.slice(range.from, range.to)) || undefined,
-  }))
+  const blockRanges = collectMatches(content, sectionPattern)
+    .filter((range) => {
+      const raw = content.slice(range.from, range.to)
+      return rootSectionHasClass(raw, `md-block`) || rootSectionHasClass(raw, `md-media-block`)
+    })
+    .map(range => ({
+      ...range,
+      replacement: createBlockTextProjection(content.slice(range.from, range.to)) || undefined,
+    }))
   const rawRanges = [
     ...blockRanges,
     ...collectMatches(content, markdownImagePattern).filter(range => !isEscaped(content, range.from)),

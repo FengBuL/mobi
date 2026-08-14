@@ -33,6 +33,20 @@ describe(`编辑区嵌入内容隐藏`, () => {
     ].join(`\n`))
   })
 
+  it(`组件 class 前存在字号元数据时仍隐藏完整源码`, () => {
+    const content = [
+      `正文开头。`,
+      ``,
+      `<section data-block-font-scale="1.2" class="md-block md-block--quote" data-block-category="quote">`,
+      `<p data-block-field="quote" data-block-value="真正重要的话">真正重要的话</p>`,
+      `</section>`,
+      ``,
+      `正文结尾。`,
+    ].join(`\n`)
+
+    expect(stripEmbeddedContent(content)).toBe(`正文开头。\n\n正文结尾。`)
+  })
+
   it(`隐藏图片排版组件的完整多行源码`, () => {
     const content = [
       `开头`,

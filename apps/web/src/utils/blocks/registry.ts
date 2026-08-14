@@ -74,10 +74,19 @@ export function parseBlockMarkup(raw: string) {
   return parsed
 }
 
+function rootSectionHasClass(raw: string, className: string) {
+  const openingTag = raw.slice(0, raw.indexOf(`>`) + 1)
+  const classValue = openingTag.match(/\bclass\s*=\s*"([^"]*)"/u)?.[1] ?? ``
+  return classValue.split(/\s+/u).includes(className)
+}
+
 export function parseBlockEntries(content: string): ParsedBlock[] {
   const entries: ParsedBlock[] = []
-  const pattern = /<section class="md-block\b[\s\S]*?<\/section>/gu
+  const pattern = /<section(?:\s[^>]*)?>[\s\S]*?<\/section>/gu
   for (const match of content.matchAll(pattern)) {
+    if (!rootSectionHasClass(match[0], `md-block`)) {
+      continue
+    }
     const parsed = parseBlockMarkup(match[0])
     if (!parsed) {
       continue

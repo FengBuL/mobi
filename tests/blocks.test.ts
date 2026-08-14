@@ -96,6 +96,21 @@ describe(`build / parse 往返`, () => {
 })
 
 describe(`正文扫描`, () => {
+  it(`根节点 class 前存在字号元数据时仍能定位板块`, () => {
+    const preset = getBlockPreset(`quote-editorial-rail`)!
+    const category = blockCategories.find(item => item.id === `quote`)!
+    const markup = buildBlockMarkup(preset, {
+      ...category.createDefaultState(preset),
+      fontScale: 1.2,
+    })
+
+    const entries = parseBlockEntries(`开头\n\n${markup}\n\n结尾`)
+
+    expect(entries).toHaveLength(1)
+    expect(entries[0].presetId).toBe(preset.id)
+    expect(entries[0].state.fontScale).toBe(1.2)
+  })
+
   it(`能在混排正文里定位板块的起止位置`, () => {
     const preset = getBlockPreset(`heading-editorial-rail`)!
     const category = blockCategories.find(item => item.id === `heading`)!

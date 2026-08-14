@@ -43,4 +43,60 @@ describe(`markdown 工具栏`, () => {
       selection: { anchor: 7, head: 15 },
     })
   })
+
+  it.each([
+    [`bold`, `**重点**`],
+    [`italic`, `*重点*`],
+    [`strike`, `~~重点~~`],
+    [`code`, `\`重点\``],
+  ] as const)(`再次点击 %s 会取消已有的行内格式`, (command, formatted) => {
+    const first = applyMarkdownCommand(`重点`, { from: 0, to: 2 }, command)
+    expect(first.insert).toBe(formatted)
+
+    const second = applyMarkdownCommand(first.insert, {
+      from: Math.min(first.selection.anchor, first.selection.head),
+      to: Math.max(first.selection.anchor, first.selection.head),
+    }, command)
+    expect(second).toEqual({
+      from: 0,
+      to: formatted.length,
+      insert: `重点`,
+      selection: { anchor: 0, head: 2 },
+    })
+  })
+
+  it.each([
+    [`heading-2`, `## 标题`],
+    [`quote`, `> 标题`],
+    [`unordered-list`, `- 标题`],
+    [`ordered-list`, `1. 标题`],
+  ] as const)(`再次点击 %s 会取消已有的整行格式`, (command, formatted) => {
+    const first = applyMarkdownCommand(`标题`, { from: 0, to: 2 }, command)
+    expect(first.insert).toBe(formatted)
+
+    const second = applyMarkdownCommand(first.insert, {
+      from: Math.min(first.selection.anchor, first.selection.head),
+      to: Math.max(first.selection.anchor, first.selection.head),
+    }, command)
+    expect(second).toMatchObject({
+      from: 0,
+      to: formatted.length,
+      insert: `标题`,
+    })
+  })
+
+  it(`再次点击链接会保留文字并移除链接语法`, () => {
+    const first = applyMarkdownCommand(`官网`, { from: 0, to: 2 }, `link`)
+    const second = applyMarkdownCommand(first.insert, {
+      from: Math.min(first.selection.anchor, first.selection.head),
+      to: Math.max(first.selection.anchor, first.selection.head),
+    }, `link`)
+
+    expect(second).toEqual({
+      from: 0,
+      to: `[官网](https://)`.length,
+      insert: `官网`,
+      selection: { anchor: 0, head: 2 },
+    })
+  })
 })
