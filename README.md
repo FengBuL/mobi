@@ -2,6 +2,12 @@
 
 写完就能贴进公众号的 Markdown 排版编辑器。
 
+开发者第一次接手项目时，请先阅读：
+
+- [开发环境与交接](./DEVELOPMENT.md)
+- [当前项目状态](./PROJECT_STATUS.md)
+- [第三方来源与许可证](./THIRD_PARTY_NOTICES.md)
+
 左边写 Markdown，右边就是公众号里的样子，排好版一键复制，粘到公众号后台不走样。
 
 ## 开始用
