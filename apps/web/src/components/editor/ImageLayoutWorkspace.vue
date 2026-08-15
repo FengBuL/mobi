@@ -1032,13 +1032,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
 <template>
   <div class="block-library-shell">
     <header class="block-library-shell__header">
-      <div>
-        <h2>板块库</h2>
-        <p>选样式、填内容，像拼积木一样组合公众号排版。</p>
-      </div>
-      <div class="block-library-shell__status">
-        独立配色
-      </div>
+      <h2>板块库</h2>
     </header>
 
     <nav class="block-library-nav" aria-label="板块类别">
@@ -1221,7 +1215,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
                 <Button v-if="editingBlock" variant="outline" size="sm" class="h-8 px-3 text-xs" @click="cancelEditingBlock">
                   取消编辑
                 </Button>
-                <Button variant="outline" size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('upload')">
+                <Button variant="outline" size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('batch')">
                   <ImagePlus class="mr-2 size-3.5" />
                   加图片
                 </Button>
@@ -1392,7 +1386,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
             <div v-else class="media-layout-empty">
               <p>{{ editingBlock ? '当前模块没有可回填的图片，暂时无法编辑。' : '还没有识别到 Markdown 图片。可以直接从这里批量加图，也可以在左侧 Markdown 中插入 `![](url)`。' }}</p>
               <div v-if="!editingBlock" class="media-layout-inline-actions">
-                <Button size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('upload')">
+                <Button size="sm" class="h-8 px-3 text-xs" @click="openQuickInsert('batch')">
                   <ImagePlus class="mr-2 size-3.5" />
                   批量上传图片
                 </Button>
@@ -1589,22 +1583,6 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.04em;
-}
-
-.block-library-shell__header p {
-  margin: 0.3rem 0 0;
-  font-size: 0.76rem;
-  line-height: 1.5;
-  color: hsl(var(--muted-foreground));
-}
-
-.block-library-shell__status {
-  padding: 0.4rem 0.65rem;
-  border-radius: 999px;
-  background: hsl(var(--primary));
-  font-size: 0.68rem;
-  white-space: nowrap;
-  color: hsl(var(--primary-foreground));
 }
 
 .block-library-nav {

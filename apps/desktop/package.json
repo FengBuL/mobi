@@ -1,7 +1,7 @@
 {
   "name": "@mobi/desktop",
   "type": "module",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "private": true,
   "description": "墨笔桌面版：Electron 外壳，复用 apps/web 的渲染进程",
   "main": "dist/main/index.cjs",

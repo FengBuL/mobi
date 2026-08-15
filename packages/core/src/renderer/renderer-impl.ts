@@ -261,7 +261,11 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
       const text = this.parser.parseInline(tokens)
       const isFigureImage = text.includes(`<figure`) && text.includes(`<img`)
       const isEmpty = text.trim() === ``
-      if (isFigureImage || isEmpty) {
+      if (isFigureImage) {
+        const attrs = buildSourceAttrs(`image`)
+        return attrs ? text.replace(`<figure`, `<figure${attrs}`) : text
+      }
+      if (isEmpty) {
         return text
       }
       return styledContent(`p`, text, undefined, buildSourceAttrs(`paragraph`))

@@ -63,7 +63,7 @@ async function installUpdate(): Promise<void> {
 }
 
 function ignoreVersion(): void {
-  if (state.value.status === `available`) {
+  if (state.value.status === `available` || state.value.status === `manual-update-required`) {
     writeIgnoredVersion(state.value.version)
   }
   visible.value = false
@@ -84,7 +84,7 @@ onUnmounted(() => unsubscribe?.())
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>
-          {{ state.status === 'downloaded' ? '更新已准备好' : '墨笔有新版本' }}
+          {{ state.status === 'downloaded' ? '更新已准备好' : state.status === 'manual-update-required' ? '需要手动安装一次' : '墨笔有新版本' }}
         </DialogTitle>
         <DialogDescription v-if="state.status === 'available'">
           当前可更新到 v{{ state.version }}，由你决定何时下载和安装。
@@ -95,9 +95,12 @@ onUnmounted(() => unsubscribe?.())
         <DialogDescription v-else-if="state.status === 'downloaded'">
           v{{ state.version }} 已下载完成，可以立即重启安装，也可以退出墨笔时安装。
         </DialogDescription>
+        <DialogDescription v-else-if="state.status === 'manual-update-required'">
+          v{{ state.version }} 已下载，但当前安装包的签名无法通过 macOS 连续性校验。请打开下载页并覆盖安装。
+        </DialogDescription>
       </DialogHeader>
 
-      <div v-if="state.status === 'available' && state.releaseNotes" class="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg bg-muted/50 p-3 text-sm leading-6">
+      <div v-if="(state.status === 'available' || state.status === 'manual-update-required') && state.releaseNotes" class="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg bg-muted/50 p-3 text-sm leading-6">
         {{ state.releaseNotes }}
       </div>
 
@@ -130,6 +133,20 @@ onUnmounted(() => unsubscribe?.())
         <Button @click="installUpdate">
           立即重启并安装
         </Button>
+      </DialogFooter>
+
+      <DialogFooter v-else-if="state.status === 'manual-update-required'" class="flex-wrap gap-2 sm:justify-between">
+        <Button variant="ghost" @click="ignoreVersion">
+          忽略此版本
+        </Button>
+        <div class="flex gap-2">
+          <Button variant="outline" @click="visible = false">
+            稍后处理
+          </Button>
+          <Button as="a" :href="state.downloadUrl" target="_blank" rel="noreferrer">
+            打开下载页
+          </Button>
+        </div>
       </DialogFooter>
     </DialogContent>
   </Dialog>

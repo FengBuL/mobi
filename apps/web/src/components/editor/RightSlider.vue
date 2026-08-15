@@ -11,7 +11,6 @@ import {
   codeBlockThemeOptions,
   colorOptions,
   defaultStyleConfig,
-  fontCategoryOptions,
   fontFamilyOptions,
   headingLevelOptions,
   headingStyleOptions,
@@ -51,7 +50,6 @@ const {
   headingStyles,
   favoriteThemes,
   hiddenThemes,
-  savedCustomColors,
 } = storeToRefs(themeStore)
 
 // 主题分类筛选
@@ -69,7 +67,6 @@ const filteredThemeOptions = computed(() => {
   return cat ? cat.themes.filter(t => !hiddenThemes.value.includes(t.value as string)) : allFilteredThemes
 })
 
-const allFontOptions = fontCategoryOptions.flatMap(category => category.fonts)
 const activeStylePanel = ref(`template`)
 
 /**
@@ -112,16 +109,6 @@ onBeforeUnmount(() => clearTimeout(focusFlashTimer))
 const STYLE_PRESET_STORAGE_KEY = `mobi_savedStylePresets`
 const CUSTOM_STYLE_PRESET_PLACEHOLDER = `__custom_style_preset__`
 const customStylePresets = ref<IStylePreset[]>(JSON.parse(localStorage.getItem(STYLE_PRESET_STORAGE_KEY) || `[]`))
-const selectedThemeMeta = computed(() => themeOptions.find(({ value }) => value === theme.value))
-const selectedFontMeta = computed(() => allFontOptions.find(({ value }) => value === fontFamily.value))
-const selectedColorMeta = computed(() => {
-  const currentColor = primaryColor.value as string
-  return colorOptions.find(({ value }) => value === currentColor)
-    || (savedCustomColors.value.includes(currentColor)
-      ? { label: `自定义已保存`, value: currentColor, desc: `你保存过的颜色` }
-      : { label: `自定义颜色`, value: currentColor, desc: `实时取色` })
-})
-
 // 标题样式选择器状态
 const selectedHeadingLevel = ref<HeadingLevel>(`h2`)
 const selectedHeadingStyle = computed({
@@ -441,12 +428,6 @@ function exportCustomVisualThemeJSON(item: CustomTheme) {
   toast.success(`已导出 JSON`)
 }
 
-function clearVisualOverrides() {
-  themeDesignerStore.resetAll()
-  themeDesignerStore.detachSource()
-  toast.success(`已清除可视化调整`)
-}
-
 function codeBlockThemeChanged(newTheme: string) {
   themeStore.codeBlockTheme = newTheme
   editorRefresh()
@@ -474,10 +455,6 @@ function useJustifyChanged() {
   // 使用新主题系统
   themeStore.applyCurrentTheme()
   editorRefresh()
-}
-
-function resetStyleConfirm() {
-  uiStore.isOpenConfirmDialog = true
 }
 
 function toggleFavoriteTheme(val: string) {
@@ -628,45 +605,6 @@ watch(isOpen, () => {
           <X class="h-4 w-4" />
         </Button>
       </div>
-      <div class="space-y-2 rounded-2xl border bg-card px-3 py-2.5">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
-            <span class="font-medium">{{ selectedThemeMeta?.label || '未选择' }}</span>
-            <span class="text-muted-foreground">·</span>
-            <span class="text-muted-foreground">{{ selectedFontMeta?.label || '未选择' }} {{ fontSize }}</span>
-            <span class="text-muted-foreground">·</span>
-            <span class="inline-flex items-center gap-1 text-muted-foreground">
-              <span class="inline-block size-3 rounded-full border" :style="{ background: primaryColor as string }" />
-              {{ selectedColorMeta.label }}
-            </span>
-          </div>
-          <div class="flex shrink-0 items-center gap-1">
-            <Button variant="ghost" size="sm" class="h-7 px-2.5 text-xs" @click="resetStyleConfirm">
-              重置
-            </Button>
-          </div>
-        </div>
-        <p class="text-[11px] leading-4 text-muted-foreground">
-          在右侧预览里点任意文字、图片或代码，这里会自动翻到管它的那一组。
-        </p>
-        <div
-          v-if="themeDesignerStore.hasOverrides"
-          class="flex items-center justify-between gap-2 rounded-xl border border-dashed px-2.5 py-1.5"
-        >
-          <span class="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
-            {{ themeDesignerStore.sourceTheme ? themeDesignerStore.sourceTheme.name : '未保存的调整' }} ·
-            {{ themeDesignerStore.modifiedCount }} 项生效中
-          </span>
-          <button
-            type="button"
-            class="shrink-0 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            @click="clearVisualOverrides"
-          >
-            清除
-          </button>
-        </div>
-      </div>
-
       <Tabs v-model="activeStylePanel" class="w-full">
         <TabsList class="grid w-full grid-cols-4">
           <TabsTrigger value="template">

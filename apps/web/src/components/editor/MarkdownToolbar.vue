@@ -69,11 +69,11 @@ function runCommand(command: MarkdownToolbarCommand) {
 }
 
 function insertImage() {
-  uiStore.openUploadImgDialog()
+  openQuickInsert(`single`)
 }
 
 function insertImageBatch() {
-  openQuickInsert(`upload`)
+  openQuickInsert(`batch`)
 }
 
 function insertImageByLink() {
@@ -91,10 +91,6 @@ function insertMpCard() {
 
 <template>
   <nav class="markdown-toolbar" aria-label="Markdown 快捷格式">
-    <div class="markdown-toolbar__lead">
-      <span>文字工具</span>
-      <small>先选中文字，再点格式</small>
-    </div>
     <div class="markdown-toolbar__rail">
       <div v-for="(group, groupIndex) in groups" :key="groupIndex" class="markdown-toolbar__group">
         <button
@@ -172,47 +168,37 @@ function insertMpCard() {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 0.8rem;
   min-width: 0;
-  padding: 0.55rem 0.8rem;
+  padding: 0.48rem 0.65rem 0.28rem;
   border-bottom: 1px solid hsl(var(--border) / 0.75);
   background:
     linear-gradient(90deg, hsl(var(--secondary) / 0.52), transparent 24%),
     hsl(var(--background) / 0.88);
 }
 
-.markdown-toolbar__lead {
-  display: grid;
-  flex: 0 0 auto;
-  padding-right: 0.8rem;
-  border-right: 1px solid hsl(var(--border));
-  line-height: 1.15;
-}
-
-.markdown-toolbar__lead span {
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.08em;
-  color: hsl(var(--foreground));
-}
-
-.markdown-toolbar__lead small {
-  margin-top: 0.22rem;
-  font-size: 0.62rem;
-  color: hsl(var(--muted-foreground));
-}
-
 .markdown-toolbar__rail {
   display: flex;
+  width: 100%;
   min-width: 0;
   align-items: center;
   gap: 0.45rem;
+  padding-bottom: 0.28rem;
   overflow-x: auto;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
 }
 
 .markdown-toolbar__rail::-webkit-scrollbar {
-  display: none;
+  height: 5px;
+}
+
+.markdown-toolbar__rail::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.markdown-toolbar__rail::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: hsl(var(--muted-foreground) / 0.35);
 }
 
 .markdown-toolbar__group {
@@ -262,11 +248,5 @@ function insertMpCard() {
 .markdown-toolbar__group--insert span {
   font-size: 0.68rem;
   font-weight: 700;
-}
-
-@media (max-width: 900px) {
-  .markdown-toolbar__lead {
-    display: none;
-  }
 }
 </style>

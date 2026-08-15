@@ -1,6 +1,9 @@
 import type { DesktopUpdateState } from '@mobi/shared/types/desktop'
 
 export function shouldPresentUpdate(state: DesktopUpdateState, ignoredVersion: string): boolean {
+  if (state.status === `manual-update-required`) {
+    return true
+  }
   if (state.status === `available`) {
     return state.version !== ignoredVersion
   }

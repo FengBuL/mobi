@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Image, Palette } from 'lucide-vue-next'
+import { CloudCog } from 'lucide-vue-next'
 import { useUIStore } from '@/stores/ui'
 
 const props = withDefaults(defineProps<{
@@ -14,10 +14,6 @@ const uiStore = useUIStore()
 function openImageHostSettings() {
   uiStore.openUploadImgDialog()
 }
-
-function openStyleSettings() {
-  uiStore.isOpenRightSlider = true
-}
 </script>
 
 <template>
@@ -27,12 +23,8 @@ function openStyleSettings() {
     </MenubarSubTrigger>
     <MenubarSubContent class="w-52">
       <MenubarItem @click="openImageHostSettings">
-        <Image class="mr-2 size-4" />
-        图片与图床
-      </MenubarItem>
-      <MenubarItem @click="openStyleSettings">
-        <Palette class="mr-2 size-4" />
-        排版样式
+        <CloudCog class="mr-2 size-4" />
+        图床配置
       </MenubarItem>
     </MenubarSubContent>
   </MenubarSub>
@@ -43,12 +35,8 @@ function openStyleSettings() {
     </MenubarTrigger>
     <MenubarContent class="w-52" align="start">
       <MenubarItem @click="openImageHostSettings">
-        <Image class="mr-2 size-4" />
-        图片与图床
-      </MenubarItem>
-      <MenubarItem @click="openStyleSettings">
-        <Palette class="mr-2 size-4" />
-        排版样式
+        <CloudCog class="mr-2 size-4" />
+        图床配置
       </MenubarItem>
     </MenubarContent>
   </MenubarMenu>

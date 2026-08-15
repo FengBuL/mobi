@@ -36,11 +36,21 @@ onMounted(async () => {
   }
 })
 
-function handleToggleExpand(path: string) {
+async function handleToggleExpand(path: string) {
   if (expandedPaths.value.has(path)) {
     expandedPaths.value.delete(path)
   }
   else {
+    const node = folderSourceStore.findNodeByPath(fileTree.value, path)
+    if (node?.type === `directory`) {
+      try {
+        await folderSourceStore.loadDirectoryChildren(node)
+      }
+      catch (error) {
+        toast.error(`读取子文件夹失败：${(error as Error).message}`)
+        return
+      }
+    }
     expandedPaths.value.add(path)
   }
   // 触发响应式更新
@@ -59,7 +69,7 @@ async function handleSelectFolder() {
 
 async function handleRefreshFolder() {
   if (currentFolderHandle.value) {
-    await folderSourceStore.loadFileTree(currentFolderHandle.value.handle)
+    await folderSourceStore.reloadCurrentFolder()
   }
 }
 

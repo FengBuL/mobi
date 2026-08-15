@@ -56,7 +56,6 @@ const {
   toggleShowInsertFormDialog,
   toggleShowInsertMpCardDialog,
   toggleShowImageLayoutDialog,
-  toggleShowUploadImgDialog,
   toggleShowImportMdDialog,
 } = uiStore
 
@@ -167,11 +166,11 @@ function downloadAsCardImage() {
           插入
         </ContextMenuSubTrigger>
         <ContextMenuSubContent class="w-48">
-          <ContextMenuItem @click="toggleShowUploadImgDialog()">
+          <ContextMenuItem @click="openQuickInsert('single')">
             <Image class="mr-2 h-4 w-4" />
             图片
           </ContextMenuItem>
-          <ContextMenuItem @click="openQuickInsert('upload')">
+          <ContextMenuItem @click="openQuickInsert('batch')">
             <ImagePlus class="mr-2 h-4 w-4" />
             批量插入图片
           </ContextMenuItem>

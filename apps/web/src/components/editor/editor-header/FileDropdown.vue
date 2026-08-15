@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download, FileCode, FileText, FolderKanban, FolderOpen, History, Package, Upload } from 'lucide-vue-next'
+import { Download, FileCode, FileText, FolderKanban, FolderOpen, History, Upload } from 'lucide-vue-next'
 import { useImageQuickInsert } from '@/composables/useImageQuickInsert'
 import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
@@ -19,11 +19,7 @@ const uiStore = useUIStore()
 const { open: openQuickInsert } = useImageQuickInsert()
 
 const { isOpenPostSlider, isOpenFolderPanel } = storeToRefs(uiStore)
-const { toggleShowTemplateDialog, toggleShowImportMdDialog } = uiStore
-
-function openTemplateDialog() {
-  toggleShowTemplateDialog(true)
-}
+const { toggleShowImportMdDialog } = uiStore
 
 // Export functions
 function exportEditorContent2HTML() {
@@ -106,12 +102,6 @@ function exportEditorContent2PDF() {
 
       <MenubarSeparator />
 
-      <!-- 正文模板 -->
-      <MenubarItem @click="openTemplateDialog()">
-        <Package class="mr-2 size-4" />
-        正文模板
-      </MenubarItem>
-
       <!-- 内容管理 -->
       <MenubarItem @click="isOpenPostSlider = !isOpenPostSlider">
         <FolderKanban class="mr-2 size-4" />
@@ -177,12 +167,6 @@ function exportEditorContent2PDF() {
       </MenubarSub>
 
       <MenubarSeparator />
-
-      <!-- 正文模板 -->
-      <MenubarItem @click="openTemplateDialog()">
-        <Package class="mr-2 size-4" />
-        正文模板
-      </MenubarItem>
 
       <!-- 内容管理 -->
       <MenubarItem @click="isOpenPostSlider = !isOpenPostSlider">

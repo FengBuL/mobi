@@ -20,7 +20,19 @@ export const DESKTOP_IPC_CHANNELS = {
   updateDownload: `mobi:update:download`,
   updateInstall: `mobi:update:install`,
   updateState: `mobi:update:state`,
+  folderChoose: `mobi:folder:choose`,
+  folderReadDirectory: `mobi:folder:read-directory`,
+  folderReadFile: `mobi:folder:read-file`,
 } as const
+
+export interface DesktopFolderRoot {
+  name: string
+  path: string
+}
+
+export interface DesktopFolderEntry extends DesktopFolderRoot {
+  type: `file` | `directory`
+}
 
 export interface WechatStableTokenRequest {
   appID: string
@@ -76,6 +88,12 @@ export type DesktopUpdateState
       bytesPerSecond: number
     }
     | { status: `downloaded`, version: string, releaseNotes: string }
+    | {
+      status: `manual-update-required`
+      version: string
+      releaseNotes: string
+      downloadUrl: string
+    }
     | { status: `error`, message: string }
 
 export interface DesktopBridge {
@@ -86,6 +104,11 @@ export interface DesktopBridge {
    * 桌面版换成主进程注册的自定义协议，省掉再跑一个 HTTP 服务。
    */
   readonly imageFetchOrigin: string
+  readonly folders: {
+    choose: () => Promise<DesktopFolderRoot | null>
+    readDirectory: (path: string) => Promise<DesktopFolderEntry[]>
+    readFile: (path: string) => Promise<string>
+  }
   readonly wechat: {
     requestStableToken: (payload: WechatStableTokenRequest) => Promise<WechatStableTokenResult>
     uploadImage: (payload: WechatUploadImageRequest) => Promise<WechatUploadImageResult>

@@ -1,19 +1,16 @@
+import type { FolderTreeNode } from '@/utils/folder-tree'
+import { getDesktopBridge } from '@/services/desktop/bridge'
 import {
   deleteFolderHandle,
   listSavedFolderHandles,
   saveFolderHandle,
 } from '@/services/folder/handleStore'
+import { readFolderLevel } from '@/utils/folder-tree'
 
 /**
  * 文件系统节点接口
  */
-export interface FileSystemNode {
-  name: string
-  path: string
-  type: `file` | `directory`
-  children?: FileSystemNode[]
-  handle?: FileSystemFileHandle | FileSystemDirectoryHandle
-}
+export type FileSystemNode = FolderTreeNode
 
 /**
  * 运行时文件夹信息（包含 handle，仅在内存中）
@@ -21,7 +18,8 @@ export interface FileSystemNode {
 interface RuntimeFolderInfo {
   id: string
   name: string
-  handle: FileSystemDirectoryHandle
+  handle?: FileSystemDirectoryHandle
+  nativePath?: string
 }
 
 /**
@@ -61,13 +59,15 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
       id: currentRuntimeFolder.value.id,
       name: currentRuntimeFolder.value.name,
       handle: currentRuntimeFolder.value.handle,
+      nativePath: currentRuntimeFolder.value.nativePath,
       permission: true,
     }
   })
 
   // 检查浏览器是否支持 File System Access API
   const isFileSystemAPISupported = computed(() => {
-    return typeof window !== `undefined` && `showDirectoryPicker` in window
+    return Boolean(getDesktopBridge()?.folders)
+      || (typeof window !== `undefined` && `showDirectoryPicker` in window)
   })
 
   /**
@@ -83,17 +83,30 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
       isLoading.value = true
       loadError.value = ``
 
+      const desktopFolders = getDesktopBridge()?.folders
+      if (desktopFolders) {
+        const selected = await desktopFolders.choose()
+        if (!selected) {
+          return
+        }
+        const existingFolder = Array.from(runtimeFolderMap.values())
+          .find(folder => folder.nativePath === selected.path)
+        const folderId = existingFolder?.id ?? generateFolderId()
+        runtimeFolderMap.set(folderId, {
+          id: folderId,
+          name: selected.name,
+          nativePath: selected.path,
+        })
+        currentFolderId.value = folderId
+        await loadNativeFileTree(selected.name, selected.path)
+        toast.success(`文件夹「${selected.name}」已打开`)
+        return
+      }
+
       const handle = await window.showDirectoryPicker({
         mode: `read`,
         startIn: `documents`,
       })
-
-      // 请求权限
-      const permission = await handle.requestPermission({ mode: `read` })
-      if (permission !== `granted`) {
-        toast.error(`未授予文件夹访问权限`)
-        return
-      }
 
       // 检查是否已经打开过这个文件夹
       let folderId: string
@@ -120,7 +133,9 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
       // 加载文件树
       await loadFileTree(handle)
 
-      await saveFolderHandle({
+      // 记住授权属于附加能力；部分 Electron/Chromium 版本会让 FileSystemHandle
+      // 的 IndexedDB 写入迟迟不结束，不能因此把首次导入一直锁在“加载中”。
+      void saveFolderHandle({
         id: folderId,
         name: handle.name,
         handle,
@@ -173,7 +188,7 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
    * 走到这一步就是无感的；浏览器里则是等用户自己再点一次「打开文件夹」。
    */
   async function restoreSavedFolders(): Promise<void> {
-    if (!isFileSystemAPISupported.value || currentFolderId.value) {
+    if (!isFileSystemAPISupported.value || currentFolderId.value || getDesktopBridge()?.folders) {
       return
     }
 
@@ -192,9 +207,11 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
     }
 
     try {
-      const permission = await mostRecent.handle.queryPermission({ mode: `read` })
-      if (permission !== `granted`) {
-        return
+      if (typeof mostRecent.handle.queryPermission === `function`) {
+        const permission = await mostRecent.handle.queryPermission({ mode: `read` })
+        if (permission !== `granted`) {
+          return
+        }
       }
 
       currentFolderId.value = mostRecent.id
@@ -214,7 +231,13 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
    */
   async function loadFileTree(handle: FileSystemDirectoryHandle): Promise<void> {
     try {
-      const tree = await buildFileTree(handle, handle.name)
+      const tree: FileSystemNode = {
+        name: handle.name,
+        path: handle.name,
+        type: `directory`,
+        handle,
+        children: await readFolderLevel(handle, handle.name),
+      }
       fileTree.value = [tree]
     }
     catch (error: any) {
@@ -223,55 +246,53 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
     }
   }
 
-  /**
-   * 递归构建文件树
-   */
-  async function buildFileTree(
-    handle: FileSystemDirectoryHandle,
-    path: string,
-  ): Promise<FileSystemNode> {
-    const node: FileSystemNode = {
-      name: handle.name,
-      path,
+  async function loadNativeFileTree(name: string, nativePath: string): Promise<void> {
+    const folders = getDesktopBridge()?.folders
+    if (!folders) {
+      throw new Error(`桌面文件夹服务不可用`)
+    }
+    const children = await folders.readDirectory(nativePath)
+    fileTree.value = [{
+      name,
+      path: nativePath,
+      nativePath,
       type: `directory`,
-      children: [],
-      handle,
-    }
+      children: children.map(entry => ({ ...entry, nativePath: entry.path })),
+    }]
+  }
 
-    try {
-      for await (const entry of handle.values()) {
-        const entryPath = `${path}/${entry.name}`
-        if (entry.kind === `file`) {
-          // 只添加 Markdown 文件
-          if (entry.name.toLowerCase().endsWith(`.md`)) {
-            node.children!.push({
-              name: entry.name,
-              path: entryPath,
-              type: `file`,
-              handle: entry as FileSystemFileHandle,
-            })
-          }
-        }
-        else if (entry.kind === `directory`) {
-          // 递归处理子目录
-          const childNode = await buildFileTree(entry as FileSystemDirectoryHandle, entryPath)
-          node.children!.push(childNode)
-        }
+  async function reloadCurrentFolder(): Promise<void> {
+    const current = currentRuntimeFolder.value
+    if (!current) {
+      return
+    }
+    if (current.nativePath) {
+      await loadNativeFileTree(current.name, current.nativePath)
+      return
+    }
+    if (current.handle) {
+      await loadFileTree(current.handle)
+    }
+  }
+
+  async function loadDirectoryChildren(node: FileSystemNode): Promise<void> {
+    if (node.type !== `directory` || node.children) {
+      return
+    }
+    if (node.nativePath) {
+      const folders = getDesktopBridge()?.folders
+      if (!folders) {
+        throw new Error(`桌面文件夹服务不可用`)
       }
-
-      // 排序：目录在前，文件在后，按名称排序
-      node.children!.sort((a, b) => {
-        if (a.type !== b.type) {
-          return a.type === `directory` ? -1 : 1
-        }
-        return a.name.localeCompare(b.name, `zh-CN`)
-      })
+      const children = await folders.readDirectory(node.nativePath)
+      node.children = children.map(entry => ({ ...entry, nativePath: entry.path }))
+      return
     }
-    catch (error: any) {
-      console.error(`读取目录失败: ${path}`, error)
+    const handle = node.handle as FileSystemDirectoryHandle | undefined
+    if (!handle) {
+      throw new Error(`文件夹句柄不可用: ${node.path}`)
     }
-
-    return node
+    node.children = await readFolderLevel(handle, node.path)
   }
 
   /**
@@ -291,6 +312,14 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
 
       if (node.type !== `file`) {
         throw new Error(`不是文件: ${filePath}`)
+      }
+
+      if (node.nativePath) {
+        const folders = getDesktopBridge()?.folders
+        if (!folders) {
+          throw new Error(`桌面文件夹服务不可用`)
+        }
+        return await folders.readFile(node.nativePath)
       }
 
       // 使用节点中存储的文件句柄
@@ -361,6 +390,8 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
     closeFolder,
     removeFolder,
     loadFileTree,
+    reloadCurrentFolder,
+    loadDirectoryChildren,
     readFile,
     findNodeByPath,
     getAllMarkdownFiles,

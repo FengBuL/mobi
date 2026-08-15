@@ -40,4 +40,13 @@ describe(`桌面端选择性更新`, () => {
       releaseNotes: `新增应用内更新`,
     }, `2.2.0`)).toBe(true)
   })
+
+  it(`签名无法连续验证时展示手动安装入口`, () => {
+    expect(shouldPresentUpdate({
+      status: `manual-update-required`,
+      version: `2.2.2`,
+      releaseNotes: `修复桌面端更新`,
+      downloadUrl: `https://github.com/FengBuL/mobi/releases/latest`,
+    }, `2.2.2`)).toBe(true)
+  })
 })

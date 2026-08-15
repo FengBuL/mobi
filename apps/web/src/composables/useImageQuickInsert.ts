@@ -1,12 +1,12 @@
 import { ref } from 'vue'
 
-export type ImageQuickInsertTab = `upload` | `link` | `recent`
+export type ImageQuickInsertTab = `single` | `batch` | `link` | `recent`
 
 const isOpen = ref(false)
-const activeTab = ref<ImageQuickInsertTab>(`upload`)
+const activeTab = ref<ImageQuickInsertTab>(`single`)
 
 export function useImageQuickInsert() {
-  function open(tab: ImageQuickInsertTab = `upload`) {
+  function open(tab: ImageQuickInsertTab = `single`) {
     activeTab.value = tab
     isOpen.value = true
   }
