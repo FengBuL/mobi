@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Download, FileCode, FileText, FolderKanban, FolderOpen, Package, Upload } from 'lucide-vue-next'
+import { Download, FileCode, FileText, FolderKanban, FolderOpen, History, Upload } from 'lucide-vue-next'
+import { useImageQuickInsert } from '@/composables/useImageQuickInsert'
 import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
 import { useUIStore } from '@/stores/ui'
@@ -15,13 +16,10 @@ const { asSub } = toRefs(props)
 const editorStore = useEditorStore()
 const exportStore = useExportStore()
 const uiStore = useUIStore()
+const { open: openQuickInsert } = useImageQuickInsert()
 
 const { isOpenPostSlider, isOpenFolderPanel } = storeToRefs(uiStore)
-const { toggleShowTemplateDialog, toggleShowImportMdDialog } = uiStore
-
-function openTemplateDialog() {
-  toggleShowTemplateDialog(true)
-}
+const { toggleShowImportMdDialog } = uiStore
 
 // Export functions
 function exportEditorContent2HTML() {
@@ -65,6 +63,10 @@ function exportEditorContent2PDF() {
         <Upload class="mr-2 size-4" />
         导入 Markdown
       </MenubarItem>
+      <MenubarItem @click="openQuickInsert('recent')">
+        <History class="mr-2 size-4" />
+        最近使用的图片
+      </MenubarItem>
 
       <!-- 导出子菜单 -->
       <MenubarSub>
@@ -99,12 +101,6 @@ function exportEditorContent2PDF() {
       </MenubarSub>
 
       <MenubarSeparator />
-
-      <!-- 正文模板 -->
-      <MenubarItem @click="openTemplateDialog()">
-        <Package class="mr-2 size-4" />
-        正文模板
-      </MenubarItem>
 
       <!-- 内容管理 -->
       <MenubarItem @click="isOpenPostSlider = !isOpenPostSlider">
@@ -133,6 +129,10 @@ function exportEditorContent2PDF() {
         <Upload class="mr-2 size-4" />
         导入 Markdown
       </MenubarItem>
+      <MenubarItem @click="openQuickInsert('recent')">
+        <History class="mr-2 size-4" />
+        最近使用的图片
+      </MenubarItem>
 
       <!-- 导出子菜单 -->
       <MenubarSub>
@@ -167,12 +167,6 @@ function exportEditorContent2PDF() {
       </MenubarSub>
 
       <MenubarSeparator />
-
-      <!-- 正文模板 -->
-      <MenubarItem @click="openTemplateDialog()">
-        <Package class="mr-2 size-4" />
-        正文模板
-      </MenubarItem>
 
       <!-- 内容管理 -->
       <MenubarItem @click="isOpenPostSlider = !isOpenPostSlider">

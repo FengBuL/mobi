@@ -29,6 +29,11 @@ const bridge: DesktopBridge = {
   version: DESKTOP_BRIDGE_VERSION,
   platform: process.platform,
   imageFetchOrigin: IMAGE_FETCH_ORIGIN,
+  folders: {
+    choose: () => invoke(DESKTOP_IPC_CHANNELS.folderChoose, undefined),
+    readDirectory: path => invoke(DESKTOP_IPC_CHANNELS.folderReadDirectory, path),
+    readFile: path => invoke(DESKTOP_IPC_CHANNELS.folderReadFile, path),
+  },
   wechat: {
     requestStableToken: (payload: WechatStableTokenRequest) =>
       invoke<WechatStableTokenResult>(DESKTOP_IPC_CHANNELS.wechatStableToken, payload),

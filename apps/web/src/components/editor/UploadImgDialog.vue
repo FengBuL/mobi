@@ -1,17 +1,13 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/yup'
-import { UploadCloud } from 'lucide-vue-next'
 import { Field, Form } from 'vee-validate'
 import * as yup from 'yup'
 import { isDesktopRuntime } from '@/services/desktop/bridge'
 import { DEFAULT_MP_PROXY_ORIGIN, OFFICIAL_MP_PROXY_ORIGIN } from '@/services/wechat'
 import { useUIStore } from '@/stores/ui'
-import { checkImage } from '@/utils'
 import { prepareMpProxySubmission, sanitizeStoredMpProxyOrigin, saveAndSelectImageHost, validateMpProxyBeforeSave } from '@/utils/image-host-config'
 import { store } from '@/utils/storage'
 import { trackEvent } from '@/utils/telemetry'
-
-const emit = defineEmits([`uploadImage`])
 
 const uiStore = useUIStore()
 const { enableImageReupload } = storeToRefs(uiStore)
@@ -369,7 +365,7 @@ const options = [
 ]
 
 const useCompression = store.reactive(`useCompression`, false)
-const activeName = ref(`upload`)
+const activeName = ref(`general`)
 
 // 别处（板块库、复制警告）可以要求打开时直接定位到某个图床页签
 watch(() => uiStore.isShowUploadImgDialog, (open) => {
@@ -387,87 +383,6 @@ async function changeCompression() {
   // reactive 会自动保存，不需要手动操作
 }
 
-async function beforeImageUpload(file: File) {
-  // check image
-  const checkResult = checkImage(file)
-  if (!checkResult.ok) {
-    toast.error(checkResult.msg)
-    return false
-  }
-  // check image host
-  const imgHostValue = imgHost.value || `default`
-
-  if (imgHostValue === `default`) {
-    toast.error(`还没有选择图床。在下面的「图床」里选一个（推荐阿里云 OSS 或 Cloudflare R2），填好配置后再上传。`)
-    return false
-  }
-
-  const config = await store.get(`${imgHostValue}Config`)
-  if (!config) {
-    toast.error(`请先配置 ${imgHostValue} 图床参数`)
-    return false
-  }
-  return true
-}
-
-const dragover = ref(false)
-
-const { open, reset, onChange } = useFileDialog({
-  accept: `image/*`,
-})
-
-onChange(async (files) => {
-  if (files == null) {
-    return
-  }
-
-  const file = files[0]
-
-  if (await beforeImageUpload(file)) {
-    emitUploads(file)
-  }
-  reset()
-})
-
-async function onDrop(e: DragEvent) {
-  dragover.value = false
-  e.stopPropagation()
-  const file = [...e.dataTransfer!.files][0]
-  if (await beforeImageUpload(file)) {
-    emitUploads(file)
-  }
-}
-const progressValue = ref(0)
-const imageUrl = ref(``)
-function emitUploads(file: File) {
-  progressValue.value = 0
-  const intervalId = setInterval(() => {
-    const newProgress = progressValue.value + 1
-    if (newProgress >= 100) {
-      return
-    }
-    progressValue.value = newProgress
-  }, 100)
-
-  // 监听上传完成事件，在真正完成后清除定时器和设置100%
-  const cleanup = (_url: string, data: string) => {
-    clearInterval(intervalId)
-    progressValue.value = 100 // 设置完成状态
-    if (data) {
-      imageUrl.value = `data:image/png;base64,${data}`
-    }
-    // 可选：延迟一段时间后重置进度
-    setTimeout(() => {
-      progressValue.value = 0
-      imageUrl.value = ``
-    }, 1000)
-  }
-
-  // 假设有一个上传完成的事件可以监听
-  // 或者需要修改 uploadImage 方法使其返回 Promise
-  emit(`uploadImage`, file, cleanup, true)
-}
-
 function onTabScroll(e: WheelEvent) {
   if (e.deltaY !== 0) {
     e.preventDefault()
@@ -481,9 +396,9 @@ function onTabScroll(e: WheelEvent) {
   <Dialog v-model:open="uiStore.isShowUploadImgDialog">
     <DialogContent class="md:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden" @pointer-down-outside="ev => ev.preventDefault()">
       <DialogHeader>
-        <DialogTitle>插入图片</DialogTitle>
+        <DialogTitle>图床设置</DialogTitle>
         <DialogDescription>
-          上传本地图片，或在下方页签配置图床。配好「公众号图床」后，复制到公众号时会自动把图片转成微信地址，排版才不会丢。
+          选择并配置图片存储服务。配好「公众号图床」后，复制到公众号时会自动把图片转成微信地址。
         </DialogDescription>
       </DialogHeader>
       <Tabs v-model="activeName" class="w-full md:w-full flex flex-col flex-1 overflow-hidden">
@@ -491,8 +406,8 @@ function onTabScroll(e: WheelEvent) {
           class="flex w-full justify-start overflow-x-auto flex-nowrap gap-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
           @wheel="onTabScroll"
         >
-          <TabsTrigger value="upload" class="text-xs md:text-sm whitespace-nowrap">
-            选择上传
+          <TabsTrigger value="general" class="text-xs md:text-sm whitespace-nowrap">
+            通用设置
           </TabsTrigger>
           <TabsTrigger
             v-for="item in options.filter(item => item.value !== 'default')"
@@ -504,7 +419,7 @@ function onTabScroll(e: WheelEvent) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="upload" class="flex-1 overflow-y-auto p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <TabsContent value="general" class="flex-1 overflow-y-auto p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <Select v-model="imgHost" class="my-4" @update:model-value="changeImgHost">
             <SelectTrigger>
               <SelectValue placeholder="请选择图床" />
@@ -546,27 +461,6 @@ function onTabScroll(e: WheelEvent) {
             <p class="text-xs text-muted-foreground mt-1.5">
               粘贴 Markdown 图片链接时自动转存到配置的图床
             </p>
-          </div>
-
-          <div
-            class="bg-clip-padding mt-4 h-50 relative flex flex-col cursor-pointer items-center justify-evenly border-2 rounded border-dashed transition-colors hover:border-gray-700 hover:bg-gray-400/50 dark:hover:border-gray-200 dark:hover:bg-gray-500/50"
-            :class="{
-              'border-gray-700 bg-gray-400/50 dark:border-gray-200 dark:bg-gray-500/50': dragover,
-            }"
-            @click="open()"
-            @drop.prevent="onDrop"
-            @dragover.prevent="dragover = true"
-            @dragleave.prevent="dragover = false"
-          >
-            <Progress v-model="progressValue" class="absolute left-0 right-0 rounded-none" style="top: -24px; height: 2px;" />
-            <UploadCloud class="size-16 md:size-20" />
-            <p class="text-center text-sm md:text-base px-4">
-              将图片拖到此处，或
-              <strong>点击上传</strong>
-            </p>
-            <div v-if="imageUrl" class="absolute left-0 right-0 h-full w-full flex items-center justify-center bg-white dark:bg-black">
-              <img :src="imageUrl" class="max-h-40 object-contain">
-            </div>
           </div>
         </TabsContent>
 

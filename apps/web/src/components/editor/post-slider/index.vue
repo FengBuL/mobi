@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckSquare, ChevronsDownUp, ChevronsUpDown, Ellipsis, FileText, Plus, Search, X } from 'lucide-vue-next'
+import { CheckSquare, ChevronsDownUp, ChevronsUpDown, Ellipsis, FileText, PanelLeftClose, Plus, Search, X } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useUIStore } from '@/stores/ui'
@@ -513,13 +513,15 @@ function handleDragEnd() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <!-- 移动端关闭 -->
+        <!-- 收起内容管理 -->
         <button
-          v-if="isMobile"
           class="inline-flex items-center justify-center size-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150 ml-0.5"
+          title="收起内容管理，之后从「文件 → 内容管理」打开"
+          aria-label="收起内容管理"
           @click="isOpenPostSlider = false"
         >
-          <X class="size-4" />
+          <X v-if="isMobile" class="size-4" />
+          <PanelLeftClose v-else class="size-4" />
         </button>
       </div>
 

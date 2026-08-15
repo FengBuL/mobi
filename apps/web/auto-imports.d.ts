@@ -194,7 +194,6 @@ declare global {
   const useFileSystemAccess: typeof import('@vueuse/core').useFileSystemAccess
   const useFocus: typeof import('@vueuse/core').useFocus
   const useFocusWithin: typeof import('@vueuse/core').useFocusWithin
-  const useFolderFileSync: typeof import('./src/composables/useFolderFileSync').useFolderFileSync
   const useFolderSourceStore: typeof import('./src/stores/folderSource').useFolderSourceStore
   const useFps: typeof import('@vueuse/core').useFps
   const useFullscreen: typeof import('@vueuse/core').useFullscreen

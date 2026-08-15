@@ -36,7 +36,7 @@ import {
 } from '@/utils/editor-content-visibility'
 import { shouldSyncPreviewFromEditorUpdate } from '@/utils/editor-preview-sync'
 import { fileUpload } from '@/utils/file'
-import { repairIndentedMediaLayoutBlocks } from '@/utils/image-layouts'
+import { parseMediaLayoutBlocks, repairIndentedMediaLayoutBlocks } from '@/utils/image-layouts'
 import { store } from '@/utils/storage'
 import { resolveWechatPreviewFrame } from '@/utils/wechat-preview'
 
@@ -245,13 +245,6 @@ const editorLineCount = computed(() => {
   return Math.max(1, editorVisibleContent.value.split(/\r?\n/).length)
 })
 const editorCharCount = computed(() => editorVisibleContent.value.length)
-const viewModeLabel = computed(() => {
-  if (viewMode.value === `split`)
-    return `双栏对照`
-  if (viewMode.value === `edit`)
-    return `专注编辑`
-  return `专注预览`
-})
 const previewDeviceLabel = computed(() => {
   if (isMobile.value)
     return `自适应预览`
@@ -775,6 +768,15 @@ function applyBlockSelectionHighlight() {
 // 用浮层而不是往预览 DOM 里插节点，避免按钮混进公众号复制产物。
 const hoveredBlockElement = shallowRef<HTMLElement | null>(null)
 const hoveredBlockAnchor = ref<{ top: number, left: number } | null>(null)
+const hoveredRemoveTitle = computed(() => {
+  if (hoveredBlockElement.value?.matches(`[data-src-kind="image"]`)) {
+    return `删除这张图片`
+  }
+  if (hoveredBlockElement.value?.matches(`section.md-media-block`)) {
+    return `删除这个图片组件`
+  }
+  return `删除这个板块`
+})
 
 const hoverInset = 10
 let hoverHideTimer: ReturnType<typeof setTimeout> | undefined
@@ -817,7 +819,10 @@ function handlePreviewPointerMove(event: PointerEvent) {
     return
   }
 
-  const block = target?.closest<HTMLElement>(`#output section.md-block`) ?? null
+  const block = target?.closest<HTMLElement>(`#output section.md-block`)
+    ?? target?.closest<HTMLElement>(`#output section.md-media-block`)
+    ?? target?.closest<HTMLElement>(`#output [data-src-kind="image"]`)
+    ?? null
 
   if (!block) {
     if (hoveredBlockElement.value && !hoverHideTimer) {
@@ -856,14 +861,34 @@ function deleteHoveredBlock() {
     return
   }
 
-  const selection = createExistingBlockSelection(element)
-  if (!selection) {
-    toast.error(`没能定位这个板块，请在板块库里删除`)
+  const current = editorStore.getContent()
+  let range: { from: number, to: number } | null = null
+  let deletedLabel = `板块`
+
+  if (element.matches(`section.md-block`)) {
+    range = createExistingBlockSelection(element)
+  }
+  else if (element.matches(`section.md-media-block`)) {
+    const previewBlocks = Array.from(element.closest(`#output`)?.querySelectorAll<HTMLElement>(`section.md-media-block`) ?? [])
+    const blockIndex = previewBlocks.indexOf(element)
+    range = parseMediaLayoutBlocks(current)[blockIndex] ?? null
+    deletedLabel = `图片组件`
+  }
+  else {
+    const sourceKind = element.dataset.srcKind
+    const sourceOrdinal = Number(element.dataset.srcOrdinal)
+    range = sourceKind && Number.isInteger(sourceOrdinal)
+      ? resolveMarkdownSourceRange(current, sourceKind, sourceOrdinal)
+      : null
+    deletedLabel = `图片`
+  }
+
+  if (!range) {
+    toast.error(`没能定位该内容，请在正文中删除`)
     return
   }
 
-  const current = editorStore.getContent()
-  let { from, to } = selection
+  let { from, to } = range
   while (from > 0 && /[\t ]/.test(current[from - 1])) {
     from -= 1
   }
@@ -882,7 +907,7 @@ function deleteHoveredBlock() {
   renderStore.render(next)
   blockSelectionStore.clear()
   clearHoveredBlock()
-  toast.success(`已删除该板块`)
+  toast.success(`已删除该${deletedLabel}`)
 }
 
 /**
@@ -1687,7 +1712,6 @@ onUnmounted(() => {
                           <h2>{{ currentPostTitle }}</h2>
                         </div>
                         <div class="workspace-panel__chips">
-                          <span class="workspace-chip workspace-chip--accent">{{ viewModeLabel }}</span>
                           <span class="workspace-chip">{{ editorLineCount }} 行</span>
                           <span class="workspace-chip">{{ editorCharCount }} 字</span>
                         </div>
@@ -1778,7 +1802,7 @@ onUnmounted(() => {
                               type="button"
                               class="preview-block-remove"
                               :style="{ top: `${hoveredBlockAnchor.top}px`, left: `${hoveredBlockAnchor.left}px` }"
-                              title="删除这个板块"
+                              :title="hoveredRemoveTitle"
                               @click.stop="deleteHoveredBlock"
                             >
                               <X class="size-3.5" />
@@ -1826,7 +1850,7 @@ onUnmounted(() => {
 
       <WorkspaceDrawer />
 
-      <UploadImgDialog @upload-image="uploadImage" />
+      <UploadImgDialog />
 
       <ImageLayoutDialog v-if="isMobile" />
 
@@ -2256,7 +2280,8 @@ onUnmounted(() => {
 }
 
 :deep(#output [data-src-kind]),
-:deep(#output section.md-block) {
+:deep(#output section.md-block),
+:deep(#output section.md-media-block) {
   cursor: pointer;
 }
 

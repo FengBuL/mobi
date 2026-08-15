@@ -4,6 +4,7 @@ import { marked } from 'marked'
 export type MarkdownSourceKind
   = | `heading-${1 | 2 | 3 | 4 | 5 | 6}`
     | 'paragraph'
+    | 'image'
     | 'code'
     | 'table'
     | 'quote'
@@ -36,6 +37,10 @@ function getTokenSourceKind(token: Token): MarkdownSourceKind | null {
     return `heading-${token.depth}` as MarkdownSourceKind
   }
   if (token.type === `paragraph`) {
+    const inlineTokens = token.tokens ?? []
+    if (inlineTokens.length > 0 && inlineTokens.every(item => item.type === `image`)) {
+      return `image`
+    }
     return `paragraph`
   }
   if (token.type === `code`) {

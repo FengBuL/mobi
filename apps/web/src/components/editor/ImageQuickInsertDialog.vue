@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { RecentImageEntry } from '@/utils/image-library'
-import { ImagePlus, Link2, Trash2, UploadCloud, X } from 'lucide-vue-next'
+import { ImagePlus, Trash2, UploadCloud, X } from 'lucide-vue-next'
 import { useImageQuickInsert } from '@/composables/useImageQuickInsert'
 import { useImageUploader } from '@/composables/useImageUploader'
 import { useEditorStore } from '@/stores/editor'
@@ -40,6 +40,25 @@ const migrateLinks = ref(false)
 const isDropActive = ref(false)
 const busyLabel = ref(``)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+
+const dialogCopy = computed(() => ({
+  single: {
+    title: `上传单张图片`,
+    description: `选择一张本地图片上传到当前图床，再插入正文。`,
+  },
+  batch: {
+    title: `批量上传图片`,
+    description: `一次选择多张本地图片上传，并按顺序插入正文。`,
+  },
+  link: {
+    title: `按链接插入图片`,
+    description: `粘贴图片地址，可选择直接使用或转存到当前图床。`,
+  },
+  recent: {
+    title: `最近使用的图片`,
+    description: `从最近插入过的图片中重新选择。`,
+  },
+})[activeTab.value])
 
 const insertModeOptions = computed(() => {
   const layoutOptions = mediaLayoutPresets
@@ -115,7 +134,9 @@ function addPendingImages(images: Array<{ url: string, alt?: string }>) {
     return 0
   }
 
-  pendingImages.value = [...pendingImages.value, ...next]
+  pendingImages.value = activeTab.value === `single`
+    ? next.slice(0, 1)
+    : [...pendingImages.value, ...next]
   return next.length
 }
 
@@ -167,14 +188,16 @@ async function uploadFiles(files: File[]) {
 
 async function handleFileChange(event: Event) {
   const input = event.target as HTMLInputElement
-  const files = Array.from(input.files ?? [])
+  const selected = Array.from(input.files ?? [])
+  const files = activeTab.value === `single` ? selected.slice(0, 1) : selected
   input.value = ``
   await uploadFiles(files)
 }
 
 async function handleDrop(event: DragEvent) {
   isDropActive.value = false
-  const files = Array.from(event.dataTransfer?.files ?? []).filter(file => file.type.startsWith(`image/`))
+  const dropped = Array.from(event.dataTransfer?.files ?? []).filter(file => file.type.startsWith(`image/`))
+  const files = activeTab.value === `single` ? dropped.slice(0, 1) : dropped
   if (files.length) {
     await uploadFiles(files)
     return
@@ -318,33 +341,16 @@ function insertImages() {
       <DialogHeader class="border-b px-6 pt-6 pb-4">
         <DialogTitle class="flex items-center gap-2">
           <ImagePlus class="size-5" />
-          快速插入图片
+          {{ dialogCopy.title }}
         </DialogTitle>
         <DialogDescription>
-          支持批量上传、按链接插入和复用最近图片，插入时可以顺手套上排版模板。
+          {{ dialogCopy.description }}
         </DialogDescription>
       </DialogHeader>
 
       <div class="flex-1 space-y-5 overflow-auto px-6 py-5">
-        <Tabs v-model="activeTab" class="w-full">
-          <TabsList class="grid w-full grid-cols-3">
-            <TabsTrigger value="upload" class="gap-2">
-              <UploadCloud class="size-4" />
-              本地上传
-            </TabsTrigger>
-            <TabsTrigger value="link" class="gap-2">
-              <Link2 class="size-4" />
-              图片链接
-            </TabsTrigger>
-            <TabsTrigger value="recent" class="gap-2">
-              <ImagePlus class="size-4" />
-              最近使用
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
         <div
-          v-if="activeTab === 'upload'"
+          v-if="activeTab === 'single' || activeTab === 'batch'"
           class="quick-insert-dropzone rounded-2xl border border-dashed p-8 text-center"
           :class="{ 'quick-insert-dropzone--active': isDropActive }"
           @dragover.prevent="isDropActive = true"
@@ -355,16 +361,16 @@ function insertImages() {
             ref="fileInputRef"
             type="file"
             accept="image/*"
-            multiple
+            :multiple="activeTab === 'batch'"
             class="hidden"
             @change="handleFileChange"
           >
           <UploadCloud class="mx-auto size-8 text-muted-foreground" />
           <p class="mt-3 text-sm font-semibold">
-            把多张图片拖到这里，或者点下面的按钮一次选多张
+            {{ activeTab === 'single' ? '把一张图片拖到这里，或者点击按钮选择' : '把多张图片拖到这里，或者点击按钮一次选择多张' }}
           </p>
           <p class="mt-1 text-xs text-muted-foreground">
-            走的是当前配置的图床，上传完会先进入下面的待插入列表。
+            图片会上传到当前配置的图床，完成后进入待插入列表。
           </p>
           <Button class="mt-4 h-9" :disabled="Boolean(busyLabel)" @click="triggerFilePicker">
             选择图片
@@ -388,7 +394,7 @@ function insertImages() {
           </div>
         </div>
 
-        <div v-else class="space-y-3">
+        <div v-else-if="activeTab === 'recent'" class="space-y-3">
           <div class="flex items-center justify-between gap-3">
             <p class="text-xs text-muted-foreground">
               这里记录你最近插入过的图片，点一下即可重新加入。
@@ -460,7 +466,7 @@ function insertImages() {
           </div>
 
           <div v-else class="mt-4 rounded-xl border border-dashed p-5 text-center text-xs text-muted-foreground">
-            上传、粘贴链接或者从最近图片里选几张，都会汇总到这里。
+            {{ activeTab === 'single' ? '上传一张图片后会显示在这里。' : activeTab === 'batch' ? '上传的多张图片会按顺序显示在这里。' : activeTab === 'link' ? '解析图片链接后会显示在这里。' : '从最近图片中选择后会显示在这里。' }}
           </div>
         </div>
       </div>

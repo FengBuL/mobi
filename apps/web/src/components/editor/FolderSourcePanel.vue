@@ -8,7 +8,6 @@ import {
   PanelLeftClose,
   RefreshCw,
 } from 'lucide-vue-next'
-import { useFolderFileSync } from '@/composables/useFolderFileSync'
 import { useFolderSourceStore } from '@/stores/folderSource'
 import { usePostStore } from '@/stores/post'
 import { useUIStore } from '@/stores/ui'
@@ -17,7 +16,6 @@ import FolderTree from './FolderTree.vue'
 const folderSourceStore = useFolderSourceStore()
 const postStore = usePostStore()
 const uiStore = useUIStore()
-const { setCurrentFilePath } = useFolderFileSync()
 
 const {
   currentFolderHandle,
@@ -38,11 +36,21 @@ onMounted(async () => {
   }
 })
 
-function handleToggleExpand(path: string) {
+async function handleToggleExpand(path: string) {
   if (expandedPaths.value.has(path)) {
     expandedPaths.value.delete(path)
   }
   else {
+    const node = folderSourceStore.findNodeByPath(fileTree.value, path)
+    if (node?.type === `directory`) {
+      try {
+        await folderSourceStore.loadDirectoryChildren(node)
+      }
+      catch (error) {
+        toast.error(`读取子文件夹失败：${(error as Error).message}`)
+        return
+      }
+    }
     expandedPaths.value.add(path)
   }
   // 触发响应式更新
@@ -61,7 +69,7 @@ async function handleSelectFolder() {
 
 async function handleRefreshFolder() {
   if (currentFolderHandle.value) {
-    await folderSourceStore.loadFileTree(currentFolderHandle.value.handle)
+    await folderSourceStore.reloadCurrentFolder()
   }
 }
 
@@ -80,10 +88,7 @@ async function handleOpenFile(node: any) {
     postStore.addPost(title)
     postStore.updatePostContent(postStore.currentPostId, content)
 
-    // 记录当前文件路径以便自动同步
-    setCurrentFilePath(node.path)
-
-    toast.success(`已加载文件: ${node.name}`)
+    toast.success(`已导入副本: ${node.name}，编辑不会修改本地文件`)
   }
   catch (error) {
     console.error(`打开文件失败:`, error)

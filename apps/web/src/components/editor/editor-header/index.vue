@@ -14,7 +14,7 @@ import { useUIStore } from '@/stores/ui'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
 import HelpDropdown from './HelpDropdown.vue'
-import InsertDropdown from './InsertDropdown.vue'
+import SettingsDropdown from './SettingsDropdown.vue'
 
 const emit = defineEmits([`startCopy`, `endCopy`])
 
@@ -70,7 +70,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
       <Menubar class="menubar border-0">
         <FileDropdown />
         <EditDropdown />
-        <InsertDropdown />
+        <SettingsDropdown />
         <HelpDropdown @open-about="handleOpenAbout" />
       </Menubar>
     </div>
@@ -87,7 +87,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
           <MenubarContent align="start">
             <FileDropdown :as-sub="true" />
             <EditDropdown :as-sub="true" />
-            <InsertDropdown :as-sub="true" />
+            <SettingsDropdown :as-sub="true" />
             <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" />
           </MenubarContent>
         </MenubarMenu>

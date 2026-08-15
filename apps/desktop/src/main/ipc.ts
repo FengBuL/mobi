@@ -1,6 +1,7 @@
 import type { DesktopIpcResult } from '@mobi/shared/types/desktop'
 import { DESKTOP_IPC_CHANNELS } from '@mobi/shared/types/desktop'
-import { ipcMain } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
+import { chooseFolder, readDirectory, readFolderFile } from './folders'
 import {
   describeTransferError,
   parseStableTokenRequest,
@@ -29,4 +30,13 @@ export function registerWechatIpc(): void {
 
   ipcMain.handle(DESKTOP_IPC_CHANNELS.wechatUploadImage, (_event, payload: unknown) =>
     toResult(() => uploadImage(parseUploadImageRequest(payload))))
+
+  ipcMain.handle(DESKTOP_IPC_CHANNELS.folderChoose, event =>
+    toResult(() => chooseFolder(BrowserWindow.fromWebContents(event.sender))))
+
+  ipcMain.handle(DESKTOP_IPC_CHANNELS.folderReadDirectory, (_event, folderPath: unknown) =>
+    toResult(() => readDirectory(String(folderPath || ``))))
+
+  ipcMain.handle(DESKTOP_IPC_CHANNELS.folderReadFile, (_event, filePath: unknown) =>
+    toResult(() => readFolderFile(String(filePath || ``))))
 }

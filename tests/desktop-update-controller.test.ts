@@ -73,4 +73,30 @@ describe(`桌面更新控制器`, () => {
     controller.install()
     expect(updater.quitAndInstall).toHaveBeenCalledOnce()
   })
+
+  it(`macOS 签名身份不连续时引导用户手动安装一次`, () => {
+    const updater = createFakeUpdater()
+    const states: any[] = []
+    createDesktopUpdateController(updater, state => states.push(state))
+
+    updater.emit(`update-available`, { version: `2.2.2`, releaseNotes: `更新说明` })
+    updater.emit(`error`, new Error(`Code signature at URL file:///tmp/墨笔.app did not pass validation`))
+
+    expect(states.at(-1)).toEqual({
+      status: `manual-update-required`,
+      version: `2.2.2`,
+      releaseNotes: `更新说明`,
+      downloadUrl: `https://github.com/FengBuL/mobi/releases/latest`,
+    })
+  })
+
+  it(`普通更新错误仍按错误状态上报`, () => {
+    const updater = createFakeUpdater()
+    const states: any[] = []
+    createDesktopUpdateController(updater, state => states.push(state))
+
+    updater.emit(`error`, new Error(`网络连接失败`))
+
+    expect(states.at(-1)).toEqual({ status: `error`, message: `网络连接失败` })
+  })
 })
