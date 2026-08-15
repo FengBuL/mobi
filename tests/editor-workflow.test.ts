@@ -114,4 +114,185 @@ describe(`编辑工作流`, () => {
     expect(blocks).not.toContain(`选样式、填内容，像拼积木一样组合公众号排版。`)
     expect(blocks).not.toContain(`独立配色`)
   })
+
+  it(`板块列表保持原位并把当前板块编辑器送到右侧检查器`, () => {
+    const workspace = readSource(`apps/web/src/components/editor/HeadingBlockWorkspace.vue`)
+    const styles = readSource(`apps/web/src/components/editor/RightSlider.vue`)
+    const uiStore = readSource(`apps/web/src/stores/ui.ts`)
+
+    expect(workspace).toContain("mode?: `library` | `inspector`")
+    expect(workspace).toContain(`v-if="mode === 'library'"`)
+    expect(workspace).toContain(`uiStore.openBlockInspector()`)
+    expect(styles).toContain(`当前组件`)
+    expect(styles).toContain(`全局样式`)
+    expect(styles).toContain(`id="block-inspector-slot"`)
+    expect(styles).toContain(`mode="inspector"`)
+    expect(uiStore).toContain(`function openBlockInspector()`)
+    expect(uiStore).toContain(`isOpenRightSlider.value = true`)
+  })
+
+  it(`全局字体和主题色使用紧凑控件释放组件编辑空间`, () => {
+    const controls = readSource(`apps/web/src/components/editor/StyleQuickControls.vue`)
+    const styles = readSource(`apps/web/src/components/editor/RightSlider.vue`)
+
+    expect(controls).not.toContain(`filteredFontOptions`)
+    expect(controls).not.toContain(`selectedFontCategory`)
+    expect(controls).toContain(`全局字体`)
+    expect(controls).toContain(`grid-cols-8`)
+    expect(styles).toContain(`grid-cols-2 gap-2`)
+  })
+
+  it(`新插入同款组件使用编辑器返回的精确范围`, () => {
+    const editorStore = readSource(`apps/web/src/stores/editor.ts`)
+    const workspace = readSource(`apps/web/src/components/editor/HeadingBlockWorkspace.vue`)
+
+    expect(editorStore).toContain(`return { from: from + leading.length`)
+    expect(workspace).toContain(`const insertedRange = editorStore.insertBlockAtCursor(markup, { preserveBlockSelection: true })`)
+    expect(workspace).not.toContain(`nextContent.indexOf(markup)`)
+  })
+
+  it(`组件实时写回时保留当前检查器选择`, () => {
+    const editorStore = readSource(`apps/web/src/stores/editor.ts`)
+    const editor = readSource(`apps/web/src/views/CodemirrorEditor.vue`)
+    const workspace = readSource(`apps/web/src/components/editor/HeadingBlockWorkspace.vue`)
+
+    expect(editorStore).toContain(`Annotation.define<boolean>()`)
+    expect(editorStore).toContain(`preserveBlockSelection?: boolean`)
+    expect(editor).toContain(`transaction.annotation(blockSelectionTransaction)`)
+    expect(workspace).toContain(`preserveBlockSelection: true`)
+  })
+
+  it(`样式面板不渲染说明、状态摘要或精细调节提示`, () => {
+    const styles = readSource(`apps/web/src/components/editor/RightSlider.vue`)
+    const quickControls = readSource(`apps/web/src/components/editor/StyleQuickControls.vue`)
+    const field = readSource(`apps/web/src/components/editor/theme-designer/ThemeDesignerField.vue`)
+    const groupCard = readSource(`apps/web/src/components/editor/theme-designer/ThemeDesignerGroupCard.vue`)
+    const draftControls = readSource(`apps/web/src/components/editor/theme-designer/ThemeDraftControls.vue`)
+    const diffDialog = readSource(`apps/web/src/components/editor/theme-designer/ThemeDesignerDiffDialog.vue`)
+
+    expect(styles).not.toContain(`当前状态：`)
+    expect(styles).not.toContain(`引用、列表、表格这些内容块的外观`)
+    expect(styles).not.toContain(`适合教程和调试类文章`)
+    expect(styles).not.toContain(`右键可编辑、导出或删除`)
+    expect(quickControls).not.toContain(`先确定整体阅读气质`)
+    expect(quickControls).not.toContain(`当前跟随主题的出厂配色`)
+    expect(field).not.toContain(`field.hint`)
+    expect(field).not.toContain(`option.desc`)
+    expect(groupCard).not.toContain(`group.desc`)
+    expect(draftControls).not.toContain(`设置在公众号里可能失效`)
+    expect(diffDialog).not.toContain(`公众号兼容性提醒`)
+    expect(diffDialog).not.toContain(`当前完全等同于内置主题`)
+  })
+
+  it(`方案和版式各自只有一个紧凑选择入口`, () => {
+    const styles = readSource(`apps/web/src/components/editor/RightSlider.vue`)
+    const helpers = readSource(`apps/web/src/utils/style-panel.ts`)
+
+    expect(styles).toContain(`方案`)
+    expect(styles).toContain(`版式`)
+    expect(styles).toContain(`themeSelectOptions`)
+    expect(helpers).toContain(`\${category.category} · \${theme.label}`)
+    expect(styles).not.toContain(`themeCategoryNames`)
+    expect(styles).not.toContain(`filteredThemeOptions`)
+    expect(styles).not.toContain(`grid grid-cols-2 gap-2\">\n              <ContextMenu v-for`)
+  })
+
+  it(`版式选择器支持有边界的滚轮切换`, () => {
+    const styles = readSource(`apps/web/src/components/editor/RightSlider.vue`)
+
+    expect(styles).toContain(`stepSelectValue`)
+    expect(styles).toContain(`handleThemeWheel`)
+    expect(styles).toContain(`@wheel="handleThemeWheel"`)
+    expect(styles).toContain(`@keydown.down.prevent="handleThemeKeyStep(1)"`)
+    expect(styles).toContain(`@keydown.up.prevent="handleThemeKeyStep(-1)"`)
+    expect(styles).toContain(`event.preventDefault()`)
+  })
+
+  it(`方案可退出且手动修改后回到当前自定义`, () => {
+    const styles = readSource(`apps/web/src/components/editor/RightSlider.vue`)
+
+    expect(styles).toContain(`leaveActiveStylePreset`)
+    expect(styles).toContain(`cancelActiveStylePreset`)
+    expect(styles).toContain(`appliedPresetSignature`)
+    expect(styles).not.toContain(`<SelectItem :value="CUSTOM_STYLE_PRESET_PLACEHOLDER" disabled>`)
+  })
+
+  it(`方案使用就地命名和可见保存反馈`, () => {
+    const styles = readSource(`apps/web/src/components/editor/RightSlider.vue`)
+    const helpers = readSource(`apps/web/src/utils/style-panel.ts`)
+
+    expect(styles).toContain(`savePresetName`)
+    expect(styles).toContain(`savePresetError`)
+    expect(styles).toContain(`savePresetFeedback`)
+    expect(styles).toContain(`保存方案`)
+    expect(helpers).toContain(`方案名称不能为空`)
+    expect(styles).toContain(`方案保存失败`)
+    expect(styles).not.toContain(`window.prompt(\`请输入预设名称\``)
+  })
+
+  it(`标题预设和 H1-H6 精细设置合并到同一卡片`, () => {
+    const styles = readSource(`apps/web/src/components/editor/RightSlider.vue`)
+    const heading = readSource(`apps/web/src/components/editor/theme-designer/ThemeDesignerHeadingCard.vue`)
+
+    expect(styles).not.toContain(`标题装饰`)
+    expect(heading).toContain(`headingStyleOptions`)
+    expect(heading).toContain(`selectedHeadingStyle`)
+    expect(heading).toContain("![`decoration`, `decorationColor`].includes(field.key)")
+    expect(heading).toContain(`全部标题恢复默认`)
+  })
+
+  it(`预览快捷条只显示当前值并跳转唯一编辑入口`, () => {
+    const quickBar = readSource(`apps/web/src/components/editor/ThemeQuickBar.vue`)
+
+    expect(quickBar).toContain(`currentStyleSummary`)
+    expect(quickBar).toContain("focusStyleGroup(`text`, `base`)")
+    expect(quickBar).not.toContain(`<StyleQuickControls`)
+    expect(quickBar).not.toContain(`@click="themeChanged`)
+  })
+
+  it(`方案删除、取消和刷新恢复共享首次应用前快照`, () => {
+    const styles = readSource(`apps/web/src/components/editor/RightSlider.vue`)
+
+    expect(styles).toContain(`STYLE_PRESET_SESSION_KEY`)
+    expect(styles).toContain(`cancelActiveStylePreset`)
+    expect(styles).toContain(`deleteCustomStylePreset`)
+    expect(styles).toContain(`删除方案`)
+    expect(styles).toContain(`action: { label: \`撤销\``)
+    expect(styles).not.toContain(`@click="clearActiveStylePreset"`)
+  })
+
+  it(`自定义版式删除可撤销且内置版式没有删除入口`, () => {
+    const styles = readSource(`apps/web/src/components/editor/RightSlider.vue`)
+    const designer = readSource(`apps/web/src/stores/themeDesigner.ts`)
+
+    expect(styles).toContain(`deleteCustomVisualTheme`)
+    expect(styles).toContain(`undoDeleteCustomVisualTheme`)
+    expect(styles).toContain(`删除版式`)
+    expect(designer).toContain(`restoreCustomTheme`)
+  })
+
+  it(`版式整体恢复进入统一历史且标题局部恢复语义明确`, () => {
+    const styles = readSource(`apps/web/src/components/editor/RightSlider.vue`)
+    const designer = readSource(`apps/web/src/stores/themeDesigner.ts`)
+    const heading = readSource(`apps/web/src/components/editor/theme-designer/ThemeDesignerHeadingCard.vue`)
+
+    expect(styles).toContain(`restoreCurrentLayout`)
+    expect(styles).toContain(`恢复当前版式`)
+    expect(styles).not.toContain(`@click="resetTemplateGroup"`)
+    expect(designer).toContain(`setHistoryContextAdapter`)
+    expect(designer).toContain(`checkpoint`)
+    expect(heading).toContain(`恢复本级标题`)
+  })
+
+  it(`自动排版位于内容工具栏首位并通过单事务更新整篇`, () => {
+    const toolbar = readSource(`apps/web/src/components/editor/MarkdownToolbar.vue`)
+
+    expect(toolbar).toContain(`autoFormatContent`)
+    expect(toolbar).toContain(`createAutoFormatTransaction`)
+    expect(toolbar).toContain(`aria-label="自动排版"`)
+    expect(toolbar).toContain(`title="自动排版"`)
+    expect(toolbar).toContain(`markdown-toolbar__button:focus-visible`)
+    expect(toolbar.indexOf(`@click="autoFormatContent"`)).toBeLessThan(toolbar.indexOf(`v-for="(group, groupIndex) in groups"`))
+    expect(toolbar).not.toContain(`fetch(`)
+  })
 })

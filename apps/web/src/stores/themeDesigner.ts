@@ -9,6 +9,7 @@ import type {
 import { addPrefix } from '@/utils'
 import { createClientId } from '@/utils/id'
 import { store } from '@/utils/storage'
+import { removeSavedItem, restoreSavedItem } from '@/utils/style-panel'
 import {
   cloneThemeTokens,
   collectThemeTokenDiff,
@@ -19,8 +20,29 @@ import {
   generateThemeOverrideCSS,
   sanitizeThemeTokens,
 } from '@/utils/theme-designer'
+import {
+  createHistoryState,
+  pushHistory as pushHistoryState,
+  redoHistory,
+  undoHistory,
+} from '@/utils/theme-designer/history'
 
 const HISTORY_LIMIT = 60
+
+interface ThemeHistoryContextAdapter {
+  capture: () => unknown
+  restore: (context: unknown) => void
+}
+
+interface ThemeHistoryEntry {
+  draft: ThemeDraft
+  context: unknown
+}
+
+interface DeletedCustomTheme {
+  item: CustomTheme
+  index: number
+}
 
 function createEmptyDraft(baseTheme: string): ThemeDraft {
   return {
@@ -28,6 +50,15 @@ function createEmptyDraft(baseTheme: string): ThemeDraft {
     name: ``,
     baseTheme,
     tokens: {},
+  }
+}
+
+function cloneThemeDraft(source: ThemeDraft): ThemeDraft {
+  return {
+    sourceId: source.sourceId,
+    name: source.name,
+    baseTheme: source.baseTheme,
+    tokens: cloneThemeTokens(source.tokens),
   }
 }
 
@@ -67,8 +98,8 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
   /** 从预览点过来时短暂高亮的分组，用完由样式面板清掉 */
   const focusedGroupId = ref(``)
 
-  const past = ref<ThemeTokens[]>([])
-  const future = ref<ThemeTokens[]>([])
+  const history = ref(createHistoryState<ThemeHistoryEntry>())
+  let historyContextAdapter: ThemeHistoryContextAdapter | null = null
 
   const tokens = computed(() => draft.value.tokens)
   const overrideCSS = computed(() => generateThemeOverrideCSS(draft.value.tokens))
@@ -76,8 +107,8 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
   const hasOverrides = computed(() => modifiedCount.value > 0)
   const diffItems = computed(() => collectThemeTokenDiff(draft.value.tokens))
   const wechatRisks = computed(() => collectWechatRisks(draft.value.tokens))
-  const canUndo = computed(() => past.value.length > 0)
-  const canRedo = computed(() => future.value.length > 0)
+  const canUndo = computed(() => history.value.past.length > 0)
+  const canRedo = computed(() => history.value.future.length > 0)
 
   const sourceTheme = computed(() => customThemes.value.find(item => item.id === draft.value.sourceId) || null)
   const isDirty = computed(() => {
@@ -95,9 +126,24 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
     return countGroupTokens(draft.value.tokens, groupId)
   }
 
-  function pushHistory() {
-    past.value = [...past.value, cloneThemeTokens(draft.value.tokens)].slice(-HISTORY_LIMIT)
-    future.value = []
+  function captureHistoryEntry(): ThemeHistoryEntry {
+    return {
+      draft: cloneThemeDraft(draft.value),
+      context: historyContextAdapter?.capture() ?? null,
+    }
+  }
+
+  function restoreHistoryEntry(entry: ThemeHistoryEntry) {
+    draft.value = cloneThemeDraft(entry.draft)
+    historyContextAdapter?.restore(entry.context)
+  }
+
+  function checkpoint() {
+    history.value = pushHistoryState(history.value, captureHistoryEntry(), HISTORY_LIMIT)
+  }
+
+  function setHistoryContextAdapter(adapter: ThemeHistoryContextAdapter | null) {
+    historyContextAdapter = adapter
   }
 
   function commitTokens(next: ThemeTokens) {
@@ -105,17 +151,18 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
   }
 
   function setToken(groupId: string, key: string, value: ThemeTokenValue) {
-    pushHistory()
+    checkpoint()
     const next = cloneThemeTokens(draft.value.tokens)
     next[groupId] = { ...next[groupId], [key]: value }
     commitTokens(next)
   }
 
-  function resetToken(groupId: string, key: string) {
+  function resetToken(groupId: string, key: string, recordHistory = true) {
     if (!(key in (draft.value.tokens[groupId] || {})))
       return
 
-    pushHistory()
+    if (recordHistory)
+      checkpoint()
     const next = cloneThemeTokens(draft.value.tokens)
     const group = { ...next[groupId] }
     delete group[key]
@@ -130,11 +177,12 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
     commitTokens(next)
   }
 
-  function resetGroup(groupId: string) {
+  function resetGroup(groupId: string, recordHistory = true) {
     if (!draft.value.tokens[groupId])
       return
 
-    pushHistory()
+    if (recordHistory)
+      checkpoint()
     const next = cloneThemeTokens(draft.value.tokens)
     delete next[groupId]
     commitTokens(next)
@@ -144,13 +192,26 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
     if (!hasOverrides.value)
       return
 
-    pushHistory()
+    checkpoint()
     commitTokens({})
   }
 
-  function replaceTokens(next: ThemeTokens) {
-    pushHistory()
+  function replaceTokens(next: ThemeTokens, recordHistory = true) {
+    if (recordHistory)
+      checkpoint()
     commitTokens(sanitizeThemeTokens(next))
+  }
+
+  function replaceDraft(next: ThemeDraft, recordHistory = true) {
+    if (recordHistory)
+      checkpoint()
+
+    draft.value = {
+      sourceId: typeof next.sourceId === `string` ? next.sourceId : null,
+      name: typeof next.name === `string` ? next.name : ``,
+      baseTheme: typeof next.baseTheme === `string` ? next.baseTheme : `default`,
+      tokens: sanitizeThemeTokens(next.tokens),
+    }
   }
 
   function applyPalette(color: string) {
@@ -158,28 +219,25 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
   }
 
   function undo() {
-    if (!past.value.length)
+    const transition = undoHistory(history.value, captureHistoryEntry(), HISTORY_LIMIT)
+    if (!transition)
       return
 
-    const previous = past.value[past.value.length - 1]
-    past.value = past.value.slice(0, -1)
-    future.value = [cloneThemeTokens(draft.value.tokens), ...future.value].slice(0, HISTORY_LIMIT)
-    commitTokens(previous)
+    history.value = transition.state
+    restoreHistoryEntry(transition.entry)
   }
 
   function redo() {
-    if (!future.value.length)
+    const transition = redoHistory(history.value, captureHistoryEntry(), HISTORY_LIMIT)
+    if (!transition)
       return
 
-    const next = future.value[0]
-    future.value = future.value.slice(1)
-    past.value = [...past.value, cloneThemeTokens(draft.value.tokens)].slice(-HISTORY_LIMIT)
-    commitTokens(next)
+    history.value = transition.state
+    restoreHistoryEntry(transition.entry)
   }
 
   function clearHistory() {
-    past.value = []
-    future.value = []
+    history.value = createHistoryState()
   }
 
   function setDraftName(name: string) {
@@ -197,8 +255,7 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
   }
 
   function startFromTheme(baseTheme: string) {
-    clearHistory()
-    draft.value = createEmptyDraft(baseTheme)
+    replaceDraft(createEmptyDraft(baseTheme))
   }
 
   function loadCustomTheme(id: string): CustomTheme | null {
@@ -206,13 +263,12 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
     if (!target)
       return null
 
-    clearHistory()
-    draft.value = {
+    replaceDraft({
       sourceId: target.id,
       name: target.name,
       baseTheme: target.baseTheme,
       tokens: cloneThemeTokens(target.tokens),
-    }
+    })
 
     return target
   }
@@ -273,12 +329,25 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
     }
   }
 
-  function deleteCustomTheme(id: string) {
-    customThemes.value = customThemes.value.filter(item => item.id !== id)
+  function deleteCustomTheme(id: string): DeletedCustomTheme | null {
+    const result = removeSavedItem(customThemes.value, item => item.id === id)
+    if (!result)
+      return null
+
+    customThemes.value = result.items
 
     if (draft.value.sourceId === id) {
       draft.value = { ...draft.value, sourceId: null }
     }
+
+    return result.removal
+  }
+
+  function restoreCustomTheme(removal: DeletedCustomTheme) {
+    if (customThemes.value.some(item => item.id === removal.item.id))
+      return
+
+    customThemes.value = restoreSavedItem(customThemes.value, removal)
   }
 
   function importThemeFile(parsed: ParsedThemeFile, fallbackBaseTheme: string): CustomTheme {
@@ -336,10 +405,13 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
     resetGroup,
     resetAll,
     replaceTokens,
+    replaceDraft,
     applyPalette,
+    checkpoint,
     undo,
     redo,
     clearHistory,
+    setHistoryContextAdapter,
     setDraftName,
     setBaseTheme,
     startFromTheme,
@@ -350,6 +422,7 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
     updateDraftSource,
     renameCustomTheme,
     deleteCustomTheme,
+    restoreCustomTheme,
     importThemeFile,
     open,
     close,

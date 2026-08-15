@@ -8,6 +8,7 @@ import { isBlockingClipboardImageFailure, isUnsafeClipboardImage } from '@/utils
 import { hasMpUploadConfig } from '@/utils/file'
 import { store } from '@/utils/storage'
 import { trackEvent } from '@/utils/telemetry'
+import { createWeChatClipboardBlobs } from '@/utils/wechat-compat'
 
 type CopyMode = 'txt' | 'html' | 'html-without-style' | 'html-and-style' | 'md'
 
@@ -234,11 +235,7 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
               throw new TypeError(`ClipboardItem is not supported in this browser.`)
             }
 
-            const plainText = clipboardDiv.textContent || ``
-            const clipboardItem = new ClipboardItem({
-              'text/html': new Blob([temp], { type: `text/html` }),
-              'text/plain': new Blob([plainText], { type: `text/plain` }),
-            })
+            const clipboardItem = new ClipboardItem(createWeChatClipboardBlobs(clipboardDiv))
 
             await writeClipboardItems([clipboardItem])
           }

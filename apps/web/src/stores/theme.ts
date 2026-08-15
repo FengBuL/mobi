@@ -102,6 +102,16 @@ export const useThemeStore = defineStore(`theme`, () => {
     assignPrimaryColorFromTheme(theme.value)
   }
 
+  const restorePrimaryColorState = (value: string, source: PrimaryColorSource) => {
+    writePrimaryColorSource(source)
+    if (primaryColor.value === value)
+      return
+
+    suppressPrimaryColorSourceUpdate = true
+    primaryColor.value = value
+    void store.set(PRIMARY_COLOR_KEY, value)
+  }
+
   // 代码块主题
   const codeBlockTheme = store.reactive(`codeBlockTheme`, defaultStyleConfig.codeBlockTheme)
 
@@ -387,6 +397,7 @@ export const useThemeStore = defineStore(`theme`, () => {
     toggleUseJustify,
     toggleHeadingDecorationStatus,
     followThemePrimaryColor,
+    restorePrimaryColorState,
     resetStyle,
     updateCodeTheme,
     applyCurrentTheme,

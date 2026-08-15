@@ -1,5 +1,12 @@
 import type { EditorView } from '@codemirror/view'
+import { Annotation } from '@codemirror/state'
 import { formatDoc } from '@/utils'
+
+export const blockSelectionTransaction = Annotation.define<boolean>()
+
+interface EditorMutationOptions {
+  preserveBlockSelection?: boolean
+}
 
 /**
  * 编辑器 Store
@@ -22,12 +29,13 @@ export const useEditorStore = defineStore(`editor`, () => {
   }
 
   // 导入默认文档
-  const importContent = (content: string) => {
+  const importContent = (content: string, options: EditorMutationOptions = {}) => {
     if (!editor.value)
       return
 
     editor.value.dispatch({
       changes: { from: 0, to: editor.value.state.doc.length, insert: content },
+      annotations: options.preserveBlockSelection ? blockSelectionTransaction.of(true) : undefined,
     })
   }
 
@@ -83,7 +91,7 @@ export const useEditorStore = defineStore(`editor`, () => {
    * CommonMark 的 HTML 块要遇到空行才结束。只垫一个换行的话，紧跟在板块后面的
    * 那一行 Markdown 会被吞进 HTML 块当原文输出，正文里就会冒出一行 `## 标题`。
    */
-  const insertBlockAtCursor = (markup: string) => {
+  const insertBlockAtCursor = (markup: string, options: EditorMutationOptions = {}) => {
     if (!editor.value)
       return
 
@@ -110,8 +118,10 @@ export const useEditorStore = defineStore(`editor`, () => {
     editor.value.dispatch({
       changes: { from, to, insert: text },
       selection: { anchor: from + text.length },
+      annotations: options.preserveBlockSelection ? blockSelectionTransaction.of(true) : undefined,
     })
     editor.value.focus()
+    return { from: from + leading.length, to: from + leading.length + markup.length }
   }
 
   return {

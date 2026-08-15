@@ -4,6 +4,7 @@ import type {
   BlockState,
   ParsedBlock,
 } from './types'
+import { materializeWeChatDecorations } from '@/utils/wechat-compat'
 
 const categoryModules = import.meta.glob<{ default: BlockCategoryDefinition }>(
   `./categories/*.ts`,
@@ -212,4 +213,5 @@ export function convertBlocksForWeChat(root: HTMLElement) {
     stripEditorMetadata(holder)
     element.replaceWith(...Array.from(holder.childNodes))
   })
+  materializeWeChatDecorations(root)
 }

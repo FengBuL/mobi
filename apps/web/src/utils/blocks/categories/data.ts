@@ -264,7 +264,7 @@ function ringDataUri(percent: number, palette: BlockPalette) {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
 
-function renderBody(preset: BlockPreset, state: BlockState) {
+function renderBody(preset: BlockPreset, state: BlockState, forWeChat = false) {
   const p = preset.palette
   const percent = percentOf(state)
   const label = field(state, `label`, `display:block;color:${p.ink};font-size:14px;font-weight:750;line-height:1.5;`)
@@ -311,7 +311,8 @@ function renderBody(preset: BlockPreset, state: BlockState) {
       return `<div style="padding:18px 12px;border-top:1px solid ${p.border};border-bottom:1px solid ${p.border};background-color:${p.surface};">${field(state, `note`, `display:block;margin-bottom:13px;color:${p.muted};font-size:11px;font-weight:700;line-height:1.3;letter-spacing:0.14em;text-align:center;`)}<div style="display:flex;align-items:flex-start;justify-content:space-between;">${metricColumn(state, 1, p)}${metricColumn(state, 2, p)}${metricColumn(state, 3, p)}</div></div>`
     case `ring`: {
       const uri = ringDataUri(percent, p)
-      return `<div style="display:flex;align-items:center;padding:17px;border:1px solid ${p.border};border-radius:14px;background-color:${p.surface};"><span style="display:inline-block;width:112px;max-width:35% !important;height:112px;margin-right:18px;border-radius:999px;background-color:${p.surface};background-image:url('${uri}');text-align:center;line-height:112px;"><span ${getBlockFieldAttrs(`percent`, percent)} style="display:inline-block;color:${p.primary};font-size:23px;font-weight:900;line-height:1;vertical-align:middle;">${percent}%</span></span><span style="display:block;flex:1;">${label}${note}</span></div>`
+      const fallback = forWeChat ? `border:9px solid ${p.secondary};box-sizing:border-box;` : ``
+      return `<div style="display:flex;align-items:center;padding:17px;border:1px solid ${p.border};border-radius:14px;background-color:${p.surface};"><span style="display:inline-block;width:112px;max-width:35% !important;height:112px;margin-right:18px;${fallback}border-radius:999px;background-color:${p.surface};background-image:url('${uri}');text-align:center;line-height:${forWeChat ? 94 : 112}px;"><span ${getBlockFieldAttrs(`percent`, percent)} style="display:inline-block;color:${p.primary};font-size:23px;font-weight:900;line-height:1;vertical-align:middle;">${percent}%</span></span><span style="display:block;flex:1;">${label}${note}</span></div>`
     }
     case `bars`: {
       const rows = [1, 2, 3].map((index) => {
@@ -395,7 +396,7 @@ function render(preset: BlockPreset, inputState: BlockState, withMetadata: boole
   return compactBlockMarkup(`
     <section ${attrs} style="margin:24px 0;padding:0;box-sizing:border-box;">
       ${metadata}
-      <div style="box-sizing:border-box;">${renderBody(preset, state)}</div>
+      <div style="box-sizing:border-box;">${renderBody(preset, state, !withMetadata)}</div>
     </section>
   `)
 }

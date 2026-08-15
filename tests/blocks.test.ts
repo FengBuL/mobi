@@ -7,6 +7,7 @@ import {
   parseBlockEntries,
   parseBlockMarkup,
 } from '@/utils/blocks/registry'
+import { materializeWeChatDecorations } from '@/utils/wechat-compat'
 
 const allPresets = blockCategories.flatMap(category => (
   category.presets.map(preset => ({ category, preset }))
@@ -20,6 +21,37 @@ function buildExport(presetId: string) {
   holder.innerHTML = category.build(preset, state)
   convertBlocksForWeChat(holder)
   return holder.innerHTML
+}
+
+/**
+ * 本地保守清洗夹具：模拟公众号粘贴时会丢弃的空元素和不稳定布局属性。
+ * 它不声称完整复刻微信，只编码用户截图和项目参考文档已能验证的失效边界。
+ */
+function sanitizeLikeWeChat(html: string) {
+  const holder = document.createElement(`div`)
+  holder.innerHTML = html
+
+  holder.querySelectorAll<HTMLElement>(`[style]`).forEach((element) => {
+    element.style.removeProperty(`position`)
+    element.style.removeProperty(`top`)
+    element.style.removeProperty(`right`)
+    element.style.removeProperty(`bottom`)
+    element.style.removeProperty(`left`)
+    element.style.removeProperty(`transform`)
+    element.style.removeProperty(`gap`)
+    if (element.style.display === `flex` || element.style.display === `grid`) {
+      element.style.removeProperty(`display`)
+    }
+    element.style.removeProperty(`flex`)
+  })
+
+  Array.from(holder.querySelectorAll<HTMLElement>(`span, section`)).reverse().forEach((element) => {
+    if (!element.childNodes.length && element.textContent === ``) {
+      element.remove()
+    }
+  })
+
+  return holder
 }
 
 describe(`板块预设`, () => {
@@ -36,6 +68,17 @@ describe(`板块预设`, () => {
 })
 
 describe(`build / parse 往返`, () => {
+  it(`可选字段节点被删除后解析为空值`, () => {
+    const preset = getBlockPreset(`heading-geometry-dots`)!
+    const category = blockCategories.find(item => item.id === `heading`)!
+    const state = category.createDefaultState(preset)
+    state.subtitle = ``
+
+    const parsed = category.parse(category.build(preset, state))
+
+    expect(parsed?.state.subtitle).toBe(``)
+  })
+
   it(`统一字号比例会写入板块并能够回填`, () => {
     const preset = getBlockPreset(`heading-signal-banner`)!
     const state = { ...blockCategories.find(item => item.id === `heading`)!.createDefaultState(preset), fontScale: 1.2 }
@@ -214,5 +257,92 @@ describe(`公众号导出产物`, () => {
 
     expect(holder.querySelector(`img`)).toBeNull()
     expect(holder.textContent).toContain(`<img onerror=alert(1)>`)
+  })
+
+  it(`几何坐标的菱形与圆点经过保守清洗仍由真实节点承载`, () => {
+    const sanitized = sanitizeLikeWeChat(buildExport(`heading-geometry-dots`))
+    const decorations = Array.from(sanitized.querySelectorAll<HTMLElement>(`[data-mobi-clipboard-decoration]`))
+
+    expect(sanitized.textContent).toContain(`这里是章节标题`)
+    expect(decorations).toHaveLength(2)
+    expect(decorations.map(element => element.textContent)).toEqual([`◆`, `●`])
+    expect(decorations.map(element => element.style.color)).toEqual([`rgb(30, 107, 184)`, `rgb(220, 236, 255)`])
+    decorations.forEach((element) => {
+      expect(element.style.transform).toBe(``)
+      expect(element.style.backgroundImage).toBe(``)
+    })
+  })
+
+  it(`几何坐标的菱形与圆点跟随预设主题色`, () => {
+    const preset = getBlockPreset(`heading-geometry-dots`)!
+    const category = blockCategories.find(item => item.id === `heading`)!
+    const customPreset = {
+      ...preset,
+      palette: { ...preset.palette, primary: `#7346c8`, secondary: `#e2d8fa` },
+    }
+    const holder = document.createElement(`div`)
+    holder.innerHTML = category.toWeChat(customPreset, category.createDefaultState(customPreset))
+    materializeWeChatDecorations(holder)
+    const sanitized = sanitizeLikeWeChat(holder.innerHTML)
+    const decorations = Array.from(sanitized.querySelectorAll<HTMLElement>(`[data-mobi-clipboard-decoration]`))
+
+    expect(decorations.map(element => element.style.color)).toEqual([`rgb(115, 70, 200)`, `rgb(226, 216, 250)`])
+  })
+
+  it(`空装饰节点经过保守清洗仍保留尺寸、颜色和顺序`, () => {
+    const sanitized = sanitizeLikeWeChat(buildExport(`divider-three-breaths`))
+    const decorations = Array.from(sanitized.querySelectorAll<HTMLElement>(`span`))
+
+    expect(decorations).toHaveLength(3)
+    expect(decorations.map(element => element.style.width)).toEqual([`5px`, `8px`, `5px`])
+    expect(decorations.every(element => Boolean(element.style.backgroundColor))).toBe(true)
+    expect(decorations.every(element => element.textContent !== ``)).toBe(true)
+  })
+
+  it(`依赖 flex 的标题行在布局属性被清洗后仍保持装饰、文字和先后顺序`, () => {
+    const sanitized = sanitizeLikeWeChat(buildExport(`heading-number-seal`))
+    const text = sanitized.textContent || ``
+    const badge = Array.from(sanitized.querySelectorAll<HTMLElement>(`span`)).find(element => element.style.width === `42px`)
+    const title = Array.from(sanitized.querySelectorAll<HTMLElement>(`p`)).find(element => element.textContent === `这里是章节标题`)
+
+    expect(badge).toBeTruthy()
+    expect(title).toBeTruthy()
+    expect(text.indexOf(`01`)).toBeLessThan(text.indexOf(`这里是章节标题`))
+    expect(title?.parentElement?.style.width).toMatch(/%$/)
+  })
+
+  it(`所有板块类别的可见空装饰都已物化`, () => {
+    allPresets.forEach(({ preset }) => {
+      const holder = document.createElement(`div`)
+      holder.innerHTML = buildExport(preset.id)
+      const unsafe = Array.from(holder.querySelectorAll<HTMLElement>(`span, section`)).filter((element) => {
+        if (element.childNodes.length || element.textContent !== `` || element.style.display === `none`) {
+          return false
+        }
+        const style = element.getAttribute(`style`) || ``
+        return /(?:background|border|box-shadow)\s*:/i.test(style)
+      })
+      expect(unsafe, preset.id).toHaveLength(0)
+    })
+  }, 15000)
+
+  it(`内联 SVG 分隔件被剔除时仍有真实边框降级`, () => {
+    const sanitized = sanitizeLikeWeChat(buildExport(`divider-tidal-wave`))
+    sanitized.querySelectorAll(`svg`).forEach(svg => svg.remove())
+    const fallback = Array.from(sanitized.querySelectorAll<HTMLElement>(`section`)).find(element => element.style.borderBottomWidth)
+
+    expect(fallback?.style.borderBottomStyle).toBe(`solid`)
+    expect(fallback?.style.borderBottomColor).toBeTruthy()
+  })
+
+  it(`data-URI 环形进度在背景图被清洗后仍有内联边框轮廓`, () => {
+    const sanitized = sanitizeLikeWeChat(buildExport(`data-orbit-progress`))
+    const ring = Array.from(sanitized.querySelectorAll<HTMLElement>(`span`)).find(element => element.style.width === `112px`)
+    ring?.style.removeProperty(`background-image`)
+
+    expect(ring?.textContent).toContain(`68%`)
+    expect(ring?.style.borderWidth).toBeTruthy()
+    expect(ring?.style.borderStyle).toBe(`solid`)
+    expect(ring?.style.borderColor).toBeTruthy()
   })
 })

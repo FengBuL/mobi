@@ -5,6 +5,7 @@ import { useBlockSelectionStore } from '@/stores/blockSelection'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
+import { useUIStore } from '@/stores/ui'
 import {
   BLOCK_FONT_SCALE_OPTIONS,
   blockCategories,
@@ -16,14 +17,19 @@ import { trackEvent } from '@/utils/telemetry'
 
 const props = withDefaults(defineProps<{
   categoryId?: string
+  mode?: `library` | `inspector`
 }>(), {
   categoryId: `heading`,
+  mode: `library`,
 })
+
+const { mode } = toRefs(props)
 
 const editorStore = useEditorStore()
 const blockSelectionStore = useBlockSelectionStore()
 const postStore = usePostStore()
 const renderStore = useRenderStore()
+const uiStore = useUIStore()
 const { selection: blockSelection } = storeToRefs(blockSelectionStore)
 const category = computed(() => blockCategories.find(item => item.id === props.categoryId) ?? blockCategories[0])
 const presets = computed(() => category.value.presets)
@@ -99,6 +105,7 @@ watch([category, blockSelection], ([nextCategory, selection]) => {
 function selectPreset(preset: BlockPreset) {
   const previous = selectedPreset.value
   selectedPresetId.value = preset.id
+  uiStore.openBlockInspector()
 
   const next = category.value.createDefaultState(preset)
   Object.keys(next).forEach((key) => {
@@ -161,6 +168,7 @@ function editBlock(block: ParsedBlock) {
     state: { ...block.state },
     title: block.title,
   })
+  uiStore.openBlockInspector()
 }
 
 // 删除时连带吃掉板块前后的空行，否则正文里会留下越积越多的空白
@@ -200,12 +208,23 @@ function deleteSelected() {
   toast.success(`已删除当前${category.value.name}板块`)
 }
 
-function persistContent(nextContent: string) {
-  editorStore.importContent(nextContent)
+function persistContent(nextContent: string, options: { preserveBlockSelection?: boolean } = {}) {
+  editorStore.importContent(nextContent, options)
   if (postStore.currentPost) {
     postStore.updatePostContent(postStore.currentPost.id, nextContent)
   }
   renderStore.render(nextContent)
+}
+
+function syncBlockSelection(preset: BlockPreset, range: { from: number, to: number }) {
+  blockSelectionStore.select({
+    category: category.value.id,
+    from: range.from,
+    to: range.to,
+    presetId: preset.id,
+    state: { ...state },
+    title: String(state.title ?? state.quote ?? state.item1 ?? preset.name),
+  })
 }
 
 function writeBlock(preset: BlockPreset, message?: string) {
@@ -217,31 +236,26 @@ function writeBlock(preset: BlockPreset, message?: string) {
 
   if (editingRange.value) {
     const { from, to } = editingRange.value
-    persistContent(`${current.slice(0, from)}${markup}${current.slice(to)}`)
+    persistContent(`${current.slice(0, from)}${markup}${current.slice(to)}`, { preserveBlockSelection: true })
     editingRange.value = { from, to: from + markup.length }
-    blockSelectionStore.select({
-      category: category.value.id,
-      from,
-      to: from + markup.length,
-      presetId: preset.id,
-      state: { ...state },
-      title: String(state.title ?? state.quote ?? state.item1 ?? preset.name),
-    })
+    syncBlockSelection(preset, editingRange.value)
     if (message) {
       toast.success(message)
     }
     return
   }
 
-  editorStore.insertBlockAtCursor(markup)
+  const insertedRange = editorStore.insertBlockAtCursor(markup, { preserveBlockSelection: true })
   const nextContent = editorStore.getContent()
   if (postStore.currentPost) {
     postStore.updatePostContent(postStore.currentPost.id, nextContent)
   }
   renderStore.render(nextContent)
 
-  const from = nextContent.indexOf(markup)
-  editingRange.value = from === -1 ? null : { from, to: from + markup.length }
+  editingRange.value = insertedRange ?? null
+  if (editingRange.value) {
+    syncBlockSelection(preset, editingRange.value)
+  }
   if (message) {
     toast.success(message)
   }
@@ -249,8 +263,8 @@ function writeBlock(preset: BlockPreset, message?: string) {
 </script>
 
 <template>
-  <div class="heading-block-workspace">
-    <section class="heading-block-section">
+  <div class="heading-block-workspace" :class="`heading-block-workspace--${mode}`">
+    <section v-if="mode === 'library'" class="heading-block-section">
       <div class="heading-block-section__head">
         <div>
           <h3>选择{{ category.name }}样式</h3>
@@ -282,7 +296,7 @@ function writeBlock(preset: BlockPreset, message?: string) {
       </div>
     </section>
 
-    <section class="heading-block-section">
+    <section v-if="mode === 'inspector'" class="heading-block-section heading-block-inspector">
       <div class="heading-block-section__head">
         <div>
           <h3>{{ editingRange ? '编辑当前板块' : '填写内容' }}</h3>
@@ -353,7 +367,7 @@ function writeBlock(preset: BlockPreset, message?: string) {
       </div>
     </section>
 
-    <section v-if="existingBlocks.length" class="heading-block-section">
+    <section v-if="mode === 'library' && existingBlocks.length" class="heading-block-section">
       <div class="heading-block-section__head">
         <div>
           <h3>正文中的{{ category.name }}板块</h3>
@@ -394,6 +408,15 @@ function writeBlock(preset: BlockPreset, message?: string) {
   border: 1px solid hsl(var(--border) / 0.78);
   border-radius: 24px;
   background: hsl(var(--background) / 0.9);
+}
+
+.heading-block-inspector {
+  padding: 0.85rem;
+  border-radius: 16px;
+}
+
+.heading-block-inspector .heading-block-preview {
+  display: none;
 }
 
 .heading-block-section__head {

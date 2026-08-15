@@ -16,7 +16,7 @@ import {
 import { SearchTab } from '@/components/ui/search-tab'
 import { useImageUploader } from '@/composables/useImageUploader'
 import { useBlockSelectionStore } from '@/stores/blockSelection'
-import { useEditorStore } from '@/stores/editor'
+import { blockSelectionTransaction, useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
@@ -1351,7 +1351,10 @@ function createFormTextArea(dom: HTMLDivElement) {
       themeCompartment.of(theme(isDark.value)),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
-          blockSelectionStore.clear()
+          const preserveBlockSelection = update.transactions.some(transaction => transaction.annotation(blockSelectionTransaction))
+          if (!preserveBlockSelection) {
+            blockSelectionStore.clear()
+          }
           const value = update.state.doc.toString()
           clearTimeout(changeTimer.value)
           changeTimer.value = setTimeout(() => {

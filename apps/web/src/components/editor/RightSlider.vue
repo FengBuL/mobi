@@ -1,19 +1,15 @@
 <script setup lang="ts">
 import type {
-  HeadingLevel,
   HeadingStyles,
-  HeadingStyleType,
   IStylePreset,
   ThemeName,
 } from '@mobi/shared/configs'
-import type { CustomTheme } from '@/utils/theme-designer'
+import type { StylePresetSession } from '@/utils/style-panel'
+import type { CustomTheme, ThemeDraft } from '@/utils/theme-designer'
 import {
   codeBlockThemeOptions,
-  colorOptions,
   defaultStyleConfig,
-  fontFamilyOptions,
-  headingLevelOptions,
-  headingStyleOptions,
+  getThemeDefaultPrimaryColor,
   stylePresetOptions,
   themeCategoryOptions,
   themeMap,
@@ -21,24 +17,42 @@ import {
   themeOptionsMap,
 } from '@mobi/shared/configs'
 import { X } from 'lucide-vue-next'
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
+import HeadingBlockWorkspace from '@/components/editor/HeadingBlockWorkspace.vue'
+import { useBlockSelectionStore } from '@/stores/blockSelection'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useUIStore } from '@/stores/ui'
+import {
+  buildThemeSelectOptions,
+  clearStylePresetSession,
+  createStylePresetSession,
+  loadStylePresets,
+  loadStylePresetSession,
+  persistStylePresets,
+  persistStylePresetSession,
+  removeSavedItem,
+  restoreSavedItem,
+  shouldClearStylePreset,
+  stepSelectValue,
+  validateStylePresetName,
+} from '@/utils/style-panel'
 import { trackEvent } from '@/utils/telemetry'
 import { exportCustomThemeAsCSS, exportCustomThemeAsJSON, themeDesignerGroupMap } from '@/utils/theme-designer'
 
 const uiStore = useUIStore()
+const blockSelectionStore = useBlockSelectionStore()
 const themeStore = useThemeStore()
 const themeDesignerStore = useThemeDesignerStore()
+type DeletedCustomTheme = NonNullable<ReturnType<typeof themeDesignerStore.deleteCustomTheme>>
 const { customThemes: customVisualThemes, draft: visualThemeDraft } = storeToRefs(themeDesignerStore)
 const {
   theme,
   fontFamily,
   fontSize,
   primaryColor,
+  primaryColorSource,
   codeBlockTheme,
   legend,
   isShowCodeLanguage,
@@ -48,26 +62,13 @@ const {
   isUseIndent,
   isUseJustify,
   headingStyles,
-  favoriteThemes,
   hiddenThemes,
 } = storeToRefs(themeStore)
 
-// 主题分类筛选
-const selectedThemeCategory = ref(`全部`)
-const themeCategoryNames = computed(() => [`常用`, `全部`, ...themeCategoryOptions.map(c => c.category)])
-const filteredThemeOptions = computed(() => {
-  const allFilteredThemes = themeOptions.filter(t => !hiddenThemes.value.includes(t.value as string))
-  if (selectedThemeCategory.value === `常用`) {
-    return themeOptions.filter(t => favoriteThemes.value.includes(t.value as string) && !hiddenThemes.value.includes(t.value as string))
-  }
-  if (selectedThemeCategory.value === `全部`) {
-    return allFilteredThemes
-  }
-  const cat = themeCategoryOptions.find(c => c.category === selectedThemeCategory.value)
-  return cat ? cat.themes.filter(t => !hiddenThemes.value.includes(t.value as string)) : allFilteredThemes
-})
-
 const activeStylePanel = ref(`template`)
+const activeInspectorPanel = ref<`component` | `style`>(`style`)
+const { selection: blockSelection } = storeToRefs(blockSelectionStore)
+const { blockInspectorRequest } = storeToRefs(uiStore)
 
 /**
  * 跟随预览里的点击：翻到对应的页、展开那一组、滚过去，再闪一下告诉用户「就是这里」。
@@ -80,6 +81,7 @@ watch(() => uiStore.styleFocusRequest, (request) => {
     return
   }
 
+  activeInspectorPanel.value = `style`
   activeStylePanel.value = request.panel
 
   if (!request.groupId) {
@@ -105,71 +107,48 @@ watch(() => uiStore.styleFocusRequest, (request) => {
   })
 })
 
+watch(blockInspectorRequest, (request) => {
+  if (request) {
+    activeInspectorPanel.value = `component`
+  }
+}, { immediate: true })
+
 onBeforeUnmount(() => clearTimeout(focusFlashTimer))
 const STYLE_PRESET_STORAGE_KEY = `mobi_savedStylePresets`
+const STYLE_PRESET_SESSION_KEY = `mobi_activeStylePresetSession`
 const CUSTOM_STYLE_PRESET_PLACEHOLDER = `__custom_style_preset__`
-const customStylePresets = ref<IStylePreset[]>(JSON.parse(localStorage.getItem(STYLE_PRESET_STORAGE_KEY) || `[]`))
-// 标题样式选择器状态
-const selectedHeadingLevel = ref<HeadingLevel>(`h2`)
-const selectedHeadingStyle = computed({
-  get: () => themeStore.getHeadingStyle(selectedHeadingLevel.value),
-  set: (val: HeadingStyleType) => {
-    themeStore.setHeadingStyle(selectedHeadingLevel.value, val)
-    // 无论选择哪种预设，都立即应用主题，确保标题样式及时恢复/更新
-    themeStore.applyCurrentTheme()
-    editorRefresh()
-  },
-})
-const headingLevels = headingLevelOptions.map(({ value }) => value as HeadingLevel)
-const selectedHeadingLevelLabel = computed(() => {
-  return headingLevelOptions.find(({ value }) => value === selectedHeadingLevel.value)?.label || `二级标题`
-})
-const selectedHeadingStyleMeta = computed(() => {
-  return headingStyleOptions.find(({ value }) => value === selectedHeadingStyle.value) || headingStyleOptions[0]
-})
-const headingSyncSnapshot = ref<HeadingStyles | null>(null)
-const lastSyncedHeadingStyle = ref<HeadingStyleType | null>(null)
-const isHeadingStyleFullySynced = computed(() => {
-  return headingLevels.every(level => themeStore.getHeadingStyle(level) === selectedHeadingStyle.value)
-})
-const canUndoHeadingSync = computed(() => {
-  return Boolean(headingSyncSnapshot.value)
-    && lastSyncedHeadingStyle.value === selectedHeadingStyle.value
-    && isHeadingStyleFullySynced.value
-})
-const headingSyncButtonLabel = computed(() => canUndoHeadingSync.value ? `取消同步` : `同步到全部标题`)
-const headingStatusSummary = computed(() => {
-  const activeLevels = headingLevels.filter(level => themeStore.getHeadingStyle(level) !== `default`)
-  if (!activeLevels.length)
-    return `跟随主题`
 
-  const firstStyle = themeStore.getHeadingStyle(headingLevels[0])
-  const allSame = headingLevels.every(level => themeStore.getHeadingStyle(level) === firstStyle)
-  if (allSame) {
-    return `${headingStyleOptions.find(({ value }) => value === firstStyle)?.label || `自定义`} · 全部标题`
-  }
+interface StyleSnapshot {
+  preset: IStylePreset
+  primaryColorSource: `theme` | `manual`
+  visualDraft: ThemeDraft
+}
 
-  return `已混搭 ${activeLevels.length} 个级别`
-})
-const hasVisualHeadingOverride = computed(() => {
-  return headingLevels.some(level => themeDesignerStore.groupCount(level) > 0)
-})
-const paragraphStatusSummary = computed(() => {
-  const parts = [
-    isUseIndent.value ? `首行缩进` : ``,
-    isUseJustify.value ? `两端对齐` : ``,
-  ].filter(Boolean)
+interface StyleHistoryContext {
+  style: StyleSnapshot
+  activeStylePresetValue: string
+  appliedPresetSignature: string | null
+  presetSession: StylePresetSession<StyleSnapshot> | null
+}
 
-  return parts.length ? parts.join(` / `) : `默认段落`
-})
-const codeStatusSummary = computed(() => {
-  const parts = [
-    isShowCodeLanguage.value ? `标语言` : `不标语言`,
-    isShowLineNumber.value ? `带行号` : `无行号`,
-  ]
+const customStylePresets = ref<IStylePreset[]>(loadStylePresets(localStorage, STYLE_PRESET_STORAGE_KEY))
+const storedPresetSession = loadStylePresetSession<StyleSnapshot>(localStorage, STYLE_PRESET_SESSION_KEY)
+const storedPresetStillExists = Boolean(storedPresetSession?.snapshot?.preset && [
+  ...stylePresetOptions,
+  ...customStylePresets.value,
+].some(preset => preset.value === storedPresetSession.activeValue))
+const presetSession = ref(storedPresetStillExists ? storedPresetSession : null)
+const activeStylePresetValue = ref(storedPresetStillExists
+  ? storedPresetSession!.activeValue
+  : CUSTOM_STYLE_PRESET_PLACEHOLDER)
+if (storedPresetSession && !storedPresetStillExists)
+  clearStylePresetSession(localStorage, STYLE_PRESET_SESSION_KEY)
+const appliedPresetSignature = ref<string | null>(null)
+const savePresetName = ref(``)
+const savePresetError = ref(``)
+const savePresetFeedback = ref(``)
+const activeCustomStylePreset = computed(() => customStylePresets.value.find(preset => preset.value === activeStylePresetValue.value) || null)
 
-  return parts.join(` / `)
-})
 function headingStylesSignature(styles: HeadingStyles = {}) {
   return JSON.stringify(
     Object.entries(styles)
@@ -177,32 +156,34 @@ function headingStylesSignature(styles: HeadingStyles = {}) {
       .sort(([left], [right]) => left.localeCompare(right)),
   )
 }
-const currentHeadingStylesSignature = computed(() => headingStylesSignature(headingStyles.value))
-const allStylePresets = computed(() => [...customStylePresets.value, ...stylePresetOptions])
-const activeMatchedPreset = computed(() => {
-  return allStylePresets.value.find(preset => isPresetActive(preset)) || null
-})
+const allStylePresets = computed(() => [...stylePresetOptions, ...customStylePresets.value])
 const presetSelectValue = computed({
-  get: () => activeMatchedPreset.value?.value || CUSTOM_STYLE_PRESET_PLACEHOLDER,
+  get: () => activeStylePresetValue.value,
   set: (value: string) => {
-    if (value === CUSTOM_STYLE_PRESET_PLACEHOLDER)
+    if (value === CUSTOM_STYLE_PRESET_PLACEHOLDER) {
+      cancelActiveStylePreset()
       return
+    }
 
     const preset = allStylePresets.value.find(item => item.value === value)
     if (preset)
       applyStylePreset(preset)
   },
 })
-const displayedStylePreset = computed<IStylePreset>(() => {
-  return activeMatchedPreset.value || buildCurrentStylePreset({
-    label: `当前自定义`,
-    value: CUSTOM_STYLE_PRESET_PLACEHOLDER,
-    scene: `自定义组合`,
-    desc: `当前搭配没有对应预设，可以保存成自己的方案。`,
-    previewSurface: `#f5f7fb`,
-    previewInk: `#111827`,
-  })
+
+const visibleThemeCategories = computed(() => themeCategoryOptions.map(category => ({
+  ...category,
+  themes: category.themes.filter(option => !hiddenThemes.value.includes(option.value)),
+})))
+const themeSelectOptions = computed(() => buildThemeSelectOptions(visibleThemeCategories.value, customVisualThemes.value))
+const themeSelectValue = computed({
+  get: () => visualThemeDraft.value.sourceId
+    ? `custom:${visualThemeDraft.value.sourceId}`
+    : `theme:${theme.value}`,
+  set: (value: string) => applyThemeSelectValue(value),
 })
+const activeCustomVisualTheme = computed(() => customVisualThemes.value.find(item => item.id === visualThemeDraft.value.sourceId) || null)
+const isThemeSelectFocused = ref(false)
 
 const { isMobile, isOpenRightSlider } = storeToRefs(uiStore)
 
@@ -217,25 +198,8 @@ function editorRefresh() {
   renderStore.render(renderStore.resolvePreviewContent(raw))
 }
 
-function clearHeadingSyncState() {
-  headingSyncSnapshot.value = null
-  lastSyncedHeadingStyle.value = null
-}
-
 function getThemeLabel(value: string) {
   return themeOptions.find(option => option.value === value)?.label || value
-}
-
-function getFontLabel(value: string) {
-  return fontFamilyOptions.find(option => option.value === value)?.label || `自定义字体`
-}
-
-function getColorLabel(value: string) {
-  return colorOptions.find(option => option.value === value)?.label || `自定义颜色`
-}
-
-function isCustomPresetValue(value: string) {
-  return customStylePresets.value.some(preset => preset.value === value)
 }
 
 function buildCurrentStylePreset(overrides: Partial<IStylePreset>): IStylePreset {
@@ -243,7 +207,7 @@ function buildCurrentStylePreset(overrides: Partial<IStylePreset>): IStylePreset
     label: overrides.label || `未命名预设`,
     value: overrides.value || `custom-${Date.now()}`,
     scene: overrides.scene || `我的预设`,
-    desc: overrides.desc || `${getThemeLabel(theme.value)} · ${getFontLabel(fontFamily.value)} · ${getColorLabel(primaryColor.value as string)}`,
+    desc: overrides.desc || `${getThemeLabel(theme.value)} · ${fontSize.value}`,
     theme: overrides.theme || theme.value,
     fontFamily: overrides.fontFamily || fontFamily.value,
     fontSize: overrides.fontSize || fontSize.value,
@@ -261,33 +225,48 @@ function buildCurrentStylePreset(overrides: Partial<IStylePreset>): IStylePreset
   }
 }
 
-function selectThemeCategoryByTheme(themeValue: string) {
-  selectedThemeCategory.value = themeCategoryOptions.find(category =>
-    category.themes.some(option => option.value === themeValue),
-  )?.category || `全部`
+function currentStylePresetSignature() {
+  return JSON.stringify({
+    theme: theme.value,
+    fontFamily: fontFamily.value,
+    fontSize: fontSize.value,
+    primaryColor: primaryColor.value,
+    codeBlockTheme: codeBlockTheme.value,
+    legend: legend.value,
+    headingStyles: headingStylesSignature(headingStyles.value),
+    isShowCodeLanguage: isShowCodeLanguage.value,
+    isShowLineNumber: isShowLineNumber.value,
+    isCiteStatus: isCiteStatus.value,
+    isUseIndent: isUseIndent.value,
+    isUseJustify: isUseJustify.value,
+  })
 }
 
-function isPresetActive(preset: IStylePreset) {
-  return theme.value === preset.theme
-    && fontFamily.value === preset.fontFamily
-    && fontSize.value === preset.fontSize
-    && primaryColor.value === preset.primaryColor
-    && codeBlockTheme.value === preset.codeBlockTheme
-    && legend.value === preset.legend
-    && isShowCodeLanguage.value === preset.isShowCodeLanguage
-    && isShowLineNumber.value === preset.isShowLineNumber
-    && isCiteStatus.value === preset.isCiteStatus
-    && isUseIndent.value === preset.isUseIndent
-    && isUseJustify.value === preset.isUseJustify
-    && currentHeadingStylesSignature.value === headingStylesSignature(preset.headingStyles)
+if (storedPresetStillExists)
+  appliedPresetSignature.value = currentStylePresetSignature()
+
+function captureStyleSnapshot(): StyleSnapshot {
+  return {
+    preset: buildCurrentStylePreset({
+      label: `当前自定义`,
+      value: CUSTOM_STYLE_PRESET_PLACEHOLDER,
+      scene: `当前自定义`,
+    }),
+    primaryColorSource: primaryColorSource.value === `theme` ? `theme` : `manual`,
+    visualDraft: {
+      sourceId: visualThemeDraft.value.sourceId,
+      name: visualThemeDraft.value.name,
+      baseTheme: visualThemeDraft.value.baseTheme,
+      tokens: structuredClone(toRaw(visualThemeDraft.value.tokens)),
+    },
+  }
 }
 
-function applyStylePreset(preset: IStylePreset) {
-  clearHeadingSyncState()
+function applyPresetValues(preset: IStylePreset, colorSource: `theme` | `manual` = `manual`) {
   themeStore.theme = preset.theme
   themeStore.fontFamily = preset.fontFamily
   themeStore.fontSize = preset.fontSize
-  themeStore.primaryColor = preset.primaryColor
+  themeStore.restorePrimaryColorState(String(preset.primaryColor), colorSource)
   themeStore.codeBlockTheme = preset.codeBlockTheme
   themeStore.legend = preset.legend
   themeStore.isShowCodeLanguage = preset.isShowCodeLanguage
@@ -296,60 +275,134 @@ function applyStylePreset(preset: IStylePreset) {
   themeStore.isUseIndent = preset.isUseIndent
   themeStore.isUseJustify = preset.isUseJustify
   headingStyles.value = { ...preset.headingStyles }
-  selectedHeadingLevel.value = `h2`
-  selectThemeCategoryByTheme(preset.theme)
+}
+
+function syncPresetSessionStorage() {
+  if (presetSession.value) {
+    persistStylePresetSession(localStorage, STYLE_PRESET_SESSION_KEY, presetSession.value)
+  }
+  else {
+    clearStylePresetSession(localStorage, STYLE_PRESET_SESSION_KEY)
+  }
+}
+
+function leaveActiveStylePreset() {
+  activeStylePresetValue.value = CUSTOM_STYLE_PRESET_PLACEHOLDER
+  appliedPresetSignature.value = null
+  presetSession.value = null
+  syncPresetSessionStorage()
+}
+
+let isApplyingStyleLifecycle = false
+
+function applyStylePreset(preset: IStylePreset) {
+  const snapshot = captureStyleSnapshot()
+  themeDesignerStore.checkpoint()
+  isApplyingStyleLifecycle = true
+  presetSession.value = createStylePresetSession(presetSession.value, preset.value, snapshot)
+  applyPresetValues(preset)
+  activeStylePresetValue.value = preset.value
+  appliedPresetSignature.value = currentStylePresetSignature()
+  syncPresetSessionStorage()
   themeStore.applyCurrentTheme()
   editorRefresh()
+  nextTick(() => {
+    isApplyingStyleLifecycle = false
+  })
   trackEvent(`style_preset_apply`, { preset: preset.value })
 }
 
-function saveCurrentStylePreset() {
-  const fallbackName = activeMatchedPreset.value
-    ? `${activeMatchedPreset.value.label} 变体`
-    : `${getThemeLabel(theme.value)}预设`
-  const name = window.prompt(`请输入预设名称`, fallbackName)?.trim()
-
-  if (!name)
-    return
-
-  if (stylePresetOptions.some(preset => preset.label === name)) {
-    toast.error(`该名称已被内置预设占用`)
+function cancelActiveStylePreset() {
+  const snapshot = presetSession.value?.snapshot
+  if (!snapshot) {
+    leaveActiveStylePreset()
     return
   }
 
-  const existingIndex = customStylePresets.value.findIndex(preset => preset.label === name)
-  const nextPreset = buildCurrentStylePreset({
-    label: name,
-    value: existingIndex >= 0 ? customStylePresets.value[existingIndex].value : `custom-${Date.now()}`,
-    scene: `我的预设`,
-    desc: `${getThemeLabel(theme.value)} · ${getFontLabel(fontFamily.value)} · ${getColorLabel(primaryColor.value as string)}`,
-  })
-
-  if (existingIndex >= 0) {
-    customStylePresets.value = customStylePresets.value.map((preset, index) => index === existingIndex ? nextPreset : preset)
-    toast.success(`预设「${name}」已更新`)
-  }
-  else {
-    customStylePresets.value = [nextPreset, ...customStylePresets.value]
-    toast.success(`预设「${name}」已保存`)
-  }
-}
-
-function resetTemplateGroup() {
-  themeStore.theme = defaultStyleConfig.theme
-  selectThemeCategoryByTheme(defaultStyleConfig.theme)
+  themeDesignerStore.checkpoint()
+  isApplyingStyleLifecycle = true
+  applyPresetValues(snapshot.preset, snapshot.primaryColorSource)
+  themeDesignerStore.replaceDraft(snapshot.visualDraft, false)
+  leaveActiveStylePreset()
   themeStore.applyCurrentTheme()
   editorRefresh()
+  nextTick(() => {
+    isApplyingStyleLifecycle = false
+  })
 }
 
-// 标题装饰属于文字排版，跟着它所在的分组一起重置
+function saveCurrentStylePreset() {
+  savePresetError.value = ``
+  savePresetFeedback.value = ``
+  const validationError = validateStylePresetName(savePresetName.value, stylePresetOptions, customStylePresets.value)
+  if (validationError) {
+    savePresetError.value = validationError
+    return
+  }
+
+  const name = savePresetName.value.trim()
+  const nextPreset = buildCurrentStylePreset({
+    label: name,
+    value: `custom-${Date.now()}`,
+    scene: `我的预设`,
+    desc: `${getThemeLabel(theme.value)} · ${fontSize.value}`,
+  })
+  const nextPresets = [nextPreset, ...customStylePresets.value]
+
+  if (!persistStylePresets(localStorage, STYLE_PRESET_STORAGE_KEY, nextPresets)) {
+    savePresetError.value = `方案保存失败，请检查浏览器存储空间后重试`
+    return
+  }
+
+  customStylePresets.value = nextPresets
+  presetSession.value = createStylePresetSession(null, nextPreset.value, captureStyleSnapshot())
+  activeStylePresetValue.value = nextPreset.value
+  appliedPresetSignature.value = currentStylePresetSignature()
+  syncPresetSessionStorage()
+  savePresetName.value = ``
+  savePresetFeedback.value = `方案「${name}」已保存`
+  toast.success(savePresetFeedback.value)
+}
+
+function undoDeleteCustomStylePreset(removal: { item: IStylePreset, index: number }) {
+  if (customStylePresets.value.some(preset => preset.value === removal.item.value))
+    return
+
+  const nextPresets = restoreSavedItem(customStylePresets.value, removal)
+  if (!persistStylePresets(localStorage, STYLE_PRESET_STORAGE_KEY, nextPresets)) {
+    toast.error(`方案恢复失败，请检查浏览器存储空间后重试`)
+    return
+  }
+
+  customStylePresets.value = nextPresets
+  toast.success(`方案「${removal.item.label}」已恢复`)
+}
+
+function deleteCustomStylePreset(item: IStylePreset) {
+  const result = removeSavedItem(customStylePresets.value, preset => preset.value === item.value)
+  if (!result)
+    return
+
+  if (!persistStylePresets(localStorage, STYLE_PRESET_STORAGE_KEY, result.items)) {
+    toast.error(`方案删除失败，请检查浏览器存储空间后重试`)
+    return
+  }
+
+  customStylePresets.value = result.items
+  if (activeStylePresetValue.value === item.value)
+    leaveActiveStylePreset()
+
+  toast.success(`方案「${item.label}」已删除`, {
+    duration: 5000,
+    action: { label: `撤销`, onClick: () => undoDeleteCustomStylePreset(result.removal) },
+  })
+}
+
 function resetTextGroup() {
-  clearHeadingSyncState()
   themeStore.fontFamily = defaultStyleConfig.fontFamily
   themeStore.fontSize = defaultStyleConfig.fontSize
   themeStore.primaryColor = defaultStyleConfig.primaryColor
   headingStyles.value = { ...defaultStyleConfig.headingStyles }
-  selectedHeadingLevel.value = `h2`
   themeStore.isUseIndent = false
   themeStore.isUseJustify = false
   themeStore.applyCurrentTheme()
@@ -366,33 +419,136 @@ function resetDetailGroup() {
   editorRefresh()
 }
 
-// Theme change handlers
-function themeChanged(newTheme: keyof typeof themeMap) {
-  themeStore.theme = newTheme
-  // 使用新主题系统
-  themeStore.applyCurrentTheme()
-  editorRefresh()
-  trackEvent(`theme_change`, { theme: newTheme })
-}
-
 function getDesignerGroup(groupId: string) {
   return themeDesignerGroupMap[groupId]
 }
 
-function applyCustomVisualTheme(id: string) {
-  const target = themeDesignerStore.loadCustomTheme(id)
-  if (!target)
-    return
-
-  themeStore.theme = target.baseTheme as ThemeName
-  selectThemeCategoryByTheme(target.baseTheme)
+function applyLayoutBaseline(baseTheme: ThemeName, draft: ThemeDraft) {
+  themeDesignerStore.checkpoint()
+  themeDesignerStore.replaceDraft(draft, false)
+  themeStore.theme = baseTheme
+  themeStore.restorePrimaryColorState(getThemeDefaultPrimaryColor(baseTheme), `theme`)
+  headingStyles.value = {}
+  if (activeStylePresetValue.value !== CUSTOM_STYLE_PRESET_PLACEHOLDER)
+    leaveActiveStylePreset()
   themeStore.applyCurrentTheme()
   editorRefresh()
 }
 
+function applyThemeSelectValue(value: string) {
+  if (value.startsWith(`custom:`)) {
+    const target = customVisualThemes.value.find(item => item.id === value.slice(`custom:`.length))
+    if (!target)
+      return
+
+    applyLayoutBaseline(target.baseTheme as ThemeName, {
+      sourceId: target.id,
+      name: target.name,
+      baseTheme: target.baseTheme,
+      tokens: structuredClone(toRaw(target.tokens)),
+    })
+    return
+  }
+
+  if (value.startsWith(`theme:`)) {
+    const baseTheme = value.slice(`theme:`.length) as ThemeName
+    applyLayoutBaseline(baseTheme, {
+      sourceId: null,
+      name: ``,
+      baseTheme,
+      tokens: {},
+    })
+    trackEvent(`theme_change`, { theme: baseTheme })
+  }
+}
+
+function restoreCurrentLayout() {
+  const source = activeCustomVisualTheme.value
+  if (source) {
+    applyLayoutBaseline(source.baseTheme as ThemeName, {
+      sourceId: source.id,
+      name: source.name,
+      baseTheme: source.baseTheme,
+      tokens: structuredClone(toRaw(source.tokens)),
+    })
+  }
+  else {
+    applyLayoutBaseline(theme.value, {
+      sourceId: null,
+      name: ``,
+      baseTheme: theme.value,
+      tokens: {},
+    })
+  }
+
+  toast.success(`已恢复当前版式，可使用撤销返回`)
+}
+
+function handleThemeWheel(event: WheelEvent) {
+  const nextValue = stepSelectValue(themeSelectOptions.value, themeSelectValue.value, event.deltaY)
+  if (nextValue === themeSelectValue.value)
+    return
+
+  event.preventDefault()
+  themeSelectValue.value = nextValue
+}
+
+function handleThemeKeyStep(direction: -1 | 1) {
+  const nextValue = stepSelectValue(themeSelectOptions.value, themeSelectValue.value, direction)
+  if (nextValue !== themeSelectValue.value)
+    themeSelectValue.value = nextValue
+}
+
+function handleFocusedThemeWheel(event: WheelEvent) {
+  if (!isThemeSelectFocused.value)
+    return
+  if ((event.target as Element | null)?.closest?.(`[data-theme-select-trigger]`))
+    return
+  handleThemeWheel(event)
+}
+
+function captureStyleHistoryContext(): StyleHistoryContext {
+  return {
+    style: captureStyleSnapshot(),
+    activeStylePresetValue: activeStylePresetValue.value,
+    appliedPresetSignature: appliedPresetSignature.value,
+    presetSession: presetSession.value ? structuredClone(toRaw(presetSession.value)) : null,
+  }
+}
+
+function restoreStyleHistoryContext(context: unknown) {
+  const snapshot = context as StyleHistoryContext | null
+  if (!snapshot?.style?.preset)
+    return
+
+  isApplyingStyleLifecycle = true
+  applyPresetValues(snapshot.style.preset, snapshot.style.primaryColorSource)
+  activeStylePresetValue.value = snapshot.activeStylePresetValue
+  appliedPresetSignature.value = snapshot.appliedPresetSignature
+  presetSession.value = snapshot.presetSession
+  syncPresetSessionStorage()
+  themeStore.applyCurrentTheme()
+  editorRefresh()
+  nextTick(() => {
+    isApplyingStyleLifecycle = false
+  })
+}
+
+onMounted(() => {
+  themeDesignerStore.setHistoryContextAdapter({
+    capture: captureStyleHistoryContext,
+    restore: restoreStyleHistoryContext,
+  })
+  window.addEventListener(`wheel`, handleFocusedThemeWheel, { passive: false })
+})
+onBeforeUnmount(() => {
+  themeDesignerStore.setHistoryContextAdapter(null)
+  window.removeEventListener(`wheel`, handleFocusedThemeWheel)
+})
+
 // 精细调节现在就在下面几页里，载入后跳到「文字」页即可继续改
 function editCustomVisualTheme(id: string) {
-  applyCustomVisualTheme(id)
+  applyThemeSelectValue(`custom:${id}`)
   activeStylePanel.value = `text`
 }
 
@@ -410,10 +566,21 @@ function renameCustomVisualTheme(item: CustomTheme) {
   toast.success(`已重命名为「${name}」`)
 }
 
+function undoDeleteCustomVisualTheme(removal: DeletedCustomTheme) {
+  themeDesignerStore.restoreCustomTheme(removal)
+  toast.success(`版式「${removal.item.name}」已恢复`)
+}
+
 function deleteCustomVisualTheme(item: CustomTheme) {
-  themeDesignerStore.deleteCustomTheme(item.id)
+  const removal = themeDesignerStore.deleteCustomTheme(item.id)
+  if (!removal)
+    return
+
   themeStore.applyCurrentTheme()
-  toast.success(`主题「${item.name}」已删除`)
+  toast.success(`版式「${item.name}」已删除`, {
+    duration: 5000,
+    action: { label: `撤销`, onClick: () => undoDeleteCustomVisualTheme(removal) },
+  })
 }
 
 function exportCustomVisualThemeCSS(item: CustomTheme) {
@@ -453,50 +620,6 @@ function useIndentChanged() {
 function useJustifyChanged() {
   themeStore.isUseJustify = !themeStore.isUseJustify
   // 使用新主题系统
-  themeStore.applyCurrentTheme()
-  editorRefresh()
-}
-
-function toggleFavoriteTheme(val: string) {
-  if (favoriteThemes.value.includes(val)) {
-    favoriteThemes.value = favoriteThemes.value.filter(v => v !== val)
-  }
-  else {
-    favoriteThemes.value.push(val)
-  }
-}
-
-function deleteThemeOption(val: string) {
-  if (!hiddenThemes.value.includes(val)) {
-    hiddenThemes.value.push(val)
-  }
-}
-
-function applyHeadingStyleToAll(style: HeadingStyleType) {
-  if (canUndoHeadingSync.value && headingSyncSnapshot.value) {
-    headingStyles.value = { ...headingSyncSnapshot.value }
-    clearHeadingSyncState()
-    themeStore.applyCurrentTheme()
-    editorRefresh()
-    return
-  }
-
-  headingSyncSnapshot.value = { ...headingStyles.value }
-  lastSyncedHeadingStyle.value = style
-  const syncedStyles: HeadingStyles = {}
-  if (style !== `default`) {
-    for (const level of headingLevels) {
-      syncedStyles[level] = style
-    }
-  }
-  headingStyles.value = syncedStyles
-  themeStore.applyCurrentTheme()
-  editorRefresh()
-}
-
-function resetAllHeadingStyles() {
-  clearHeadingSyncState()
-  headingStyles.value = {}
   themeStore.applyCurrentTheme()
   editorRefresh()
 }
@@ -552,18 +675,19 @@ watch(isMobile, () => {
   enableAnimation.value = false
 })
 
-watch(customStylePresets, value => localStorage.setItem(STYLE_PRESET_STORAGE_KEY, JSON.stringify(value)), { deep: true })
-
-watch(headingStyles, () => {
-  if (!lastSyncedHeadingStyle.value)
+watch(computed(currentStylePresetSignature), (signature) => {
+  if (isApplyingStyleLifecycle)
     return
 
-  const stillSynced = headingLevels.every(level => themeStore.getHeadingStyle(level) === lastSyncedHeadingStyle.value)
-  if (!stillSynced) {
-    headingSyncSnapshot.value = null
-    lastSyncedHeadingStyle.value = null
+  if (shouldClearStylePreset(
+    activeStylePresetValue.value,
+    CUSTOM_STYLE_PRESET_PLACEHOLDER,
+    appliedPresetSignature.value,
+    signature,
+  )) {
+    leaveActiveStylePreset()
   }
-}, { deep: true })
+})
 
 const isOpen = ref(false)
 
@@ -605,7 +729,39 @@ watch(isOpen, () => {
           <X class="h-4 w-4" />
         </Button>
       </div>
-      <Tabs v-model="activeStylePanel" class="w-full">
+      <div class="inspector-mode-switch" aria-label="右侧检查器模式">
+        <button
+          type="button"
+          :class="{ 'inspector-mode-switch__item--active': activeInspectorPanel === 'component' }"
+          class="inspector-mode-switch__item"
+          @click="activeInspectorPanel = 'component'"
+        >
+          当前组件
+        </button>
+        <button
+          type="button"
+          :class="{ 'inspector-mode-switch__item--active': activeInspectorPanel === 'style' }"
+          class="inspector-mode-switch__item"
+          @click="activeInspectorPanel = 'style'"
+        >
+          全局样式
+        </button>
+      </div>
+
+      <section v-show="activeInspectorPanel === 'component'" id="block-inspector-slot" class="block-inspector-slot">
+        <HeadingBlockWorkspace
+          v-if="blockSelection"
+          :category-id="blockSelection.category"
+          mode="inspector"
+        />
+        <div v-else class="block-inspector-empty">
+          <span>COMPONENT</span>
+          <strong>从板块库选择一个组件</strong>
+          <p>组件列表会保留当前位置，选中后可在这里直接修改文字和字号。</p>
+        </div>
+      </section>
+
+      <Tabs v-show="activeInspectorPanel === 'style'" v-model="activeStylePanel" class="w-full">
         <TabsList class="grid w-full grid-cols-4">
           <TabsTrigger value="template">
             版式
@@ -623,156 +779,134 @@ watch(isOpen, () => {
 
         <TabsContent value="template" class="mt-4 space-y-4">
           <div class="style-card space-y-3">
-            <div class="flex items-start justify-between gap-3">
-              <div class="space-y-1">
-                <h2 class="text-sm font-semibold">
-                  整套搭配
-                </h2>
-                <p class="text-xs leading-5 text-muted-foreground">
-                  一次换掉版式、字体和主题色。
-                </p>
-              </div>
-              <Button variant="ghost" size="sm" class="h-8 shrink-0 px-3 text-xs" @click="saveCurrentStylePreset">
-                存为我的
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-sm font-semibold">
+                方案
+              </h2>
+              <Button
+                v-if="presetSelectValue !== CUSTOM_STYLE_PRESET_PLACEHOLDER"
+                variant="ghost"
+                size="sm"
+                class="h-8 shrink-0 px-2.5 text-xs"
+                @click="cancelActiveStylePreset"
+              >
+                取消方案
               </Button>
             </div>
-            <div class="grid gap-3">
-              <Select v-model="presetSelectValue">
-                <SelectTrigger class="w-full">
-                  <SelectValue placeholder="选择一个场景预设" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem :value="CUSTOM_STYLE_PRESET_PLACEHOLDER" disabled>
-                    当前自定义组合
-                  </SelectItem>
-                  <SelectItem v-for="preset in allStylePresets" :key="preset.value" :value="preset.value">
-                    {{ isCustomPresetValue(preset.value) ? `我的 · ${preset.label}` : preset.label }}
-                    <span class="ml-2 text-muted-foreground">{{ preset.scene }}</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <div
-                class="rounded-xl border px-3 py-3"
-                :style="{
-                  background: `linear-gradient(135deg, ${displayedStylePreset.previewSurface}, #ffffff)`,
-                  color: displayedStylePreset.previewInk,
-                  fontFamily: displayedStylePreset.fontFamily,
-                }"
+            <Select v-model="presetSelectValue">
+              <SelectTrigger class="h-9 w-full">
+                <SelectValue placeholder="当前自定义" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem :value="CUSTOM_STYLE_PRESET_PLACEHOLDER">
+                  当前自定义
+                </SelectItem>
+                <SelectItem v-for="preset in stylePresetOptions" :key="preset.value" :value="preset.value">
+                  内置 · {{ preset.label }}
+                </SelectItem>
+                <SelectItem v-for="preset in customStylePresets" :key="preset.value" :value="preset.value">
+                  我的 · {{ preset.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <div v-if="activeCustomStylePreset" class="flex justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                class="h-8 px-2.5 text-xs text-destructive"
+                :aria-label="`删除方案 ${activeCustomStylePreset.label}`"
+                @click="deleteCustomStylePreset(activeCustomStylePreset)"
               >
-                <div class="min-w-0 space-y-1">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-sm font-semibold">{{ displayedStylePreset.label }}</span>
-                    <span class="rounded-full border border-current/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em]" :style="{ color: displayedStylePreset.primaryColor }">
-                      {{ displayedStylePreset.scene }}
-                    </span>
-                    <span class="rounded-full border border-current/15 px-2 py-0.5 text-[10px] text-muted-foreground">
-                      {{ activeMatchedPreset ? (isCustomPresetValue(activeMatchedPreset.value) ? '已保存的我的预设' : '内置预设') : '未保存组合' }}
-                    </span>
-                  </div>
-                  <p class="text-xs leading-5 opacity-80">
-                    {{ displayedStylePreset.desc }}
-                  </p>
-                </div>
-                <div class="mt-3 flex flex-wrap gap-1">
-                  <span class="rounded-full border border-current/10 px-2 py-1 text-[11px] opacity-80">{{ getThemeLabel(displayedStylePreset.theme) }}</span>
-                  <span class="rounded-full border border-current/10 px-2 py-1 text-[11px] opacity-80">{{ getFontLabel(displayedStylePreset.fontFamily) }}</span>
-                  <span class="rounded-full border border-current/10 px-2 py-1 text-[11px] opacity-80">{{ getColorLabel(displayedStylePreset.primaryColor) }}</span>
-                </div>
+                删除方案
+              </Button>
+            </div>
+            <div class="flex items-start gap-2">
+              <div class="min-w-0 flex-1">
+                <Input
+                  v-model="savePresetName"
+                  class="h-9"
+                  placeholder="方案名称"
+                  aria-label="方案名称"
+                  :aria-invalid="Boolean(savePresetError)"
+                  @update:model-value="savePresetError = ''; savePresetFeedback = ''"
+                  @keydown.enter="saveCurrentStylePreset"
+                />
+                <p v-if="savePresetError" role="alert" class="mt-1.5 text-xs text-destructive">
+                  {{ savePresetError }}
+                </p>
+                <p v-else-if="savePresetFeedback" role="status" class="mt-1.5 text-xs text-primary">
+                  {{ savePresetFeedback }}
+                </p>
               </div>
+              <Button size="sm" class="h-9 shrink-0 px-3 text-xs" @click="saveCurrentStylePreset">
+                保存方案
+              </Button>
             </div>
           </div>
 
           <div class="style-card space-y-3">
-            <div class="flex items-start justify-between gap-3">
-              <div class="space-y-1">
-                <h2 class="text-sm font-semibold">
-                  只换版式
-                </h2>
-                <p class="text-xs leading-5 text-muted-foreground">
-                  保留当前字体和主题色，只改排版气质与模块结构。
-                </p>
-              </div>
-              <Button variant="ghost" size="sm" class="h-8 shrink-0 px-3 text-xs" @click="resetTemplateGroup">
-                恢复默认
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-sm font-semibold">
+                版式
+              </h2>
+              <Button variant="ghost" size="sm" class="h-8 shrink-0 px-3 text-xs" @click="restoreCurrentLayout">
+                恢复当前版式
               </Button>
             </div>
-            <div class="flex flex-wrap gap-1">
-              <Button
-                v-for="cat in themeCategoryNames"
-                :key="cat"
-                size="sm"
-                :variant="selectedThemeCategory === cat ? 'default' : 'ghost'"
-                class="h-7 px-2 text-xs"
-                @click="selectedThemeCategory = cat"
+            <Select v-model="themeSelectValue">
+              <SelectTrigger
+                data-theme-select-trigger
+                class="h-9 w-full"
+                @focus="isThemeSelectFocused = true"
+                @blur="isThemeSelectFocused = false"
+                @wheel="handleThemeWheel"
+                @keydown.down.prevent="handleThemeKeyStep(1)"
+                @keydown.up.prevent="handleThemeKeyStep(-1)"
               >
-                {{ cat }}
+                <SelectValue placeholder="选择版式" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in themeSelectOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div v-if="activeCustomVisualTheme" class="flex flex-wrap gap-1.5">
+              <Button variant="outline" size="sm" class="h-8 px-2.5 text-xs" @click="editCustomVisualTheme(activeCustomVisualTheme.id)">
+                编辑
+              </Button>
+              <Button variant="outline" size="sm" class="h-8 px-2.5 text-xs" @click="renameCustomVisualTheme(activeCustomVisualTheme)">
+                重命名
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <Button variant="outline" size="sm" class="h-8 px-2.5 text-xs">
+                    导出
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem @click="exportCustomVisualThemeCSS(activeCustomVisualTheme)">
+                    导出 CSS
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="exportCustomVisualThemeJSON(activeCustomVisualTheme)">
+                    导出 JSON
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="h-8 px-2.5 text-xs text-destructive"
+                :aria-label="`删除版式 ${activeCustomVisualTheme.name}`"
+                @click="deleteCustomVisualTheme(activeCustomVisualTheme)"
+              >
+                删除版式
               </Button>
             </div>
-            <div class="grid grid-cols-2 gap-2">
-              <ContextMenu v-for="{ label, value } in filteredThemeOptions" :key="value">
-                <ContextMenuTrigger as-child>
-                  <Button
-                    class="w-full justify-start" variant="outline" :class="{
-                      'border-black dark:border-white border-2': theme === value,
-                    }" @click="themeChanged(value as any)"
-                  >
-                    {{ label }}
-                  </Button>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <ContextMenuItem @click="toggleFavoriteTheme(value as string)">
-                    {{ favoriteThemes.includes(value as string) ? '取消常用' : '设为常用' }}
-                  </ContextMenuItem>
-                  <ContextMenuItem @click="deleteThemeOption(value as string)">
-                    删除
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
-            </div>
 
-            <div v-if="customVisualThemes.length" class="space-y-2 border-t pt-3">
-              <div class="flex items-center justify-between">
-                <div class="text-xs font-medium">
-                  我的主题
-                </div>
-                <span class="text-[11px] text-muted-foreground">
-                  右键可编辑、导出或删除
-                </span>
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <ContextMenu v-for="item in customVisualThemes" :key="item.id">
-                  <ContextMenuTrigger as-child>
-                    <Button
-                      class="w-full justify-start" variant="outline" :class="{
-                        'border-black dark:border-white border-2': visualThemeDraft.sourceId === item.id,
-                      }" @click="applyCustomVisualTheme(item.id)"
-                    >
-                      <span class="truncate">{{ item.name }}</span>
-                    </Button>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent>
-                    <ContextMenuItem @click="editCustomVisualTheme(item.id)">
-                      可视化编辑
-                    </ContextMenuItem>
-                    <ContextMenuItem @click="renameCustomVisualTheme(item)">
-                      重命名
-                    </ContextMenuItem>
-                    <ContextMenuItem @click="exportCustomVisualThemeCSS(item)">
-                      导出为 CSS
-                    </ContextMenuItem>
-                    <ContextMenuItem @click="exportCustomVisualThemeJSON(item)">
-                      导出为 JSON
-                    </ContextMenuItem>
-                    <ContextMenuItem @click="deleteCustomVisualTheme(item)">
-                      删除
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
-              </div>
-            </div>
+            <ThemeDraftControls />
           </div>
-
-          <ThemeDraftControls />
         </TabsContent>
 
         <TabsContent value="text" class="mt-4 space-y-4">
@@ -785,79 +919,14 @@ watch(isOpen, () => {
           <StyleQuickControls variant="full" />
 
           <div class="style-card space-y-3">
-            <div class="space-y-1">
-              <h2 class="text-sm font-semibold">
-                标题装饰
-              </h2>
-              <p class="text-xs leading-5 text-muted-foreground">
-                {{ headingStatusSummary }}，会覆盖当前版式自带的标题样式。
-              </p>
-            </div>
-            <div class="grid gap-3">
-              <div class="space-y-2">
-                <div class="text-xs text-muted-foreground">
-                  标题级别
-                </div>
-                <Select v-model="selectedHeadingLevel">
-                  <SelectTrigger class="w-full">
-                    <SelectValue placeholder="选择标题级别" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="{ label, value } in headingLevelOptions" :key="value" :value="value">
-                      {{ label }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div class="space-y-2">
-                <div class="text-xs text-muted-foreground">
-                  标题样式
-                </div>
-                <Select v-model="selectedHeadingStyle">
-                  <SelectTrigger class="w-full">
-                    <SelectValue placeholder="选择标题样式" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="{ label, value, desc } in headingStyleOptions" :key="value" :value="value">
-                      {{ label }} <span class="ml-2 text-muted-foreground">{{ desc }}</span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-              <Button variant="secondary" size="sm" class="h-8 px-3 text-xs" @click="applyHeadingStyleToAll(selectedHeadingStyle)">
-                {{ headingSyncButtonLabel }}
-              </Button>
-              <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="resetAllHeadingStyles">
-                全部恢复默认
-              </Button>
-            </div>
-            <div class="rounded-xl border border-dashed border-border px-3 py-2 text-xs leading-5 text-muted-foreground">
-              当前正在编辑 {{ selectedHeadingLevelLabel }}，{{ selectedHeadingStyleMeta.desc }}。
-              <span v-if="hasVisualHeadingOverride">可视化编辑器里的标题调整会覆盖这里的预设。</span>
-            </div>
-          </div>
-
-          <div class="style-card space-y-3">
-            <div class="space-y-1">
-              <h2 class="text-sm font-semibold">
-                段落阅读方式
-              </h2>
-              <p class="text-xs leading-5 text-muted-foreground">
-                当前状态：{{ paragraphStatusSummary }}
-              </p>
-            </div>
+            <h2 class="text-sm font-semibold">
+              段落阅读方式
+            </h2>
             <div class="grid gap-3">
               <div class="rounded-xl border p-3">
                 <div class="flex items-center justify-between gap-3">
-                  <div>
-                    <div class="text-sm font-medium">
-                      首行缩进
-                    </div>
-                    <div class="text-xs text-muted-foreground">
-                      适合长文和评论型内容
-                    </div>
+                  <div class="text-sm font-medium">
+                    首行缩进
                   </div>
                   <div class="grid grid-cols-2 gap-2">
                     <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isUseIndent }" @click="setUseIndent(true)">
@@ -871,13 +940,8 @@ watch(isOpen, () => {
               </div>
               <div class="rounded-xl border p-3">
                 <div class="flex items-center justify-between gap-3">
-                  <div>
-                    <div class="text-sm font-medium">
-                      两端对齐
-                    </div>
-                    <div class="text-xs text-muted-foreground">
-                      更接近刊物和纸媒阅读感
-                    </div>
+                  <div class="text-sm font-medium">
+                    两端对齐
                   </div>
                   <div class="grid grid-cols-2 gap-2">
                     <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isUseJustify }" @click="setUseJustify(true)">
@@ -904,9 +968,6 @@ watch(isOpen, () => {
         </TabsContent>
 
         <TabsContent value="block" class="mt-4 space-y-2">
-          <p class="px-1 text-xs leading-5 text-muted-foreground">
-            引用、列表、表格这些内容块的外观，改完在右侧预览里即时可见。
-          </p>
           <ThemeDesignerGroupCard :group="getDesignerGroup('blockquote')" />
           <ThemeDesignerGroupCard :group="getDesignerGroup('list')" />
           <ThemeDesignerGroupCard :group="getDesignerGroup('table')" />
@@ -923,14 +984,9 @@ watch(isOpen, () => {
           </div>
 
           <div class="style-card space-y-3">
-            <div class="space-y-1">
-              <h2 class="text-sm font-semibold">
-                代码块
-              </h2>
-              <p class="text-xs leading-5 text-muted-foreground">
-                当前状态：{{ codeStatusSummary }}
-              </p>
-            </div>
+            <h2 class="text-sm font-semibold">
+              代码块
+            </h2>
             <div class="space-y-2">
               <div class="text-xs text-muted-foreground">
                 代码块主题
@@ -949,13 +1005,8 @@ watch(isOpen, () => {
             <div class="grid gap-3">
               <div class="rounded-xl border p-3">
                 <div class="flex items-center justify-between gap-3">
-                  <div>
-                    <div class="text-sm font-medium">
-                      代码块语言标注
-                    </div>
-                    <div class="text-xs text-muted-foreground">
-                      在代码块顶部标出语言名
-                    </div>
+                  <div class="text-sm font-medium">
+                    代码块语言标注
                   </div>
                   <div class="grid grid-cols-2 gap-2">
                     <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isShowCodeLanguage }" @click="setShowCodeLanguage(true)">
@@ -969,13 +1020,8 @@ watch(isOpen, () => {
               </div>
               <div class="rounded-xl border p-3">
                 <div class="flex items-center justify-between gap-3">
-                  <div>
-                    <div class="text-sm font-medium">
-                      代码块行号
-                    </div>
-                    <div class="text-xs text-muted-foreground">
-                      适合教程和调试类文章
-                    </div>
+                  <div class="text-sm font-medium">
+                    代码块行号
                   </div>
                   <div class="grid grid-cols-2 gap-2">
                     <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isShowLineNumber }" @click="setShowLineNumber(true)">
@@ -991,24 +1037,14 @@ watch(isOpen, () => {
           </div>
 
           <div class="style-card space-y-3">
-            <div class="space-y-1">
-              <h2 class="text-sm font-semibold">
-                公众号细节
-              </h2>
-              <p class="text-xs leading-5 text-muted-foreground">
-                这两项会跟着内容一起复制进公众号。
-              </p>
-            </div>
+            <h2 class="text-sm font-semibold">
+              公众号细节
+            </h2>
             <div class="grid gap-3">
               <div class="rounded-xl border p-3">
                 <div class="flex items-center justify-between gap-3">
-                  <div>
-                    <div class="text-sm font-medium">
-                      微信外链转底部引用
-                    </div>
-                    <div class="text-xs text-muted-foreground">
-                      正文外链改成编号，链接列在文末
-                    </div>
+                  <div class="text-sm font-medium">
+                    微信外链转底部引用
                   </div>
                   <div class="grid grid-cols-2 gap-2">
                     <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isCiteStatus }" @click="setCiteStatus(true)">
@@ -1022,13 +1058,8 @@ watch(isOpen, () => {
               </div>
               <div class="rounded-xl border p-3">
                 <div class="flex items-center justify-between gap-3">
-                  <div>
-                    <div class="text-sm font-medium">
-                      字数与阅读时间
-                    </div>
-                    <div class="text-xs text-muted-foreground">
-                      在文章开头展示字数和预计阅读时长
-                    </div>
+                  <div class="text-sm font-medium">
+                    字数与阅读时间
                   </div>
                   <div class="grid grid-cols-2 gap-2">
                     <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isCountStatus }" @click="setCountStatus(true)">
@@ -1057,6 +1088,65 @@ watch(isOpen, () => {
 </template>
 
 <style scoped>
+.inspector-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  background: hsl(var(--secondary) / 0.5);
+}
+
+.inspector-mode-switch__item {
+  min-width: 0;
+  padding: 0.48rem 0.65rem;
+  border-radius: 7px;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: hsl(var(--muted-foreground));
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.inspector-mode-switch__item--active {
+  background: hsl(var(--background));
+  box-shadow: 0 1px 3px hsl(var(--foreground) / 0.1);
+  color: hsl(var(--foreground));
+}
+
+.block-inspector-slot {
+  min-height: 12rem;
+}
+
+.block-inspector-empty {
+  display: grid;
+  min-height: 12rem;
+  place-content: center;
+  padding: 1.5rem;
+  border: 1px dashed hsl(var(--border));
+  border-radius: 16px;
+  text-align: center;
+  background: hsl(var(--secondary) / 0.22);
+}
+
+.block-inspector-empty span {
+  margin-bottom: 0.55rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  color: hsl(var(--primary));
+}
+
+.block-inspector-empty strong {
+  font-size: 0.88rem;
+}
+
+.block-inspector-empty p {
+  max-width: 17rem;
+  margin: 0.45rem auto 0;
+  font-size: 0.72rem;
+  line-height: 1.65;
+  color: hsl(var(--muted-foreground));
+}
+
 /* 移动端右侧栏动画 - 只有添加了 animate 类才启用 */
 .mobile-right-drawer.animate {
   transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);

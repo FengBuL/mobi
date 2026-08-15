@@ -196,7 +196,7 @@ function renderHeadingBodyForWeChat(preset: BlockPreset, state: BlockState) {
       )
     // 两个装饰块只有 15px 和 7px，不值得单开一列，直接和标题同处一格靠 vertical-align 对齐
     case `geometry`:
-      return `<div style="color:${p.ink};box-sizing:border-box;"><span style="display:inline-block;width:15px;height:15px;margin-right:5px;background-color:${p.primary};vertical-align:middle;"></span><span style="display:inline-block;width:7px;height:7px;margin-right:14px;border-radius:999px;background-color:${p.secondary};vertical-align:middle;"></span><span style="display:inline-block;max-width:80%;vertical-align:middle;">${title}${subtitle}</span></div>`
+      return `<div style="color:${p.ink};box-sizing:border-box;"><span data-mobi-clipboard-decoration="true" aria-hidden="true" style="display:inline-block;width:15px;height:15px;margin-right:5px;color:${p.primary};font-family:Arial,sans-serif;font-size:17px;line-height:15px;text-align:center;vertical-align:middle;">◆</span><span data-mobi-clipboard-decoration="true" aria-hidden="true" style="display:inline-block;width:7px;height:15px;margin-right:14px;color:${p.secondary};font-family:Arial,sans-serif;font-size:10px;line-height:15px;text-align:center;vertical-align:middle;">●</span><span style="display:inline-block;max-width:80%;vertical-align:middle;">${title}${subtitle}</span></div>`
     default:
       return renderHeadingBody(preset, state)
   }
@@ -205,9 +205,12 @@ function renderHeadingBodyForWeChat(preset: BlockPreset, state: BlockState) {
 function render(preset: BlockPreset, state: BlockState, withMetadata: boolean) {
   const attrs = withMetadata ? getBlockRootAttrs(preset) : `data-block-export="heading"`
   const body = withMetadata ? renderHeadingBody(preset, state) : renderHeadingBodyForWeChat(preset, state)
+  const emptySubtitleMetadata = withMetadata && !state.subtitle
+    ? `<span ${getBlockFieldAttrs(`subtitle`, ``)} style="display:none;"></span>`
+    : ``
   return compactBlockMarkup(`
     <section ${attrs} style="margin:24px 0;padding:0;box-sizing:border-box;">
-      <div style="box-sizing:border-box;">${body}</div>
+      <div style="box-sizing:border-box;">${body}${emptySubtitleMetadata}</div>
     </section>
   `)
 }

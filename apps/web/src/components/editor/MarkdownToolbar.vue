@@ -12,6 +12,7 @@ import {
   Link2,
   List,
   ListOrdered,
+  Pilcrow,
   Quote,
   Strikethrough,
   Table,
@@ -19,11 +20,42 @@ import {
 import { useImageQuickInsert } from '@/composables/useImageQuickInsert'
 import { useEditorStore } from '@/stores/editor'
 import { useUIStore } from '@/stores/ui'
+import { autoFormatMarkdown, createAutoFormatTransaction } from '@/utils/auto-format-markdown'
 import { applyMarkdownCommand } from '@/utils/markdown-toolbar'
 
 const editorStore = useEditorStore()
 const uiStore = useUIStore()
 const { open: openQuickInsert } = useImageQuickInsert()
+
+function autoFormatContent() {
+  const view = editorStore.editor
+  if (!view)
+    return
+
+  const content = view.state.doc.toString()
+  if (!content.trim()) {
+    toast.info(`暂无可排版内容`)
+    return
+  }
+
+  const result = autoFormatMarkdown(content)
+  if (!result.changed) {
+    toast.info(`当前内容已经排版`)
+    return
+  }
+
+  const selection = view.state.selection.main
+  const scrollTop = view.scrollDOM.scrollTop
+  view.dispatch(createAutoFormatTransaction(content, result, {
+    anchor: selection.anchor,
+    head: selection.head,
+  }))
+  view.focus()
+  requestAnimationFrame(() => {
+    view.scrollDOM.scrollTop = scrollTop
+  })
+  toast.success(`已整理 ${result.stats.headings} 个标题、${result.stats.listItems} 个列表项、${result.stats.paragraphs} 个段落`)
+}
 
 const groups: Array<Array<{
   command: MarkdownToolbarCommand
@@ -92,6 +124,19 @@ function insertMpCard() {
 <template>
   <nav class="markdown-toolbar" aria-label="Markdown 快捷格式">
     <div class="markdown-toolbar__rail">
+      <div class="markdown-toolbar__group markdown-toolbar__group--auto-format">
+        <button
+          type="button"
+          class="markdown-toolbar__button markdown-toolbar__button--auto-format"
+          aria-label="自动排版"
+          title="自动排版"
+          @mousedown.prevent
+          @click="autoFormatContent"
+        >
+          <Pilcrow class="size-4" />
+          <span>自动排版</span>
+        </button>
+      </div>
       <div v-for="(group, groupIndex) in groups" :key="groupIndex" class="markdown-toolbar__group">
         <button
           v-for="item in group"
@@ -236,6 +281,13 @@ function insertMpCard() {
   color: hsl(var(--foreground));
 }
 
+.markdown-toolbar__button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: -2px;
+}
+
 .markdown-toolbar__button:active {
   transform: translateY(1px);
 }
@@ -243,6 +295,17 @@ function insertMpCard() {
 .markdown-toolbar__button--image {
   padding-inline: 0.65rem;
   color: hsl(var(--primary));
+}
+
+.markdown-toolbar__button--auto-format {
+  padding-inline: 0.55rem;
+  color: hsl(var(--primary));
+}
+
+.markdown-toolbar__button--auto-format span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .markdown-toolbar__group--insert span {

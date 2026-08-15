@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ThemeField, ThemeTokenValue } from '@/utils/theme-designer'
-import { RotateCcw, TriangleAlert } from 'lucide-vue-next'
+import { RotateCcw } from 'lucide-vue-next'
 import { useThemeDesignerStore } from '@/stores/themeDesigner'
 
 const props = defineProps<{
@@ -13,14 +13,6 @@ const designerStore = useThemeDesignerStore()
 const groupValues = computed(() => designerStore.tokens[props.groupId] || {})
 const isSet = computed(() => props.field.key in groupValues.value)
 const currentValue = computed<ThemeTokenValue>(() => (isSet.value ? groupValues.value[props.field.key] : props.field.defaultValue))
-const selectedOption = computed(() => props.field.options?.find(item => item.value === String(currentValue.value)))
-const wechatHint = computed(() => {
-  if (!isSet.value)
-    return ``
-
-  return props.field.wechatHint || selectedOption.value?.wechatHint || ``
-})
-
 function update(value: ThemeTokenValue) {
   designerStore.setToken(props.groupId, props.field.key, value)
 }
@@ -80,7 +72,6 @@ function reset() {
       <SelectContent>
         <SelectItem v-for="option in field.options" :key="option.value" :value="option.value" class="text-xs">
           {{ option.label }}
-          <span v-if="option.desc" class="ml-2 text-muted-foreground">{{ option.desc }}</span>
         </SelectItem>
       </SelectContent>
     </Select>
@@ -92,12 +83,5 @@ function reset() {
       </span>
     </div>
 
-    <p v-if="field.hint" class="text-[10px] leading-4 text-muted-foreground">
-      {{ field.hint }}
-    </p>
-    <p v-if="wechatHint" class="flex items-start gap-1 text-[10px] leading-4 text-amber-600 dark:text-amber-500">
-      <TriangleAlert class="mt-0.5 size-3 shrink-0" />
-      <span>{{ wechatHint }}</span>
-    </p>
   </div>
 </template>

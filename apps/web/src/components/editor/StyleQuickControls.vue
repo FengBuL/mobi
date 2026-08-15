@@ -4,11 +4,9 @@ import {
   colorCategoryOptions,
   colorOptions,
   fontCategoryOptions,
-  fontFamilyOptions,
   fontSizeOptions,
 } from '@mobi/shared/configs'
 import PickColors from 'vue-pick-colors'
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
@@ -33,7 +31,6 @@ const {
   fontFamily,
   fontSize,
   primaryColor,
-  favoriteColors,
   hiddenColors,
   savedCustomColors,
   isPrimaryColorFollowingTheme,
@@ -71,77 +68,22 @@ function restoreThemePrimaryColor() {
   applyAndRefresh()
 }
 
-const selectedFontCategory = ref(fontCategoryOptions[0].category)
-const fontCategoryNames = computed(() => fontCategoryOptions.map(c => c.category))
-const filteredFontOptions = computed(() => {
-  const category = fontCategoryOptions.find(item => item.category === selectedFontCategory.value)
-  return category ? category.fonts : fontFamilyOptions
-})
-
-const selectedColorCategory = ref(colorCategoryOptions[0].category)
-const colorCategoryNames = computed(() => [`常用`, ...colorCategoryOptions.map(c => c.category), `已保存`])
-const filteredColorOptions = computed(() => {
-  const visibleColors = colorOptions.filter(item => !hiddenColors.value.includes(item.value as string))
-  if (selectedColorCategory.value === `常用`) {
-    return visibleColors.filter(item => favoriteColors.value.includes(item.value as string))
-  }
-  if (selectedColorCategory.value === `已保存`) {
-    return savedCustomColors.value.map(value => ({ label: value, value, desc: `` }))
-  }
-
-  const category = colorCategoryOptions.find(item => item.category === selectedColorCategory.value)
-  return category
-    ? category.colors.filter(item => !hiddenColors.value.includes(item.value as string))
-    : visibleColors
-})
-
 const compactColorOptions = computed(() => colorOptions.filter(item => !hiddenColors.value.includes(item.value as string)))
-
-function selectFontCategoryByFont(value: string) {
-  selectedFontCategory.value = fontCategoryOptions.find(category =>
-    category.fonts.some(option => option.value === value),
-  )?.category || fontCategoryOptions[0].category
-}
-
-function selectColorCategoryByColor(value: string) {
-  if (savedCustomColors.value.includes(value)) {
-    selectedColorCategory.value = `已保存`
-    return
-  }
-
-  selectedColorCategory.value = colorCategoryOptions.find(category =>
-    category.colors.some(option => option.value === value),
-  )?.category || colorCategoryOptions[0].category
-}
-
-// 换主题、套预设、重置样式都会从外面改这两个值，分类要跟着落到它所在的那一组
-watch(fontFamily, value => selectFontCategoryByFont(value as string), { immediate: true })
-watch(primaryColor, value => selectColorCategoryByColor(value as string), { immediate: true })
+const fullColorOptions = computed(() => {
+  const builtIn = colorCategoryOptions.flatMap(category => category.colors
+    .filter(option => !hiddenColors.value.includes(option.value as string))
+    .map(option => ({ ...option, label: `${category.category} · ${option.label}` })))
+  const saved = savedCustomColors.value
+    .filter(value => !builtIn.some(option => option.value === value))
+    .map(value => ({ label: `已保存 · ${value}`, value }))
+  return [...builtIn, ...saved]
+})
 
 function saveCustomColor() {
   const current = primaryColor.value as string
   if (current && !savedCustomColors.value.includes(current)) {
     savedCustomColors.value.push(current)
   }
-}
-
-function toggleFavoriteColor(value: string) {
-  if (favoriteColors.value.includes(value)) {
-    favoriteColors.value = favoriteColors.value.filter(item => item !== value)
-    return
-  }
-
-  favoriteColors.value.push(value)
-}
-
-function deleteColorOption(value: string) {
-  if (!hiddenColors.value.includes(value)) {
-    hiddenColors.value.push(value)
-  }
-}
-
-function deleteCustomColorOption(value: string) {
-  savedCustomColors.value = savedCustomColors.value.filter(item => item !== value)
 }
 
 const pickColorsContainer = useTemplateRef<HTMLElement | undefined>(`pickColorsContainer`)
@@ -227,57 +169,47 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
 
   <template v-else>
     <div class="style-card space-y-3">
-      <div class="space-y-1">
+      <div>
         <h2 class="text-sm font-semibold">
-          字体与字号
+          全局字体与字号
         </h2>
-        <p class="text-xs leading-5 text-muted-foreground">
-          先确定整体阅读气质，再用字号控制版面密度。
-        </p>
-      </div>
-      <div class="flex flex-wrap gap-1">
-        <Button
-          v-for="cat in fontCategoryNames"
-          :key="cat"
-          size="sm"
-          :variant="selectedFontCategory === cat ? 'default' : 'ghost'"
-          class="h-7 px-2 text-xs"
-          @click="selectedFontCategory = cat"
-        >
-          {{ cat }}
-        </Button>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <Button
-          v-for="{ label, value } in filteredFontOptions"
-          :key="value"
-          variant="outline"
-          class="w-full justify-start"
-          :class="{ 'border-black dark:border-white border-2': fontFamily === value }"
-          @click="fontChanged(value)"
-        >
-          {{ label }}
-        </Button>
-      </div>
-      <div class="space-y-2">
-        <div class="text-xs text-muted-foreground">
-          正文字号
+        <div class="space-y-1.5">
+          <div class="text-xs text-muted-foreground">
+            字体
+          </div>
+          <Select v-model="fontFamily" @update:model-value="fontChanged">
+            <SelectTrigger class="h-9 w-full">
+              <SelectValue placeholder="选择字体" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="{ label, value } in allFontOptions" :key="value" :value="value">
+                {{ label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select v-model="fontSize" @update:model-value="sizeChanged">
-          <SelectTrigger class="w-full">
-            <SelectValue placeholder="选择字号" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem v-for="{ label, value, desc } in fontSizeOptions" :key="value" :value="value">
-              {{ label }} <span class="ml-2 text-muted-foreground">{{ desc }}</span>
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <div class="space-y-1.5">
+          <div class="text-xs text-muted-foreground">
+            字号
+          </div>
+          <Select v-model="fontSize" @update:model-value="sizeChanged">
+            <SelectTrigger class="h-9 w-full">
+              <SelectValue placeholder="选择字号" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="{ label, value } in fontSizeOptions" :key="value" :value="value">
+                {{ label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
 
     <div class="style-card space-y-3">
-      <div class="space-y-1">
+      <div>
         <div class="flex items-center justify-between gap-2">
           <h2 class="text-sm font-semibold">
             主题色
@@ -292,48 +224,18 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
             跟随主题
           </Button>
         </div>
-        <p class="text-xs leading-5 text-muted-foreground">
-          {{ isPrimaryColorFollowingTheme ? `当前跟随主题的出厂配色，换主题会一起换。` : `已自定义，换主题不会覆盖。` }}主题色会影响标题强调、引用块和部分模块高光。
-        </p>
       </div>
-      <div class="flex flex-wrap gap-1">
-        <Button
-          v-for="cat in colorCategoryNames"
-          :key="cat"
-          size="sm"
-          :variant="selectedColorCategory === cat ? 'default' : 'ghost'"
-          class="h-7 px-2 text-xs"
-          @click="selectedColorCategory = cat"
-        >
-          {{ cat }}
-        </Button>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <ContextMenu v-for="{ label, value } in filteredColorOptions" :key="value">
-          <ContextMenuTrigger as-child>
-            <Button
-              class="w-full justify-start"
-              variant="outline"
-              :class="{ 'border-black dark:border-white border-2': primaryColor === value }"
-              @click="colorChanged(value as string)"
-            >
-              <span class="mr-2 inline-block h-4 w-4 rounded-full" :style="{ background: value as string }" />
-              {{ label }}
-            </Button>
-          </ContextMenuTrigger>
-          <ContextMenuContent>
-            <ContextMenuItem v-if="selectedColorCategory !== '已保存'" @click="toggleFavoriteColor(value as string)">
-              {{ favoriteColors.includes(value as string) ? '取消常用' : '设为常用' }}
-            </ContextMenuItem>
-            <ContextMenuItem v-if="selectedColorCategory === '已保存'" @click="deleteCustomColorOption(value as string)">
-              删除
-            </ContextMenuItem>
-            <ContextMenuItem v-else @click="deleteColorOption(value as string)">
-              删除
-            </ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
-      </div>
+      <Select v-model="primaryColor" @update:model-value="value => colorChanged(String(value))">
+        <SelectTrigger class="h-9 w-full">
+          <SelectValue placeholder="选择主题色" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="option in fullColorOptions" :key="option.value" :value="option.value">
+            <span class="mr-2 inline-block size-3 rounded-full border" :style="{ background: option.value as string }" />
+            {{ option.label }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
       <div class="space-y-2">
         <div class="flex items-center justify-between">
           <div class="text-xs text-muted-foreground">

@@ -23,6 +23,7 @@ import {
   mediaLayoutPresets,
   parseMediaLayoutBlocks,
 } from '@/utils/image-layouts'
+import { materializeWeChatDecorations } from '@/utils/wechat-compat'
 import { compactWeChatMarkup, renderWeChatRow, renderWeChatStack, renderWeChatVerticalScroller } from '@/utils/wechat-layout'
 import { buildExtendedWeChatMediaBody, defaultWeChatMediaPalette } from '@/utils/wechat-media'
 import { getMpUploadConfig, hasMpUploadConfig, uploadFileToMp } from './file'
@@ -1912,6 +1913,8 @@ export async function processClipboardContent(primaryColor: string) {
   // 图文模块改写为公众号更稳定的内联结构，避免 grid / flex / aspect-ratio 粘贴后失效
   convertMediaLayoutsForWeChat(clipboardDiv, primaryColor)
   convertBlocksForWeChat(clipboardDiv)
+  // juice 物化的伪元素与板块空装饰节点需要安全内容，否则粘贴清洗会整个删除。
+  materializeWeChatDecorations(clipboardDiv)
   removeSourcePositionAttributes(clipboardDiv)
   prunePreviewOnlyClipboardStyles(clipboardDiv)
 

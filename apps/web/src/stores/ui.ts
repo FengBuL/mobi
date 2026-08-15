@@ -207,6 +207,19 @@ export const useUIStore = defineStore(`ui`, () => {
     styleFocusRequest.value = { panel, groupId, headingLevel, seq: styleFocusSeq }
   }
 
+  const blockInspectorRequest = ref<{ seq: number } | null>(null)
+  let blockInspectorSeq = 0
+
+  function openBlockInspector() {
+    blockInspectorSeq += 1
+    blockInspectorRequest.value = { seq: blockInspectorSeq }
+
+    // 专业工作区能同时保留板块库与右侧检查器；简洁模式继续使用原位编辑，避免两个抽屉互相替换。
+    if (!isSimpleWorkspace.value) {
+      isOpenRightSlider.value = true
+    }
+  }
+
   /**
    * 在预览里点到标题、引用这类能换板块样式的元素时，把板块库叫出来。
    *
@@ -367,6 +380,8 @@ export const useUIStore = defineStore(`ui`, () => {
     // ==================== 从预览反查样式 ====================
     styleFocusRequest,
     focusStyleGroup,
+    blockInspectorRequest,
+    openBlockInspector,
     focusBlockLibrary,
     blockLibraryCategoryRequest,
 
