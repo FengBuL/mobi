@@ -5,6 +5,8 @@ import {
   createAccountProfile,
   deleteAccountProfile,
   migrateAccountProfiles,
+  pickPostAfterProfileDelete,
+  pickPostForProfile,
   renameAccountProfile,
   resolveProfileId,
 } from '@/utils/account-profile'
@@ -83,8 +85,8 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
     }
 
     suppressPersist = true
+    const config = cloneAppliedConfig(profile.config)
     currentProfileId.value = profile.id
-    const config = profile.config
     themeDesignerStore.replaceDraft({
       sourceId: null,
       name: ``,
@@ -99,9 +101,31 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
     imgHost.value = config.imgHost || `default`
     mpConfig.value = { ...EMPTY_MP_CONFIG, ...config.mpConfig }
     refreshPreview()
-    nextTick(() => {
-      suppressPersist = false
+    void nextTick(() => {
+      void nextTick(() => {
+        suppressPersist = false
+      })
     })
+  }
+
+  function cloneAppliedConfig(config: AccountProfileConfig): AccountProfileConfig {
+    return {
+      ...config,
+      mpConfig: { ...EMPTY_MP_CONFIG, ...config.mpConfig },
+    }
+  }
+
+  function activateProfile(id: string) {
+    persistCurrentConfig()
+    applyProfile(id)
+    const nextPostId = pickPostForProfile(
+      postStore.posts.map(post => ({ id: post.id, profileId: post.profileId })),
+      id,
+      postStore.currentPostId,
+    )
+    if (nextPostId && nextPostId !== postStore.currentPostId) {
+      postStore.currentPostId = nextPostId
+    }
   }
 
   function hydrate() {
@@ -126,26 +150,17 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
   function switchProfile(id: string) {
     const resolved = resolveProfileId(id, profiles.value)
     if (resolved === currentProfileId.value && ready) {
-      const current = postStore.currentPost
-      if (current && current.profileId !== resolved) {
-        current.profileId = resolved
-      }
       return
     }
-    applyProfile(resolved)
-    if (postStore.currentPost) {
-      postStore.currentPost.profileId = resolved
-    }
+    activateProfile(resolved)
   }
 
   function createProfile(name?: string) {
+    persistCurrentConfig()
     const label = name?.trim() || `号 ${profiles.value.length + 1}`
     const created = createAccountProfile(profiles.value, label, readLegacyConfig())
     profiles.value = created.profiles
-    applyProfile(created.created.id)
-    if (postStore.currentPost) {
-      postStore.currentPost.profileId = created.created.id
-    }
+    activateProfile(created.created.id)
     return created.created
   }
 
@@ -154,12 +169,21 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
   }
 
   function removeProfile(id: string) {
+    const postsBefore = postStore.posts.map(post => ({ id: post.id, profileId: post.profileId }))
     const removed = deleteAccountProfile({
       profiles: profiles.value,
       currentProfileId: currentProfileId.value,
       deleteId: id,
-      posts: postStore.posts.map(post => ({ id: post.id, profileId: post.profileId })),
+      posts: postsBefore,
     })
+    const nextPostId = pickPostAfterProfileDelete({
+      postsBefore,
+      currentPostId: postStore.currentPostId,
+      deleteId: id,
+      fallbackProfileId: removed.currentProfileId,
+    })
+
+    suppressPersist = true
     profiles.value = removed.profiles
     removed.posts.forEach((item) => {
       const post = postStore.getPostById(item.id)
@@ -167,6 +191,9 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
         post.profileId = item.profileId
       }
     })
+    if (nextPostId && nextPostId !== postStore.currentPostId) {
+      postStore.currentPostId = nextPostId
+    }
     applyProfile(removed.currentProfileId)
   }
 

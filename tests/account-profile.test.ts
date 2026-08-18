@@ -6,6 +6,8 @@ import {
   DEFAULT_PROFILE_NAME,
   deleteAccountProfile,
   migrateAccountProfiles,
+  pickPostAfterProfileDelete,
+  pickPostForProfile,
   renameAccountProfile,
   resolveProfileId,
   snapshotEquals,
@@ -160,5 +162,57 @@ describe(`我的号：重命名与删除`, () => {
     })
     expect(resolveProfileId(`ghost`, first.profiles)).toBe(DEFAULT_PROFILE_ID)
     expect(resolveProfileId(undefined, first.profiles)).toBe(DEFAULT_PROFILE_ID)
+  })
+
+  it(`删号后第一个号的配置必须仍是自己的，不能被第二个号的现场覆盖`, () => {
+    const first = migrateAccountProfiles({
+      profiles: [],
+      currentProfileId: ``,
+      legacy: legacyA,
+      posts: [{ id: `draft-a`, profileId: DEFAULT_PROFILE_ID }],
+    })
+    const two = createAccountProfile(first.profiles, `第二个号`, legacyB)
+    const extraId = two.created.id
+    const removed = deleteAccountProfile({
+      profiles: two.profiles,
+      currentProfileId: extraId,
+      deleteId: extraId,
+      posts: [
+        { id: `draft-a`, profileId: DEFAULT_PROFILE_ID },
+        { id: `draft-b`, profileId: extraId },
+      ],
+    })
+
+    expect(removed.profiles[0].config).toEqual(legacyA)
+    expect(snapshotEquals(removed.profiles[0].config, legacyB)).toBe(false)
+  })
+
+  it(`删掉正在看的第二个号时，应回到第一个号自己的稿，而不是把第二号的稿当成第一号`, () => {
+    const extraId = `profile-second`
+    expect(pickPostAfterProfileDelete({
+      postsBefore: [
+        { id: `draft-a`, profileId: DEFAULT_PROFILE_ID },
+        { id: `draft-b`, profileId: extraId },
+      ],
+      currentPostId: `draft-b`,
+      deleteId: extraId,
+      fallbackProfileId: DEFAULT_PROFILE_ID,
+    })).toBe(`draft-a`)
+  })
+
+  it(`切号或新建号不抢走当前稿`, () => {
+    expect(pickPostForProfile(
+      [{ id: `draft-a`, profileId: DEFAULT_PROFILE_ID }],
+      `profile-second`,
+      `draft-a`,
+    )).toBe(`draft-a`)
+    expect(pickPostForProfile(
+      [
+        { id: `draft-a`, profileId: DEFAULT_PROFILE_ID },
+        { id: `draft-b`, profileId: `profile-second` },
+      ],
+      `profile-second`,
+      `draft-a`,
+    )).toBe(`draft-b`)
   })
 })

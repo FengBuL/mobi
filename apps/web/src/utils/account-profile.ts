@@ -63,6 +63,35 @@ export function assignPostProfileId(currentProfileId: string) {
   return currentProfileId
 }
 
+/** 切到某个号时：已属于它的稿优先；没有就留在当前稿，不改稿的归属。 */
+export function pickPostForProfile(
+  posts: ProfilePostRef[],
+  profileId: string,
+  currentPostId?: string | null,
+) {
+  const current = posts.find(post => post.id === currentPostId)
+  if (current && current.profileId === profileId) {
+    return current.id
+  }
+  const owned = posts.find(post => post.profileId === profileId)
+  return owned?.id ?? currentPostId ?? undefined
+}
+
+/** 删掉正在看的号时，回到还属于默认号的稿，避免第二号的稿顶掉第一号。 */
+export function pickPostAfterProfileDelete(input: {
+  postsBefore: ProfilePostRef[]
+  currentPostId: string
+  deleteId: string
+  fallbackProfileId: string
+}) {
+  const current = input.postsBefore.find(post => post.id === input.currentPostId)
+  if (!current || current.profileId !== input.deleteId) {
+    return input.currentPostId
+  }
+  const kept = input.postsBefore.find(post => post.profileId === input.fallbackProfileId)
+  return kept?.id ?? input.currentPostId
+}
+
 function attachPosts(posts: ProfilePostRef[], profiles: AccountProfile[]): ProfilePostRef[] {
   return posts.map(post => ({
     id: post.id,
