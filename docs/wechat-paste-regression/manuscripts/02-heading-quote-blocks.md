@@ -1,0 +1,11 @@
+# 板块回归稿
+
+上面这行是普通一级标题。下面两块是已经换过样子的板块，不要再点选。导入后应能在预览里直接看到色条标题和侧栏引用。
+
+<section class="md-block md-block--heading" data-block-category="heading" data-block-preset="heading-editorial-rail" data-block-version="1" style="margin:24px 0;padding:0;box-sizing:border-box;"><div style="box-sizing:border-box;"><div style="padding:5px 0 5px 15px;border-left:6px solid #1e6bb8;color:#10233e;"><p data-block-field="title" data-block-value="回归矩阵：标题板块" style="display:block;margin:0;color:inherit;font-size:22px;font-weight:800;line-height:1.38;letter-spacing:0.04em;">回归矩阵：标题板块</p><p data-block-field="subtitle" data-block-value="验证点选换板块后贴入公众号" style="display:block;margin:6px 0 0;color:#55708f;font-size:13px;font-weight:400;line-height:1.65;letter-spacing:0.04em;">验证点选换板块后贴入公众号</p></div></div></section>
+
+普通段落夹在两个板块中间，用来看板块有没有把后文挤乱。
+
+<section class="md-block md-block--quote" data-block-category="quote" data-block-preset="quote-editorial-rail" data-block-version="1" style="margin:24px 0;padding:0;box-sizing:border-box;"><span style="display:none;"><i data-block-field="quote" data-block-value="贴进去和看见的一样，这是墨笔唯一要守住的承诺。"></i><i data-block-field="author" data-block-value="墨笔回归"></i><i data-block-field="source" data-block-value="TASK-06"></i><i data-block-field="question" data-block-value=""></i><i data-block-field="answer" data-block-value=""></i><i data-block-field="note" data-block-value=""></i><i data-block-field="work" data-block-value=""></i><i data-block-field="page" data-block-value=""></i></span><div style="box-sizing:border-box;"><div style="padding:14px 17px;border-left:6px solid #2456a6;background-color:#f7faff;box-shadow:-3px 0 0 #dfe9f8;color:#17233a;"><p data-block-field="quote" data-block-value="贴进去和看见的一样，这是墨笔唯一要守住的承诺。" style="display:block;margin:0;color:inherit;font-size:16px;font-weight:500;line-height:1.9;letter-spacing:0.035em;">贴进去和看见的一样，这是墨笔唯一要守住的承诺。</p><p style="margin:12px 0 0;color:#61708a;font-size:12px;line-height:1.6;letter-spacing:0.05em;text-align:right;"><span data-block-field="author" data-block-value="墨笔回归" style="display:inline;color:#17233a;font-weight:700;">墨笔回归</span> · <span data-block-field="source" data-block-value="TASK-06" style="display:inline;color:#61708a;">TASK-06</span></p></div></div></section>
+
+结尾仍是普通段落。换主题后，这两块如果还是自己的蓝，预览里应出现「这一块是单独处理的」说明。这是预期，不要当成失败。
