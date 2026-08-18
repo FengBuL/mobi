@@ -18,13 +18,32 @@ export interface AccountProfileConfig {
   mpConfig: MpConfigSnapshot
 }
 
+export const ACCOUNT_PROFILE_EXPORT_KIND = `mobi-account-profiles`
+export const ACCOUNT_PROFILE_EXPORT_VERSION = 1
+export const RECENT_BLOCK_PRESET_LIMIT = 8
+
 export interface AccountProfile {
   id: string
   name: string
   isDefault?: boolean
   /** 这个号上次在看的稿；正文仍只存在稿列表里 */
   lastPostId?: string | null
+  /** 这个号最近用过的板块样式，只记预设 id */
+  recentBlockPresets?: string[]
   config: AccountProfileConfig
+}
+
+export interface AccountProfileExportItem {
+  name: string
+  config: AccountProfileConfig
+  recentBlockPresets?: string[]
+}
+
+export interface AccountProfileExportPayload {
+  kind: typeof ACCOUNT_PROFILE_EXPORT_KIND
+  version: number
+  exportedAt: string
+  profiles: AccountProfileExportItem[]
 }
 
 export interface ProfilePostRef {
@@ -42,8 +61,180 @@ function cloneConfig(config: AccountProfileConfig): AccountProfileConfig {
 function cloneProfile(profile: AccountProfile): AccountProfile {
   return {
     ...profile,
+    recentBlockPresets: [...(profile.recentBlockPresets ?? [])],
     config: cloneConfig(profile.config),
   }
+}
+
+export function rememberRecentBlockPreset(
+  recent: readonly string[] | null | undefined,
+  presetId: string,
+  limit = RECENT_BLOCK_PRESET_LIMIT,
+) {
+  const id = presetId.trim()
+  if (!id) {
+    return [...(recent ?? [])]
+  }
+  return [id, ...(recent ?? []).filter(item => item !== id)].slice(0, limit)
+}
+
+export function rankPresetsByRecent<T extends { id: string }>(
+  presets: readonly T[],
+  recent: readonly string[] | null | undefined,
+) {
+  const order = new Map((recent ?? []).map((id, index) => [id, index]))
+  const original = new Map(presets.map((preset, index) => [preset.id, index]))
+  return [...presets].sort((left, right) => {
+    const leftRecent = order.get(left.id) ?? Number.POSITIVE_INFINITY
+    const rightRecent = order.get(right.id) ?? Number.POSITIVE_INFINITY
+    if (leftRecent !== rightRecent) {
+      return leftRecent - rightRecent
+    }
+    return (original.get(left.id) ?? 0) - (original.get(right.id) ?? 0)
+  })
+}
+
+export function buildAccountProfileExport(profiles: AccountProfile[]): AccountProfileExportPayload {
+  return {
+    kind: ACCOUNT_PROFILE_EXPORT_KIND,
+    version: ACCOUNT_PROFILE_EXPORT_VERSION,
+    exportedAt: new Date().toISOString(),
+    profiles: profiles.map(profile => ({
+      name: profile.name,
+      config: cloneConfig(profile.config),
+      recentBlockPresets: [...(profile.recentBlockPresets ?? [])],
+    })),
+  }
+}
+
+function readImportedConfig(value: unknown): AccountProfileConfig | null {
+  if (!value || typeof value !== `object`) {
+    return null
+  }
+  const config = value as Partial<AccountProfileConfig>
+  if (typeof config.theme !== `string` || typeof config.fontFamily !== `string` || typeof config.fontSize !== `string`) {
+    return null
+  }
+  const mpConfig = config.mpConfig && typeof config.mpConfig === `object`
+    ? config.mpConfig
+    : { proxyOrigin: ``, appID: ``, appsecret: `` }
+  return {
+    theme: config.theme,
+    fontFamily: config.fontFamily,
+    fontSize: config.fontSize,
+    primaryColor: typeof config.primaryColor === `string` ? config.primaryColor : `#151515`,
+    primaryColorSource: config.primaryColorSource === `manual` ? `manual` : `theme`,
+    isCiteStatus: Boolean(config.isCiteStatus),
+    imgHost: typeof config.imgHost === `string` && config.imgHost ? config.imgHost : `default`,
+    mpConfig: {
+      proxyOrigin: typeof mpConfig.proxyOrigin === `string` ? mpConfig.proxyOrigin : ``,
+      appID: typeof mpConfig.appID === `string` ? mpConfig.appID : ``,
+      appsecret: typeof mpConfig.appsecret === `string` ? mpConfig.appsecret : ``,
+    },
+  }
+}
+
+export function parseAccountProfileImport(raw: string): AccountProfileExportPayload | null {
+  try {
+    const parsed = JSON.parse(raw) as Partial<AccountProfileExportPayload>
+    if (parsed.kind !== ACCOUNT_PROFILE_EXPORT_KIND || !Array.isArray(parsed.profiles)) {
+      return null
+    }
+    const profiles: AccountProfileExportItem[] = []
+    parsed.profiles.forEach((item) => {
+      if (!item || typeof item.name !== `string` || !item.name.trim()) {
+        return
+      }
+      const config = readImportedConfig(item.config)
+      if (!config) {
+        return
+      }
+      profiles.push({
+        name: item.name.trim(),
+        config,
+        recentBlockPresets: Array.isArray(item.recentBlockPresets)
+          ? item.recentBlockPresets.filter(id => typeof id === `string` && Boolean(id.trim()))
+          : [],
+      })
+    })
+    if (profiles.length === 0) {
+      return null
+    }
+    return {
+      kind: ACCOUNT_PROFILE_EXPORT_KIND,
+      version: ACCOUNT_PROFILE_EXPORT_VERSION,
+      exportedAt: typeof parsed.exportedAt === `string` ? parsed.exportedAt : ``,
+      profiles,
+    }
+  }
+  catch {
+    return null
+  }
+}
+
+export function uniqueImportedProfileName(existingNames: readonly string[], desiredName: string) {
+  const base = desiredName.trim() || `未命名号`
+  const taken = new Set(existingNames)
+  if (!taken.has(base)) {
+    return base
+  }
+  let index = 2
+  while (taken.has(`${base} ${index}`)) {
+    index += 1
+  }
+  return `${base} ${index}`
+}
+
+export function collectImportedNameConflicts(existing: AccountProfile[], incoming: AccountProfileExportItem[]) {
+  const names = new Set(existing.map(profile => profile.name))
+  return incoming.filter(item => names.has(item.name)).map(item => item.name)
+}
+
+export function describeAccountProfileImport(result: { added: number, updated: number }) {
+  if (result.added > 0) {
+    return `已导入：更新 ${result.updated} 个，新增 ${result.added} 个。主题条和设置里可以切号。稿子不会跟着过来。`
+  }
+  return `已导入：更新 ${result.updated} 个。还是这些号，配置已覆盖。稿子不会跟着过来。`
+}
+
+export function mergeImportedProfiles(
+  existing: AccountProfile[],
+  incoming: AccountProfileExportItem[],
+  conflict: `overwrite` | `add` = `overwrite`,
+) {
+  let profiles = existing.map(cloneProfile)
+  let added = 0
+  let updated = 0
+
+  incoming.forEach((item) => {
+    const index = profiles.findIndex(profile => profile.name === item.name)
+    if (index >= 0 && conflict === `overwrite`) {
+      profiles[index] = {
+        ...profiles[index],
+        recentBlockPresets: [...(item.recentBlockPresets ?? [])],
+        config: cloneConfig(item.config),
+      }
+      updated += 1
+      return
+    }
+
+    const name = index >= 0
+      ? uniqueImportedProfileName(profiles.map(profile => profile.name), item.name)
+      : item.name
+    const created = createAccountProfile(profiles, name, item.config)
+    profiles = created.profiles.map((profile) => {
+      if (profile.id !== created.created.id) {
+        return profile
+      }
+      return {
+        ...profile,
+        recentBlockPresets: [...(item.recentBlockPresets ?? [])],
+      }
+    })
+    added += 1
+  })
+
+  return { profiles, added, updated }
 }
 
 export function snapshotEquals(left: AccountProfileConfig, right: AccountProfileConfig) {

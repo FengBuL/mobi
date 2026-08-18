@@ -1,13 +1,22 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  ACCOUNT_PROFILE_EXPORT_KIND,
   assignPostProfileId,
+  buildAccountProfileExport,
   createAccountProfile,
   DEFAULT_PROFILE_ID,
   DEFAULT_PROFILE_NAME,
   deleteAccountProfile,
+  describeAccountProfileImport,
+  mergeImportedProfiles,
   migrateAccountProfiles,
+  parseAccountProfileImport,
   pickPostAfterProfileDelete,
   pickPostForProfile,
+  rankPresetsByRecent,
+  rememberRecentBlockPreset,
   renameAccountProfile,
   resolveProfileId,
   snapshotEquals,
@@ -228,5 +237,86 @@ describe(`我的号：重命名与删除`, () => {
       `draft-a`,
       `draft-a`,
     )).toBe(`draft-b`)
+  })
+})
+
+describe(`我的号：最近板块与导出导入`, () => {
+  it(`最近用过的板块会顶到最前，最多记 8 个`, () => {
+    expect(rememberRecentBlockPreset([`a`, `b`], `c`)).toEqual([`c`, `a`, `b`])
+    expect(rememberRecentBlockPreset([`a`, `b`], `b`)).toEqual([`b`, `a`])
+    expect(rememberRecentBlockPreset([`1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`], `9`)).toEqual([
+      `9`,
+      `1`,
+      `2`,
+      `3`,
+      `4`,
+      `5`,
+      `6`,
+      `7`,
+    ])
+    expect(rankPresetsByRecent(
+      [{ id: `a` }, { id: `b` }, { id: `c` }],
+      [`c`, `a`],
+    ).map(item => item.id)).toEqual([`c`, `a`, `b`])
+  })
+
+  it(`导出不含稿 id，导入按名字覆盖或新增`, () => {
+    const first = migrateAccountProfiles({
+      profiles: [],
+      currentProfileId: ``,
+      legacy: legacyA,
+      posts: [{ id: `p1` }],
+    }).profiles
+    first[0].lastPostId = `p1`
+    first[0].recentBlockPresets = [`heading-bar`]
+
+    const payload = buildAccountProfileExport(first)
+    expect(payload.kind).toBe(ACCOUNT_PROFILE_EXPORT_KIND)
+    expect(JSON.stringify(payload)).not.toContain(`lastPostId`)
+    expect(JSON.stringify(payload)).not.toContain(`"p1"`)
+    expect(payload.profiles[0].recentBlockPresets).toEqual([`heading-bar`])
+
+    const parsed = parseAccountProfileImport(JSON.stringify(payload))
+    expect(parsed?.profiles[0].config.mpConfig.appID).toBe(`wxAAA`)
+
+    const merged = mergeImportedProfiles(first, [
+      { name: DEFAULT_PROFILE_NAME, config: legacyB, recentBlockPresets: [`quote-mark`] },
+      { name: `活动号`, config: legacyA, recentBlockPresets: [] },
+    ])
+    expect(merged.updated).toBe(1)
+    expect(merged.added).toBe(1)
+    expect(merged.profiles).toHaveLength(2)
+    expect(merged.profiles[0].config.theme).toBe(`ink`)
+    expect(merged.profiles[0].recentBlockPresets).toEqual([`quote-mark`])
+    expect(merged.profiles[1].name).toBe(`活动号`)
+    expect(parseAccountProfileImport(`{"hello":1}`)).toBeNull()
+
+    const asNew = mergeImportedProfiles(first, [
+      { name: DEFAULT_PROFILE_NAME, config: legacyB, recentBlockPresets: [] },
+    ], `add`)
+    expect(asNew.updated).toBe(0)
+    expect(asNew.added).toBe(1)
+    expect(asNew.profiles).toHaveLength(2)
+    expect(asNew.profiles[0].name).toBe(DEFAULT_PROFILE_NAME)
+    expect(asNew.profiles[0].config.theme).toBe(`default`)
+    expect(asNew.profiles[1].name).toBe(`${DEFAULT_PROFILE_NAME} 2`)
+    expect(asNew.profiles[1].config.theme).toBe(`ink`)
+    expect(describeAccountProfileImport({ added: 1, updated: 0 })).toContain(`可以切号`)
+    expect(describeAccountProfileImport({ added: 0, updated: 1 })).toContain(`配置已覆盖`)
+  })
+
+  it(`设置和板块库接上了导出导入与最近排序`, () => {
+    const settings = readFileSync(resolve(process.cwd(), `apps/web/src/components/editor/editor-header/SettingsDropdown.vue`), `utf8`)
+    const workspace = readFileSync(resolve(process.cwd(), `apps/web/src/components/editor/HeadingBlockWorkspace.vue`), `utf8`)
+    const menu = readFileSync(resolve(process.cwd(), `apps/web/src/components/editor/AccountProfileMenu.vue`), `utf8`)
+
+    expect(settings).toContain(`导出号配置`)
+    expect(settings).toContain(`导入号配置`)
+    expect(settings).toContain(`切号`)
+    expect(settings).toContain(`switchProfile`)
+    expect(menu).toContain(`导出号配置`)
+    expect(menu).toContain(`AccountProfileImportDialog`)
+    expect(workspace).toContain(`rankPresetsByRecent`)
+    expect(workspace).toContain(`rememberBlockPreset`)
   })
 })

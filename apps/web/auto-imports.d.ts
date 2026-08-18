@@ -125,6 +125,7 @@ declare global {
   const unref: typeof import('vue').unref
   const unrefElement: typeof import('@vueuse/core').unrefElement
   const until: typeof import('@vueuse/core').until
+  const useAccountProfileImport: typeof import('./src/composables/useAccountProfileImport').useAccountProfileImport
   const useAccountProfileStore: typeof import('./src/stores/accountProfile').useAccountProfileStore
   const useActiveElement: typeof import('@vueuse/core').useActiveElement
   const useAnimate: typeof import('@vueuse/core').useAnimate

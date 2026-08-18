@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { BlockPreset, BlockState, ParsedBlock } from '@/utils/blocks/types'
 import { Check, Minus, Plus, RotateCcw, Trash2, Type } from 'lucide-vue-next'
+import { useAccountProfileStore } from '@/stores/accountProfile'
 import { useBlockSelectionStore } from '@/stores/blockSelection'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
 import { useUIStore } from '@/stores/ui'
+import { rankPresetsByRecent } from '@/utils/account-profile'
 import { blockStateToPlainMarkdown } from '@/utils/blocks/plain-markdown'
 import {
   BLOCK_FONT_SCALE_OPTIONS,
@@ -28,13 +30,15 @@ const props = withDefaults(defineProps<{
 const { mode } = toRefs(props)
 
 const editorStore = useEditorStore()
+const profileStore = useAccountProfileStore()
 const blockSelectionStore = useBlockSelectionStore()
 const postStore = usePostStore()
 const renderStore = useRenderStore()
 const uiStore = useUIStore()
 const { selection: blockSelection } = storeToRefs(blockSelectionStore)
 const category = computed(() => blockCategories.find(item => item.id === props.categoryId) ?? blockCategories[0])
-const presets = computed(() => category.value.presets)
+const recentPresetIds = computed(() => profileStore.currentProfile?.recentBlockPresets ?? [])
+const presets = computed(() => rankPresetsByRecent(category.value.presets, recentPresetIds.value))
 const selectedPresetId = ref(presets.value[0].id)
 const state = reactive<BlockState>({
   ...category.value.createDefaultState(presets.value[0]),
@@ -251,6 +255,7 @@ function syncBlockSelection(preset: BlockPreset, range: { from: number, to: numb
 }
 
 function writeBlock(preset: BlockPreset, message?: string) {
+  profileStore.rememberBlockPreset(preset.id)
   const markup = buildBlockMarkup(preset, state)
   const current = editorStore.getContent()
   if (message) {
@@ -318,6 +323,7 @@ function writeBlock(preset: BlockPreset, message?: string) {
           </div>
           <div class="heading-block-preset__meta">
             <strong>{{ preset.name }}</strong>
+            <em v-if="recentPresetIds.includes(preset.id)" class="heading-block-preset__recent">最近</em>
             <span>{{ preset.cue }}</span>
             <Check v-if="preset.id === selectedPresetId" class="size-3.5 shrink-0" />
           </div>
@@ -618,6 +624,16 @@ function writeBlock(preset: BlockPreset, message?: string) {
   align-items: center;
   gap: 0.4rem;
   padding: 0 0.15rem;
+}
+
+.heading-block-preset__recent {
+  flex-shrink: 0;
+  padding: 0.04rem 0.32rem;
+  border-radius: 999px;
+  background: hsl(var(--secondary));
+  font-size: 0.6rem;
+  font-style: normal;
+  color: hsl(var(--muted-foreground));
 }
 
 .heading-block-preset__meta strong {

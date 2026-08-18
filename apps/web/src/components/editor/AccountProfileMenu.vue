@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { Check, Pencil, Plus, Trash2, Users } from 'lucide-vue-next'
+import { downloadFile } from '@mobi/shared/utils'
+import { Check, Download, Pencil, Plus, Trash2, Upload, Users } from 'lucide-vue-next'
 import { useAccountProfileStore } from '@/stores/accountProfile'
+import AccountProfileImportDialog from './AccountProfileImportDialog.vue'
 
 withDefaults(defineProps<{
   compact?: boolean
@@ -51,10 +53,23 @@ function confirmDialog() {
 function switchTo(id: string) {
   profileStore.switchProfile(id)
 }
+
+const importer = ref<{ openImport: () => void } | null>(null)
+
+function exportProfiles() {
+  const payload = profileStore.exportProfiles()
+  downloadFile(JSON.stringify(payload, null, 2), `墨笔-号配置.json`, `application/json`)
+  toast.success(`已导出 ${payload.profiles.length} 个号。文件里有图床密钥，只给自己换电脑用。`)
+}
+
+function openImport() {
+  importer.value?.openImport()
+}
 </script>
 
 <template>
   <div>
+    <AccountProfileImportDialog ref="importer" />
     <DropdownMenu v-if="!compact || showSwitcher">
       <DropdownMenuTrigger as-child>
         <Button
@@ -91,6 +106,14 @@ function switchTo(id: string) {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
         </template>
+        <DropdownMenuItem @click="exportProfiles">
+          <Download class="mr-2 size-3.5" />
+          导出号配置
+        </DropdownMenuItem>
+        <DropdownMenuItem @click="openImport">
+          <Upload class="mr-2 size-3.5" />
+          导入号配置
+        </DropdownMenuItem>
         <DropdownMenuItem @click="openCreate">
           <Plus class="mr-2 size-3.5" />
           新建号

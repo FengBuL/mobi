@@ -1,12 +1,15 @@
 import type { ThemeName } from '@mobi/shared/configs'
-import type { AccountProfile, AccountProfileConfig, MpConfigSnapshot } from '@/utils/account-profile'
+import type { AccountProfile, AccountProfileConfig, AccountProfileExportItem, MpConfigSnapshot } from '@/utils/account-profile'
 import { addPrefix } from '@/utils'
 import {
+  buildAccountProfileExport,
   createAccountProfile,
   deleteAccountProfile,
+  mergeImportedProfiles,
   migrateAccountProfiles,
   pickPostAfterProfileDelete,
   pickPostForProfile,
+  rememberRecentBlockPreset,
   renameAccountProfile,
   resolveProfileId,
 } from '@/utils/account-profile'
@@ -63,6 +66,24 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
     profiles.value[index] = {
       ...profiles.value[index],
       config: readLegacyConfig(),
+    }
+  }
+
+  function rememberBlockPreset(presetId: string) {
+    if (!ready || !presetId.trim()) {
+      return
+    }
+    const index = profiles.value.findIndex(profile => profile.id === currentProfileId.value)
+    if (index < 0) {
+      return
+    }
+    const next = rememberRecentBlockPreset(profiles.value[index].recentBlockPresets, presetId)
+    if (JSON.stringify(next) === JSON.stringify(profiles.value[index].recentBlockPresets ?? [])) {
+      return
+    }
+    profiles.value[index] = {
+      ...profiles.value[index],
+      recentBlockPresets: next,
     }
   }
 
@@ -213,6 +234,32 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
     profiles.value = renameAccountProfile(profiles.value, id, name)
   }
 
+  function exportProfiles() {
+    persistCurrentConfig()
+    return buildAccountProfileExport(profiles.value)
+  }
+
+  function importProfiles(
+    incoming: AccountProfileExportItem[],
+    conflict: `overwrite` | `add` = `overwrite`,
+  ) {
+    persistCurrentConfig()
+    const beforeIds = new Set(profiles.value.map(profile => profile.id))
+    const merged = mergeImportedProfiles(profiles.value, incoming, conflict)
+    profiles.value = merged.profiles
+    const firstAdded = merged.profiles.find(profile => !beforeIds.has(profile.id))
+    if (firstAdded) {
+      activateProfile(firstAdded.id)
+    }
+    else {
+      const current = profiles.value.find(profile => profile.id === currentProfileId.value)
+      if (current) {
+        applyProfile(current.id)
+      }
+    }
+    return merged
+  }
+
   function removeProfile(id: string) {
     const postsBefore = postStore.posts.map(post => ({ id: post.id, profileId: post.profileId }))
     const removed = deleteAccountProfile({
@@ -298,5 +345,8 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
     createProfile,
     renameProfile,
     removeProfile,
+    rememberBlockPreset,
+    exportProfiles,
+    importProfiles,
   }
 })
