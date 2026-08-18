@@ -24,6 +24,8 @@ export interface Post {
   filePath?: string | null
   // 上次成功写盘时的正文哈希，用来发现外部改动
   syncedHash?: string | null
+  // 属于哪个号；缺省或孤儿在打开时落回默认号
+  profileId?: string | null
 }
 
 /**

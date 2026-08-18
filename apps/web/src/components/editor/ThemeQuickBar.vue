@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useAccountProfileStore } from '@/stores/accountProfile'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
@@ -23,12 +24,15 @@ import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useUIStore } from '@/stores/ui'
 import { trackEvent } from '@/utils/telemetry'
 import { getThemeSwatch } from '@/utils/theme-swatch'
+import AccountProfileMenu from './AccountProfileMenu.vue'
 
 const themeStore = useThemeStore()
 const themeDesignerStore = useThemeDesignerStore()
 const uiStore = useUIStore()
 const editorStore = useEditorStore()
 const renderStore = useRenderStore()
+const profileStore = useAccountProfileStore()
+const { showSwitcher } = storeToRefs(profileStore)
 
 const { theme, hiddenThemes } = storeToRefs(themeStore)
 
@@ -148,6 +152,8 @@ function openStylePanel() {
         </DropdownMenu>
       </div>
     </div>
+
+    <AccountProfileMenu v-if="showSwitcher" compact />
 
     <Button variant="outline" size="sm" class="h-8 shrink-0 gap-1.5 px-2.5 text-xs" @click="openStylePanel">
       <SlidersHorizontal class="size-3.5" />

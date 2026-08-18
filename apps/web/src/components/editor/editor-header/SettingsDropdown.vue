@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { CloudCog } from 'lucide-vue-next'
+import { CloudCog, Plus } from 'lucide-vue-next'
+import { useAccountProfileStore } from '@/stores/accountProfile'
 import { useUIStore } from '@/stores/ui'
 
 const props = withDefaults(defineProps<{
@@ -10,9 +11,14 @@ const props = withDefaults(defineProps<{
 
 const { asSub } = toRefs(props)
 const uiStore = useUIStore()
+const profileStore = useAccountProfileStore()
 
 function openImageHostSettings() {
   uiStore.openUploadImgDialog()
+}
+
+function createProfile() {
+  profileStore.createProfile()
 }
 </script>
 
@@ -26,6 +32,10 @@ function openImageHostSettings() {
         <CloudCog class="mr-2 size-4" />
         图床配置
       </MenubarItem>
+      <MenubarItem @click="createProfile">
+        <Plus class="mr-2 size-4" />
+        新建号
+      </MenubarItem>
     </MenubarSubContent>
   </MenubarSub>
 
@@ -37,6 +47,10 @@ function openImageHostSettings() {
       <MenubarItem @click="openImageHostSettings">
         <CloudCog class="mr-2 size-4" />
         图床配置
+      </MenubarItem>
+      <MenubarItem @click="createProfile">
+        <Plus class="mr-2 size-4" />
+        新建号
       </MenubarItem>
     </MenubarContent>
   </MenubarMenu>

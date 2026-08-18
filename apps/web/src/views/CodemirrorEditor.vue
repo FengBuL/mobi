@@ -16,6 +16,7 @@ import {
 import { SearchTab } from '@/components/ui/search-tab'
 import { draftFileSyncKey, useDraftFileSync } from '@/composables/useDraftFileSync'
 import { useImageUploader } from '@/composables/useImageUploader'
+import { useAccountProfileStore } from '@/stores/accountProfile'
 import { useBlockSelectionStore } from '@/stores/blockSelection'
 import { blockSelectionTransaction, useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
@@ -54,6 +55,7 @@ const postStore = usePostStore()
 const renderStore = useRenderStore()
 const themeStore = useThemeStore()
 const uiStore = useUIStore()
+useAccountProfileStore()
 const draftFileSync = useDraftFileSync()
 provide(draftFileSyncKey, draftFileSync)
 const { selection: blockSelection } = storeToRefs(blockSelectionStore)

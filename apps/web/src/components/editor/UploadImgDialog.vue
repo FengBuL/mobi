@@ -4,6 +4,7 @@ import { Field, Form } from 'vee-validate'
 import * as yup from 'yup'
 import { isDesktopRuntime } from '@/services/desktop/bridge'
 import { DEFAULT_MP_PROXY_ORIGIN, OFFICIAL_MP_PROXY_ORIGIN } from '@/services/wechat'
+import { useAccountProfileStore } from '@/stores/accountProfile'
 import { useUIStore } from '@/stores/ui'
 import { CUSTOM_UPLOAD_SCRIPT_STORAGE_KEY } from '@/utils/file'
 import { prepareMpProxySubmission, sanitizeStoredMpProxyOrigin, saveAndSelectImageHost, validateMpProxyBeforeSave } from '@/utils/image-host-config'
@@ -11,9 +12,10 @@ import { store } from '@/utils/storage'
 import { trackEvent } from '@/utils/telemetry'
 
 const uiStore = useUIStore()
+const profileStore = useAccountProfileStore()
 const { enableImageReupload } = storeToRefs(uiStore)
+const { imgHost, mpConfig } = storeToRefs(profileStore)
 const { toggleImageReupload } = uiStore
-const imgHost = store.reactive(`imgHost`, `default`)
 
 // github
 const githubSchema = toTypedSchema(yup.object({
@@ -199,11 +201,6 @@ const mpSchema = computed(() =>
   })),
 )
 
-const mpConfig = store.reactive(`mpConfig`, {
-  proxyOrigin: ``,
-  appID: ``,
-  appsecret: ``,
-})
 const storedMpProxyOrigin = mpConfig.value.proxyOrigin
 const sanitizedMpProxyOrigin = sanitizeStoredMpProxyOrigin(storedMpProxyOrigin, [
   OFFICIAL_MP_PROXY_ORIGIN,
