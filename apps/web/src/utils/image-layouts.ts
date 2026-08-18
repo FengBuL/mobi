@@ -28,6 +28,11 @@ export const WECHAT_PREVIEW_DIFF_ADVICE = {
 export const WECHAT_PREVIEW_DIFF_HINT_ADVICE_CLASS = `md-wechat-diff-hint__advice`
 export const WECHAT_PREVIEW_DIFF_HINT_BUTTON_CLASS = `md-wechat-diff-hint__button`
 export const WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION = `expand-scroll`
+export const WECHAT_PREVIEW_DIFF_SLICE_SCROLL_ACTION = `slice-scroll`
+
+export interface WechatPreviewDiffHintOptions {
+  suppressCrop?: boolean
+}
 
 export type WechatPreviewDiffKind = keyof typeof WECHAT_PREVIEW_DIFF_LABELS
 
@@ -71,11 +76,12 @@ export function resolveWechatPreviewDiffKinds(figure: HTMLElement): WechatPrevie
   return [...kinds]
 }
 
-export function applyWechatPreviewDiffHints(root: HTMLElement) {
+export function applyWechatPreviewDiffHints(root: HTMLElement, options: WechatPreviewDiffHintOptions = {}) {
   root.querySelectorAll(`[${WECHAT_EDITOR_ONLY_ATTR}="wechat-diff"]`).forEach(node => node.remove())
 
   root.querySelectorAll<HTMLElement>(`.md-media-figure`).forEach((figure) => {
     const kinds = resolveWechatPreviewDiffKinds(figure)
+      .filter(kind => !(options.suppressCrop && kind === `crop`))
     if (!kinds.length) {
       return
     }
@@ -97,12 +103,19 @@ export function applyWechatPreviewDiffHints(root: HTMLElement) {
     hint.appendChild(advice)
 
     if (kinds.includes(`scroll`)) {
-      const button = document.createElement(`button`)
-      button.type = `button`
-      button.className = WECHAT_PREVIEW_DIFF_HINT_BUTTON_CLASS
-      button.setAttribute(`data-mobi-wechat-diff-action`, WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION)
-      button.textContent = `改成整幅长图`
-      hint.appendChild(button)
+      const expand = document.createElement(`button`)
+      expand.type = `button`
+      expand.className = WECHAT_PREVIEW_DIFF_HINT_BUTTON_CLASS
+      expand.setAttribute(`data-mobi-wechat-diff-action`, WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION)
+      expand.textContent = `改成整幅长图`
+      hint.appendChild(expand)
+
+      const slice = document.createElement(`button`)
+      slice.type = `button`
+      slice.className = WECHAT_PREVIEW_DIFF_HINT_BUTTON_CLASS
+      slice.setAttribute(`data-mobi-wechat-diff-action`, WECHAT_PREVIEW_DIFF_SLICE_SCROLL_ACTION)
+      slice.textContent = `切成多张`
+      hint.appendChild(slice)
     }
     host.appendChild(hint)
   })
@@ -1513,6 +1526,24 @@ export function expandScrollWindowToFullImage(content: string, mediaBlockIndex: 
   }
 
   return `${content.slice(0, block.from)}${buildMediaLayoutMarkup(preset, state)}${content.slice(block.to)}`
+}
+
+export function replaceScrollWindowWithSlicedImages(
+  content: string,
+  mediaBlockIndex: number,
+  urls: string[],
+) {
+  const block = parseMediaLayoutBlocks(content)[mediaBlockIndex]
+  if (!block || urls.length === 0) {
+    return null
+  }
+
+  const alt = block.form.images[0]?.alt.trim() || `长图`
+  const markdown = urls
+    .map((url, index) => `![${alt} ${index + 1}](${url})`)
+    .join(`\n\n`)
+
+  return `${content.slice(0, block.from)}${markdown}${content.slice(block.to)}`
 }
 
 function parseStyleNumericValue(style: string, propertyName: string) {

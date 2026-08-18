@@ -29,6 +29,7 @@ import {
   resolveMarkdownSourceAtPosition,
   resolveMarkdownSourceRange,
 } from '@/utils/blocks/source-selection'
+import { loadImageFileFromUrl, sliceImageFileVertically } from '@/utils/clipboard-image-crop'
 import {
   embeddedContentProjectionTheme,
   embeddedContentVisibility,
@@ -37,14 +38,16 @@ import {
   stripEmbeddedContent,
 } from '@/utils/editor-content-visibility'
 import { shouldSyncPreviewFromEditorUpdate } from '@/utils/editor-preview-sync'
-import { fileUpload } from '@/utils/file'
+import { fileUpload, getMpUploadConfig, hasMpUploadConfig, uploadFileToMp } from '@/utils/file'
 import {
   applyWechatPreviewDiffHints,
   expandScrollWindowToFullImage,
   parseMediaLayoutBlocks,
   repairIndentedMediaLayoutBlocks,
+  replaceScrollWindowWithSlicedImages,
   WECHAT_EDITOR_ONLY_ATTR,
   WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION,
+  WECHAT_PREVIEW_DIFF_SLICE_SCROLL_ACTION,
 } from '@/utils/image-layouts'
 import { store } from '@/utils/storage'
 import { applyWechatPreviewTextureDowngrade, resolveWechatPreviewFrame } from '@/utils/wechat-preview'
@@ -124,9 +127,13 @@ watch(output, () => {
     if (outputElement) {
       highlightPendingBlocks(hljs, outputElement)
       applyBlockSelectionHighlight()
-      applyWechatPreviewDiffHints(outputElement)
       applyWechatPreviewTextureDowngrade(outputElement)
       applyPreviewBlockPickHint()
+      void hasMpUploadConfig().then((suppressCrop) => {
+        if (document.getElementById(`output`) === outputElement) {
+          applyWechatPreviewDiffHints(outputElement, { suppressCrop })
+        }
+      })
     }
   })
 })
@@ -820,6 +827,68 @@ function expandSelectedScrollWindow(button: HTMLElement) {
   toast.success(`已改成整幅长图`)
 }
 
+async function publishSlicedImage(file: File) {
+  if (await hasMpUploadConfig()) {
+    return uploadFileToMp(file)
+  }
+
+  try {
+    const content = await toBase64(file)
+    return await fileUpload(content, file)
+  }
+  catch {
+    return toBase64(file)
+  }
+}
+
+async function sliceSelectedScrollWindow(button: HTMLElement) {
+  const mediaBlock = button.closest<HTMLElement>(`.md-media-block`)
+  const blocks = [...(previewRef.value?.querySelectorAll<HTMLElement>(`.md-media-block`) ?? [])]
+  const index = mediaBlock ? blocks.indexOf(mediaBlock) : -1
+  if (index < 0) {
+    toast.error(`没有找到可切片的长图`)
+    return
+  }
+
+  const parsed = parseMediaLayoutBlocks(editorStore.getContent())[index]
+  const sourceUrl = parsed?.form.images[0]?.url.trim() || ``
+  if (!sourceUrl) {
+    toast.error(`这张长图没有可下载的地址`)
+    return
+  }
+
+  try {
+    const mpConfig = await getMpUploadConfig()
+    const sourceFile = await loadImageFileFromUrl(sourceUrl, mpConfig?.proxyOrigin || ``)
+    const slices = await sliceImageFileVertically(sourceFile)
+    if (slices.length === 0) {
+      toast.error(`这张图不够长，不必切片`)
+      return
+    }
+
+    const urls: string[] = []
+    for (const slice of slices) {
+      urls.push(await publishSlicedImage(slice.file))
+    }
+
+    const next = replaceScrollWindowWithSlicedImages(editorStore.getContent(), index, urls)
+    if (!next) {
+      toast.error(`没有找到可切片的长图`)
+      return
+    }
+
+    editorStore.importContent(next)
+    if (currentPost.value) {
+      postStore.updatePostContent(currentPost.value.id, next)
+    }
+    renderStore.render(next)
+    toast.success(`已切成 ${urls.length} 张`)
+  }
+  catch (error) {
+    toast.error(error instanceof Error ? error.message : `切片失败`)
+  }
+}
+
 // 悬停在已插入板块上时，在其右上角浮出一个删除按钮。
 // 用浮层而不是往预览 DOM 里插节点，避免按钮混进公众号复制产物。
 const hoveredBlockElement = shallowRef<HTMLElement | null>(null)
@@ -1025,6 +1094,14 @@ function handlePreviewContentClick(event: MouseEvent) {
     event.preventDefault()
     event.stopPropagation()
     expandSelectedScrollWindow(expandButton)
+    return
+  }
+
+  const sliceButton = target.closest<HTMLElement>(`[data-mobi-wechat-diff-action="${WECHAT_PREVIEW_DIFF_SLICE_SCROLL_ACTION}"]`)
+  if (sliceButton) {
+    event.preventDefault()
+    event.stopPropagation()
+    void sliceSelectedScrollWindow(sliceButton)
     return
   }
 

@@ -5,6 +5,7 @@ import {
   createMediaLayoutStateFromImages,
   expandScrollWindowToFullImage,
   mediaLayoutPresets,
+  replaceScrollWindowWithSlicedImages,
 } from '@/utils/image-layouts'
 
 describe(`板块还原为普通文本`, () => {
@@ -46,5 +47,24 @@ describe(`长图视窗改成整幅长图`, () => {
     expect(next).toContain(`md-media-figure--auto`)
     expect(next).toContain(`https://example.com/long.png`)
     expect(next).not.toContain(`md-media-scroll-window`)
+  })
+
+  it(`把 scroll-window 换成若干张普通 Markdown 图`, () => {
+    const scroll = mediaLayoutPresets.find(item => item.id === `scroll-window`)!
+    const html = buildMediaLayoutMarkup(scroll, createMediaLayoutStateFromImages(scroll, [
+      { url: `https://example.com/long.png`, alt: `长图` },
+    ]))
+    const content = `前文\n${html}\n后文`
+    const next = replaceScrollWindowWithSlicedImages(content, 0, [
+      `https://example.com/long-1.png`,
+      `https://example.com/long-2.png`,
+    ])
+
+    expect(next).toBeTruthy()
+    expect(next).toContain(`![长图 1](https://example.com/long-1.png)`)
+    expect(next).toContain(`![长图 2](https://example.com/long-2.png)`)
+    expect(next).not.toContain(`md-media-scroll-window`)
+    expect(next).toContain(`前文`)
+    expect(next).toContain(`后文`)
   })
 })

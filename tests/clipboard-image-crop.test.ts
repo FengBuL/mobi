@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildClipboardImageCacheKey,
+  planVerticalSlices,
   resolveCenterCrop,
   resolveClipboardImageUploadPlan,
 } from '@/utils/clipboard-image-crop'
@@ -48,5 +49,16 @@ describe(`公众号图片实体裁切`, () => {
 
     const html = buildExtendedWeChatMediaBody(`polaroid-single`, form, `#c43b2b`)
     expect(html).toContain(`data-mobi-crop-aspect="16:9"`)
+  })
+
+  it(`按切片高度把长图切成若干段，不够长则只有一段`, () => {
+    expect(planVerticalSlices(800, 4000, 1600)).toEqual([
+      { sourceY: 0, sourceHeight: 1334, outputWidth: 800, outputHeight: 1334 },
+      { sourceY: 1334, sourceHeight: 1334, outputWidth: 800, outputHeight: 1334 },
+      { sourceY: 2668, sourceHeight: 1332, outputWidth: 800, outputHeight: 1332 },
+    ])
+    expect(planVerticalSlices(800, 1200, 1600)).toEqual([
+      { sourceY: 0, sourceHeight: 1200, outputWidth: 800, outputHeight: 1200 },
+    ])
   })
 })

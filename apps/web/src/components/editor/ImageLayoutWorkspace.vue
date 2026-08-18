@@ -451,7 +451,7 @@ const visiblePresets = computed(() => showAllTemplates.value ? rankedActivePrese
 const mpSafetyLabel = computed(() => mpUploadReady.value ? `公众号安全复制已就绪` : `未配置公众号图床`)
 const mpSafetyHint = computed(() => {
   return mpUploadReady.value
-    ? `复制到公众号时会优先把图片转成微信托管地址，并按 JPG/PNG 兼容链路处理。`
+    ? `复制时会按你选的比例先裁再上传，公众号里就是裁好的图。`
     : `当前未配置公众号图床。为了避免图片无法粘贴，含图片内容不应直接复制到公众号。`
 })
 

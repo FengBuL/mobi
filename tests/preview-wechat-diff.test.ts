@@ -13,6 +13,7 @@ import {
   WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION,
   WECHAT_PREVIEW_DIFF_HINT_CLASS,
   WECHAT_PREVIEW_DIFF_LABELS,
+  WECHAT_PREVIEW_DIFF_SLICE_SCROLL_ACTION,
 } from '@/utils/image-layouts'
 
 vi.mock(`@/utils/file`, () => ({
@@ -73,6 +74,7 @@ describe(`预览微信差异打标`, () => {
     expect(source).toContain(WECHAT_PREVIEW_DIFF_ADVICE.badge)
     expect(source).toContain(WECHAT_PREVIEW_DIFF_ADVICE.overlay)
     expect(source).toContain(`改成整幅长图`)
+    expect(source).toContain(`切成多张`)
     expect(source).toContain(`点这里换样子`)
     expect(source).toContain(`preview_block_pick_hint_seen`)
     expect(source).toContain(`stripEditorOnlyWechatDiffMarkers`)
@@ -121,7 +123,9 @@ describe(`预览微信差异打标`, () => {
     expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_ADVICE.badge)
     expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_ADVICE.overlay)
     expect(root.innerHTML).toContain(`改成整幅长图`)
+    expect(root.innerHTML).toContain(`切成多张`)
     expect(root.querySelector(`[data-mobi-wechat-diff-action="${WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION}"]`)).toBeTruthy()
+    expect(root.querySelector(`[data-mobi-wechat-diff-action="${WECHAT_PREVIEW_DIFF_SLICE_SCROLL_ACTION}"]`)).toBeTruthy()
     expect(root.querySelectorAll(`.${WECHAT_PREVIEW_DIFF_HINT_CLASS}`).length).toBeGreaterThan(0)
 
     stripEditorOnlyWechatDiffMarkers(root)
@@ -160,5 +164,24 @@ describe(`预览微信差异打标`, () => {
     expect(root.innerHTML).not.toContain(WECHAT_PREVIEW_DIFF_LABELS.overlay)
     expect(root.innerHTML).not.toContain(`preview-wechat-diff-hint`)
     expect(root.innerHTML).not.toContain(`.md-wechat-diff-hint`)
+  })
+
+  it(`配了图床时不再打裁切标，长图和角标仍打`, () => {
+    const cropPreset = mediaLayoutPresets.find(item => item.id === `hero-image`)!
+    const scrollPreset = mediaLayoutPresets.find(item => item.id === `scroll-window`)!
+    const badgePreset = mediaLayoutPresets.find(item => item.id === `numbered-figure`)!
+    const html = [
+      buildMediaLayoutMarkup(cropPreset, stateWithImages(cropPreset.slotCount)),
+      buildMediaLayoutMarkup(scrollPreset, stateWithImages(scrollPreset.slotCount)),
+      buildMediaLayoutMarkup(badgePreset, stateWithImages(badgePreset.slotCount)),
+    ].join(`\n`)
+
+    const root = installClipboardFixture(html)
+    applyWechatPreviewDiffHints(root, { suppressCrop: true })
+
+    expect(root.innerHTML).not.toContain(WECHAT_PREVIEW_DIFF_LABELS.crop)
+    expect(root.innerHTML).not.toContain(WECHAT_PREVIEW_DIFF_ADVICE.crop)
+    expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_LABELS.scroll)
+    expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_LABELS.badge)
   })
 })
