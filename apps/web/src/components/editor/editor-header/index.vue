@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { WorkspaceMode } from '@/stores/ui'
-import { ChevronDown, Copy, Images, Menu, Palette } from 'lucide-vue-next'
+import { ChevronDown, Copy, Menu, Palette } from 'lucide-vue-next'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,17 +10,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useEditorCopyActions } from '@/composables/useEditorCopyActions'
+import { useRenderStore } from '@/stores/render'
 import { useUIStore } from '@/stores/ui'
+import { countUnsafeClipboardImagesFromHtml, formatLostWechatImageHint } from '@/utils/clipboard-image-status'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
 import HelpDropdown from './HelpDropdown.vue'
+import MarkdownGuideDialog from './MarkdownGuideDialog.vue'
 import SettingsDropdown from './SettingsDropdown.vue'
 
 const emit = defineEmits([`startCopy`, `endCopy`])
 
 const uiStore = useUIStore()
-const { isMobile, isOpenRightSlider, isOpenBlockWorkspace, workspaceMode } = storeToRefs(uiStore)
-const { toggleShowImageLayoutDialog } = uiStore
+const { isOpenRightSlider, workspaceMode } = storeToRefs(uiStore)
 
 const workspaceModes: Array<{ value: WorkspaceMode, label: string, hint: string }> = [
   { value: `simple`, label: `简洁`, hint: `只留编辑器和预览` },
@@ -36,19 +38,15 @@ const copyFormats = [
 
 // 对话框状态
 const aboutDialogVisible = ref(false)
+const markdownGuideDialogVisible = ref(false)
 
 // 处理帮助菜单事件
 function handleOpenAbout() {
   aboutDialogVisible.value = true
 }
 
-function handleOpenMediaLayout() {
-  if (isMobile.value) {
-    toggleShowImageLayoutDialog(true)
-    return
-  }
-
-  isOpenBlockWorkspace.value = !isOpenBlockWorkspace.value
+function handleOpenMarkdownGuide() {
+  markdownGuideDialogVisible.value = true
 }
 
 function handleOpenStyleWorkspace() {
@@ -59,6 +57,11 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
   onStart: () => emit(`startCopy`),
   onEnd: () => emit(`endCopy`),
 })
+
+const renderStore = useRenderStore()
+const { output } = storeToRefs(renderStore)
+const lostImageCount = computed(() => countUnsafeClipboardImagesFromHtml(output.value))
+const lostImageHint = computed(() => formatLostWechatImageHint(lostImageCount.value))
 </script>
 
 <template>
@@ -71,7 +74,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
         <FileDropdown />
         <EditDropdown />
         <SettingsDropdown />
-        <HelpDropdown @open-about="handleOpenAbout" />
+        <HelpDropdown @open-about="handleOpenAbout" @open-markdown-guide="handleOpenMarkdownGuide" />
       </Menubar>
     </div>
 
@@ -88,7 +91,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
             <FileDropdown :as-sub="true" />
             <EditDropdown :as-sub="true" />
             <SettingsDropdown :as-sub="true" />
-            <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" />
+            <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-markdown-guide="handleOpenMarkdownGuide" />
           </MenubarContent>
         </MenubarMenu>
       </Menubar>
@@ -114,41 +117,38 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
       </div>
 
       <!-- 复制：主按钮走公众号，其余格式收在下拉里 -->
-      <div class="flex overflow-hidden rounded-md">
-        <Button class="h-9 rounded-r-none pl-3 pr-3.5" @click="copyToWeChat">
-          <Copy class="mr-2 h-4 w-4" />
-          <span>复制到公众号</span>
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger as-child>
-            <Button class="h-9 rounded-l-none border-l border-primary-foreground/25 px-2" aria-label="其他复制格式">
-              <ChevronDown class="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" class="w-48">
-            <DropdownMenuLabel>其他格式</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem v-for="item in copyFormats" :key="item.mode" @click="handleCopy(item.mode)">
-              {{ item.label }}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <div class="flex items-center gap-2">
+        <div class="flex overflow-hidden rounded-md">
+          <Button class="h-9 rounded-r-none pl-3 pr-3.5" @click="copyToWeChat">
+            <Copy class="mr-2 h-4 w-4" />
+            <span>复制到公众号</span>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button class="h-9 rounded-l-none border-l border-primary-foreground/25 px-2" aria-label="其他复制格式">
+                <ChevronDown class="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" class="w-48">
+              <DropdownMenuLabel>其他格式</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem v-for="item in copyFormats" :key="item.mode" @click="handleCopy(item.mode)">
+                {{ item.label }}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <span
+          v-if="lostImageHint"
+          class="max-w-40 text-xs leading-4 text-muted-foreground"
+        >
+          {{ lostImageHint }}
+        </span>
       </div>
 
-      <!-- 板块库：桌面端常驻，简洁模式下作为右侧抽屉打开 -->
+      <!-- 简洁模式只留预览主题条上的「全局样式」，避免顶栏再开一扇门 -->
       <Button
-        v-if="!isMobile"
-        variant="outline"
-        class="h-9"
-        :class="{ 'border-foreground/45 bg-foreground/[0.06] text-foreground': isOpenBlockWorkspace }"
-        @click="handleOpenMediaLayout"
-      >
-        <Images class="mr-2 h-4 w-4" />
-        <span>板块库</span>
-      </Button>
-
-      <!-- 样式面板 -->
-      <Button
+        v-if="workspaceMode === 'professional'"
         variant="outline"
         class="h-9"
         :class="{ 'border-foreground/45 bg-foreground/[0.06] text-foreground': isOpenRightSlider }"
@@ -162,6 +162,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
 
   <!-- 对话框组件，嵌套菜单无法正常挂载，需要提取层级 -->
   <AboutDialog :visible="aboutDialogVisible" @close="aboutDialogVisible = false" />
+  <MarkdownGuideDialog :visible="markdownGuideDialogVisible" @close="markdownGuideDialogVisible = false" />
 </template>
 
 <style lang="less" scoped>

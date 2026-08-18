@@ -4,10 +4,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useUIStore } from '@/stores/ui'
 
 const uiStore = useUIStore()
-const { isMobile, workspaceMode, hasChosenWorkspaceMode } = storeToRefs(uiStore)
+const { workspaceMode } = storeToRefs(uiStore)
 
-// 移动端只有一栏，没什么可选的
-const isOpen = computed(() => !isMobile.value && !hasChosenWorkspaceMode.value)
+// 打开不再弹工作区问卷；顶栏仍可切换简洁 / 专业
+const isOpen = false
 
 const options: Array<{
   value: WorkspaceMode

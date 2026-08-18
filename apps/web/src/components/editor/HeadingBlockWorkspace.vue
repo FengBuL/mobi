@@ -71,6 +71,9 @@ const thumbnails = computed(() => new Map(
 ))
 const content = computed(() => postStore.currentPost?.content ?? editorStore.getContent())
 const existingBlocks = computed(() => parseBlockEntries(content.value).filter(block => block.category === category.value.id))
+const showCustomBlockThemeNote = computed(() => {
+  return Boolean(editingRange.value && blockSelection.value?.presetId)
+})
 
 watch(selectedPreset, (preset) => {
   const next = category.value.createDefaultState(preset)
@@ -269,6 +272,9 @@ function writeBlock(preset: BlockPreset, message?: string) {
         <div>
           <h3>选择{{ category.name }}样式</h3>
           <p>{{ editingRange ? '点任意样式，原地替换当前板块。' : '点任意样式，直接生成到光标位置。' }}</p>
+          <p v-if="showCustomBlockThemeNote">
+            这一块是单独处理的，所以还是它自己的颜色。
+          </p>
         </div>
         <span class="heading-block-count">{{ presets.length }} 种</span>
       </div>
@@ -301,6 +307,9 @@ function writeBlock(preset: BlockPreset, message?: string) {
         <div>
           <h3>{{ editingRange ? '编辑当前板块' : '填写内容' }}</h3>
           <p>{{ editingRange ? '文字和字号会实时同步到正文与预览。' : '点上方任意样式即可直接生成。' }}</p>
+          <p v-if="showCustomBlockThemeNote">
+            这一块是单独处理的，所以还是它自己的颜色。
+          </p>
         </div>
         <Button variant="ghost" size="sm" @click="resetState">
           <RotateCcw class="mr-2 size-3.5" />

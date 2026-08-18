@@ -3,8 +3,11 @@ export function normalizeMpProxyOrigin(proxyOrigin: string) {
 }
 
 export const OFFICIAL_MP_PROXY_ORIGIN = `https://api.mobieditor.cn`
+export const DEV_MP_PROXY_ORIGIN = `http://127.0.0.1:8788`
+
+// 官方域名未 /health 成功前，生产不能把它写成运行时默认。
 export const DEFAULT_MP_PROXY_ORIGIN = normalizeMpProxyOrigin(import.meta.env.VITE_MP_PROXY_ORIGIN || ``)
-  || (import.meta.env.DEV ? `http://127.0.0.1:8788` : OFFICIAL_MP_PROXY_ORIGIN)
+  || (import.meta.env.DEV ? DEV_MP_PROXY_ORIGIN : ``)
 
 export function selectMpProxyOrigin(
   configuredOrigin: string,

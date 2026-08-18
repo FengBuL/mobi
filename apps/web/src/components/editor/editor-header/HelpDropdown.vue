@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { HelpCircle, MessageSquare, Tag } from 'lucide-vue-next'
+import { BookOpen, HelpCircle, MessageSquare, Tag } from 'lucide-vue-next'
 import { formatVersionHistoryLabel } from '@/utils/version-label'
 
 const props = withDefaults(defineProps<{
@@ -8,7 +8,7 @@ const props = withDefaults(defineProps<{
   asSub: false,
 })
 
-const emit = defineEmits([`openAbout`])
+const emit = defineEmits([`openAbout`, `openMarkdownGuide`])
 
 const { asSub } = toRefs(props)
 
@@ -18,6 +18,10 @@ const versionHistoryLabel = formatVersionHistoryLabel(appVersion)
 
 function openAboutDialog() {
   emit(`openAbout`)
+}
+
+function openMarkdownGuideDialog() {
+  emit(`openMarkdownGuide`)
 }
 
 function openFeedback() {
@@ -44,6 +48,10 @@ function openReleases() {
         <Tag class="mr-2 h-4 w-4" />
         {{ versionHistoryLabel }}
       </MenubarItem>
+      <MenubarItem @click="openMarkdownGuideDialog()">
+        <BookOpen class="mr-2 h-4 w-4" />
+        Markdown 语法课
+      </MenubarItem>
       <MenubarItem @click="openAboutDialog()">
         <HelpCircle class="mr-2 h-4 w-4" />
         关于
@@ -62,6 +70,10 @@ function openReleases() {
       <MenubarItem @click="openReleases()">
         <Tag class="mr-2 h-4 w-4" />
         {{ versionHistoryLabel }}
+      </MenubarItem>
+      <MenubarItem @click="openMarkdownGuideDialog()">
+        <BookOpen class="mr-2 h-4 w-4" />
+        Markdown 语法课
       </MenubarItem>
       <MenubarItem @click="openAboutDialog()">
         <HelpCircle class="mr-2 h-4 w-4" />

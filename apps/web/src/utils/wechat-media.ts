@@ -113,6 +113,7 @@ function resolveSlotCaption(slot: MediaLayoutImageSlot) {
 
 // 微信会剥离 position、transform、float 和 overflow，比例盒方案在公众号里会整体塌掉，
 // 因此复制产物一律走文档流：图片按自身宽高比铺满栏宽，圆角和描边直接落在 img 上。
+// 预览用 data-mobi-wechat-diff / md-wechat-diff-hint 标出这个差异，复制前剥离。
 function renderImageStyle(radius: string, options: FigureBoxOptions = {}) {
   return [
     `display:block;`,
@@ -152,6 +153,7 @@ function renderCenterCaption(text: string) {
 }
 
 // 微信剥离 position，角标无法压在图片上，退化成图片下方的一枚居中药丸标签。
+// 预览角标文案「角标会落到图下」只存在编辑器，见 stripEditorOnlyWechatDiffMarkers。
 function renderBadgeOverlay(text: string, primaryColor: string) {
   if (!hasText(text)) {
     return ``

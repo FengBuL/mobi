@@ -110,9 +110,9 @@ export const useUIStore = defineStore(`ui`, () => {
   // ==================== 工作区模式 ====================
   // simple 只留写作和预览，professional 解锁全部侧栏
   const workspaceMode = store.reactive<WorkspaceMode>(WORKSPACE_MODE_KEY, `simple`)
-  const hasChosenWorkspaceMode = store.reactive(addPrefix(`workspace_mode_chosen`), false)
+  const hasChosenWorkspaceMode = store.reactive(addPrefix(`workspace_mode_chosen`), true)
 
-  // 板块库，专业模式下占编辑器与预览之间的一栏
+  // 板块库不占中间栏；点预览后从左边抽屉出来
   const isOpenBlockWorkspace = ref(false)
 
   // 移动端只有一栏，专业模式的多栏布局在这里没有落脚点
@@ -228,6 +228,15 @@ export const useUIStore = defineStore(`ui`, () => {
    */
   const blockLibraryCategoryRequest = ref<{ category: string, mediaBlockIndex?: number, seq: number } | null>(null)
   let blockLibrarySeq = 0
+
+  function toggleBlockLibrary() {
+    if (isMobile.value) {
+      toggleShowImageLayoutDialog()
+      return
+    }
+
+    isOpenBlockWorkspace.value = !isOpenBlockWorkspace.value
+  }
 
   function focusBlockLibrary(category?: string, mediaBlockIndex?: number) {
     // 移动端板块库是全屏对话框，自动弹出会盖住正文
@@ -382,6 +391,7 @@ export const useUIStore = defineStore(`ui`, () => {
     focusStyleGroup,
     blockInspectorRequest,
     openBlockInspector,
+    toggleBlockLibrary,
     focusBlockLibrary,
     blockLibraryCategoryRequest,
 

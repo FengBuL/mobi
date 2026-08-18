@@ -4,7 +4,7 @@ import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 import { addPrefix, generatePureHTML, processClipboardContent } from '@/utils'
-import { isBlockingClipboardImageFailure, isUnsafeClipboardImage } from '@/utils/clipboard-image-status'
+import { isLocalClipboardImageSrc, isUnsafeClipboardImage } from '@/utils/clipboard-image-status'
 import { hasMpUploadConfig } from '@/utils/file'
 import { store } from '@/utils/storage'
 import { trackEvent } from '@/utils/telemetry'
@@ -43,7 +43,7 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
   // 于是「滚动图复制不成功」，而提示语只说「仍是外链或本地地址」。
   const describeClipboardImage = (image: HTMLImageElement, index: number) => {
     const src = image.getAttribute(`src`)?.trim() || ``
-    const isLocal = src.startsWith(`data:`) || src.startsWith(`blob:`)
+    const isLocal = isLocalClipboardImageSrc(src)
     const scheme = src.startsWith(`data:`) ? `内嵌图片` : src.startsWith(`blob:`) ? `本地图片` : src.split(`/`)[2] || src.slice(0, 40)
     const width = image.naturalWidth
     const height = image.naturalHeight
@@ -165,56 +165,36 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
 
         if (copyMode.value === `txt`) {
           const unsafeImages = getUnsafeClipboardImages(clipboardDiv)
-          // data: / blob: 是浏览器内部地址，公众号那边取不到，只能拦；
-          // http(s) 外链粘进公众号编辑器时它自己会抓下来转存，放行并提示即可，
-          // 否则没配图床的人连一次都复制不了。
+          // 未转存图（本地 data/blob 和外链非 mmbiz）仍复制，只警告张数，不用 toast.error 拦住。
           const localImages = unsafeImages.filter(item => item.isLocal)
           const remoteImages = unsafeImages.filter(item => !item.isLocal)
 
-          if (localImages.length > 0) {
-            const blocker = localImages[0]
-            clipboardDiv.innerHTML = output.value
-            window.getSelection()?.removeAllRanges()
-            editorRefresh()
-            toast.error(
-              `${localImages.length} 张图片还是本地地址（${blocker.label}），公众号读不到。先配置图床把它们传上去，或者换成网络图片链接。`,
-              {
-                duration: 10000,
-                action: { label: `去配置图床`, onClick: () => uiStore.openUploadImgDialog(`mp`) },
-              },
-            )
-            finish()
-            return
-          }
-
-          if (remoteImages.length > 0) {
+          if (unsafeImages.length > 0) {
             const hasConfig = await hasMpUploadConfig()
-            const blocker = remoteImages.find(item => item.error) || remoteImages[0]
-            const longHint = remoteImages.some(item => item.isLong)
+            const blocker = unsafeImages.find(item => item.error) || unsafeImages[0]
+            const longHint = unsafeImages.some(item => item.isLong)
               ? `长图容易超过公众号图床的体积上限，可以先压缩或裁短。`
               : ``
-            if (isBlockingClipboardImageFailure(blocker.error, hasConfig)) {
-              clipboardDiv.innerHTML = output.value
-              window.getSelection()?.removeAllRanges()
-              editorRefresh()
-              toast.error(
-                `图片裁剪或上传失败，已停止复制。卡在${blocker.label}，原因：${blocker.error}。请检查网络和公众号图片代理服务后重试。`,
-                { duration: 12000 },
-              )
-              finish()
-              return
-            }
-            if (hasConfig) {
+            const lostHint = `还有 ${unsafeImages.length} 张会在公众号里丢。`
+
+            if (localImages.length > 0 && remoteImages.length === 0) {
               toast.warning(
-                `${remoteImages.length} 张图片没能转成公众号地址，卡在${blocker.label}。${blocker.error ? `原因：${blocker.error}。` : ``}已按外链复制，粘贴后请确认图片是否显示。${longHint}`,
+                `${lostHint}${localImages.length} 张还是本地地址（${blocker.label}），公众号读不到。已照常复制，粘贴后这些图会丢。`,
+                {
+                  duration: 10000,
+                  action: { label: `去配置图床`, onClick: () => uiStore.openUploadImgDialog(`mp`) },
+                },
+              )
+            }
+            else if (hasConfig) {
+              toast.warning(
+                `${lostHint}${unsafeImages.length} 张图片没能转成公众号地址，卡在${blocker.label}。${blocker.error ? `原因：${blocker.error}。` : ``}已按外链复制，粘贴后请确认图片是否显示。${longHint}`,
                 { duration: 10000 },
               )
             }
             else {
-              // 微信转存外链图时经常顺手把整段排版洗掉，这正是「粘过去只剩图片」的主因，
-              // 必须把因果讲透，并给一步直达的修复入口
               toast.warning(
-                `${remoteImages.length} 张图片是外链。微信编辑器转存外链图时，很可能把这段内容的排版清洗掉（只剩图片）。配置「公众号图床」后重新复制，图片会先转成微信地址，排版就稳了。${longHint}`,
+                `${lostHint}${unsafeImages.length} 张图片是外链或本地地址。微信编辑器转存外链图时，很可能把这段内容的排版清洗掉。配置「公众号图床」后重新复制更稳。${longHint}`,
                 {
                   duration: 12000,
                   action: { label: `去配置图床`, onClick: () => uiStore.openUploadImgDialog(`mp`) },

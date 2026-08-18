@@ -732,8 +732,22 @@ async function cloudinaryUpload(file: File): Promise<string> {
 // formCustom File Upload
 // -----------------------------------------------------------------------
 
+export const CUSTOM_UPLOAD_SCRIPT_STORAGE_KEY = `formCustomScriptConfirmed`
+
+export function isCustomUploadScriptEnabled(flag: unknown) {
+  return flag === true || flag === `true`
+}
+
 async function formCustomUpload(content: string, file: File) {
+  const confirmed = await store.getJSON(CUSTOM_UPLOAD_SCRIPT_STORAGE_KEY, false)
+  if (!isCustomUploadScriptEnabled(confirmed)) {
+    throw new Error(`自定义图床脚本默认关闭。请在图床设置里确认风险后再启用。`)
+  }
+
   const customConfig = await store.get(`formCustomConfig`)
+  if (typeof customConfig !== `string` || !customConfig.trim()) {
+    throw new Error(`未配置自定义上传脚本`)
+  }
   const str = `
     async (CUSTOM_ARG) => {
       ${customConfig}

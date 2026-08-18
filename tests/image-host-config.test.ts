@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { selectMpProxyOrigin } from '@/services/wechat/proxyOrigin'
+import { DEFAULT_MP_PROXY_ORIGIN, OFFICIAL_MP_PROXY_ORIGIN, selectMpProxyOrigin } from '@/services/wechat/proxyOrigin'
 import { prepareMpProxySubmission, sanitizeStoredMpProxyOrigin, saveAndSelectImageHost, validateMpProxyBeforeSave } from '@/utils/image-host-config'
 
 describe(`图床配置保存`, () => {
@@ -61,6 +61,13 @@ describe(`公众号图床配置自检`, () => {
     })).rejects.toThrow(`无法连接公众号代理 http://127.0.0.1:8788，请先启动 mp-proxy`)
   })
 
+  it(`网页端未填代理时拒绝把官方域名当默认`, async () => {
+    await expect(validateMpProxyBeforeSave({
+      requiresProxy: true,
+      proxyOrigin: ``,
+    })).rejects.toThrow(`官方代理尚未就绪`)
+  })
+
   it(`网页端代理路径错误时显示 HTTP 状态`, async () => {
     await expect(validateMpProxyBeforeSave({
       requiresProxy: true,
@@ -71,7 +78,15 @@ describe(`公众号图床配置自检`, () => {
 })
 
 describe(`公众号官方代理`, () => {
-  it(`普通网页用户未自定义代理时使用官方地址`, () => {
+  it(`运行时默认不再直接等于官方域名`, () => {
+    expect(DEFAULT_MP_PROXY_ORIGIN).not.toBe(OFFICIAL_MP_PROXY_ORIGIN)
+    expect(selectMpProxyOrigin(``, {
+      requiresProxy: true,
+      officialOrigin: ``,
+    })).toBe(``)
+  })
+
+  it(`显式传入官方地址时仍可按该地址请求`, () => {
     expect(selectMpProxyOrigin(``, {
       requiresProxy: true,
       officialOrigin: `https://api.mobieditor.cn`,

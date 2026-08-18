@@ -5,6 +5,40 @@
 
 import type { Ref } from 'vue'
 import { customRef, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
+
+const STORAGE_NEAR_FULL_BYTES = 4 * 1024 * 1024
+const STORAGE_NEAR_FULL_RATIO = 0.8
+const WRITE_FAILURE_TOAST = `存稿失败，浏览器本地空间可能不够了。导出一份再删旧稿。`
+
+let hasWarnedStorageNearFull = false
+let lastWriteFailureToastAt = 0
+
+function notifyStorageWriteFailure() {
+  const now = Date.now()
+  if (now - lastWriteFailureToastAt < 1500)
+    return
+  lastWriteFailureToastAt = now
+  toast.error(WRITE_FAILURE_TOAST)
+}
+
+async function warnIfStorageNearFull() {
+  if (hasWarnedStorageNearFull)
+    return
+  if (typeof navigator === `undefined` || typeof navigator.storage?.estimate !== `function`)
+    return
+
+  try {
+    const { usage = 0, quota = 0 } = await navigator.storage.estimate()
+    if (usage > STORAGE_NEAR_FULL_BYTES || (quota > 0 && usage / quota > STORAGE_NEAR_FULL_RATIO)) {
+      hasWarnedStorageNearFull = true
+      toast.warning(`本地存稿空间快满了。导出一份再删旧稿，以免写不进去。`)
+    }
+  }
+  catch {
+    // 容量探测失败时不要再打扰用户
+  }
+}
 
 /**
  * 存储引擎接口 - 完全异步化
@@ -38,8 +72,11 @@ export class LocalStorageEngine implements StorageEngine {
     }
     catch (error) {
       console.error(`[Storage] Failed to set item:`, key, error)
+      notifyStorageWriteFailure()
       throw error
     }
+
+    void warnIfStorageNearFull()
   }
 
   async remove(key: string): Promise<void> {
@@ -295,6 +332,7 @@ class StorageManager {
 
           savePromise.catch((error) => {
             console.error(`[Storage] Failed to save reactive data:`, key, error)
+            notifyStorageWriteFailure()
           })
         },
         { deep: true },

@@ -73,6 +73,7 @@ const renderStore = useRenderStore()
 const uiStore = useUIStore()
 const { currentPost } = storeToRefs(postStore)
 const { selection: blockSelection } = storeToRefs(blockSelectionStore)
+const { isSimpleWorkspace } = storeToRefs(uiStore)
 
 const selectedPresetId = ref(``)
 const selectedImageIds = ref<string[]>([])
@@ -93,12 +94,29 @@ const templateFamilyFilter = ref<MediaLayoutFamily | 'all'>(`all`)
 const mpUploadReady = ref(false)
 const formState = reactive(createWorkspaceLayoutFormState())
 const activeLibraryCategory = ref<BlockCategoryId>(`heading`)
+const PRIMARY_LIBRARY_CATEGORY_IDS: BlockCategoryId[] = [`heading`, `quote`, `list`, `divider`, `image`]
+const SECONDARY_LIBRARY_CATEGORY_IDS: BlockCategoryId[] = [`card`, `data`, `interactive`]
+const isImagePreviewTarget = ref(false)
+const isInsertingNewBlock = ref(false)
+const showMoreLibraryCategories = ref(false)
+
+const hasReplaceTarget = computed(() => Boolean(blockSelection.value) || isImagePreviewTarget.value)
+const showEmptyHint = computed(() => !hasReplaceTarget.value && !isInsertingNewBlock.value)
+const showLibraryNav = computed(() => isInsertingNewBlock.value && !hasReplaceTarget.value)
+const visibleLibraryCategoryIds = computed<BlockCategoryId[]>(() => {
+  if (!isSimpleWorkspace.value || showMoreLibraryCategories.value) {
+    return [...PRIMARY_LIBRARY_CATEGORY_IDS, ...SECONDARY_LIBRARY_CATEGORY_IDS]
+  }
+  return PRIMARY_LIBRARY_CATEGORY_IDS
+})
 
 // immediate：面板常常是被这次点击顺带打开的，组件挂载时信号已经发过了，
 // 不补一次就只能停在默认类别上
 watch(blockSelection, (selection) => {
   if (selection) {
     activeLibraryCategory.value = selection.category
+    isImagePreviewTarget.value = false
+    isInsertingNewBlock.value = false
   }
 }, { immediate: true })
 
@@ -107,6 +125,19 @@ function selectLibraryCategory(category: BlockCategoryId) {
     blockSelectionStore.clear()
   }
   activeLibraryCategory.value = category
+}
+
+function enterInsertLibrary() {
+  isInsertingNewBlock.value = true
+  showMoreLibraryCategories.value = false
+  if (!visibleLibraryCategoryIds.value.includes(activeLibraryCategory.value)) {
+    activeLibraryCategory.value = `heading`
+  }
+}
+
+function exitInsertLibrary() {
+  isInsertingNewBlock.value = false
+  showMoreLibraryCategories.value = false
 }
 
 const registeredBlockCategoryIds = computed(() => new Set(blockCategories.map(category => category.id)))
@@ -119,9 +150,9 @@ const blockLibraryCategories = computed<Array<{ id: BlockCategoryId, name: strin
     data: `数据`,
     interactive: `互动`,
     divider: `分隔`,
-    image: `图片`,
+    image: `图`,
   }
-  return (Object.keys(labels) as BlockCategoryId[]).map((id) => {
+  return visibleLibraryCategoryIds.value.map((id) => {
     const registered = blockCategories.find(category => category.id === id)
     return {
       id,
@@ -827,6 +858,10 @@ watch(() => uiStore.blockLibraryCategoryRequest, (request) => {
 
   handledBlockLibrarySeq = request.seq
   activeLibraryCategory.value = request.category as BlockCategoryId
+  if (request.category === `image`) {
+    isImagePreviewTarget.value = true
+    isInsertingNewBlock.value = false
+  }
 
   // 点的是已经排好版的图文块，直接回填成编辑态，省得用户再从列表里找一遍
   if (typeof request.mediaBlockIndex === `number`) {
@@ -1032,10 +1067,28 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
 <template>
   <div class="block-library-shell">
     <header class="block-library-shell__header">
-      <h2>板块库</h2>
+      <h2>换样子</h2>
+      <Button
+        v-if="showEmptyHint"
+        variant="ghost"
+        size="sm"
+        class="h-8 px-3 text-xs"
+        @click="enterInsertLibrary"
+      >
+        插入新板块
+      </Button>
+      <Button
+        v-else-if="isInsertingNewBlock"
+        variant="ghost"
+        size="sm"
+        class="h-8 px-3 text-xs"
+        @click="exitInsertLibrary"
+      >
+        返回
+      </Button>
     </header>
 
-    <nav class="block-library-nav" aria-label="板块类别">
+    <nav v-if="showLibraryNav" class="block-library-nav" aria-label="板块类别">
       <button
         v-for="category in blockLibraryCategories"
         :key="category.id"
@@ -1047,11 +1100,24 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
         <strong>{{ category.name }}</strong>
         <small>{{ category.count }}</small>
       </button>
+      <button
+        v-if="isSimpleWorkspace && !showMoreLibraryCategories"
+        type="button"
+        class="block-library-nav__item"
+        @click="showMoreLibraryCategories = true"
+      >
+        <strong>更多</strong>
+        <small>卡片等</small>
+      </button>
     </nav>
 
     <div class="block-library-shell__body">
+      <div v-if="showEmptyHint" class="block-library-empty">
+        点右边稿子里的标题、引用或列表，再来换样子。
+      </div>
+
       <HeadingBlockWorkspace
-        v-if="activeLibraryCategory !== 'image' && registeredBlockCategoryIds.has(activeLibraryCategory)"
+        v-else-if="activeLibraryCategory !== 'image' && registeredBlockCategoryIds.has(activeLibraryCategory)"
         :category-id="activeLibraryCategory"
       />
 
@@ -1634,11 +1700,18 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   background: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted) / 0.36));
 }
 
+.block-library-empty,
 .block-library-placeholder {
   padding: 1.4rem;
   border: 1px dashed hsl(var(--border));
   border-radius: 22px;
   background: hsl(var(--background));
+}
+
+.block-library-empty {
+  font-size: 0.86rem;
+  line-height: 1.7;
+  color: hsl(var(--muted-foreground));
 }
 
 .block-library-placeholder strong {

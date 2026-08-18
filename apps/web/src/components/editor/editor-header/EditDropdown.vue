@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { altSign, ctrlSign, shiftSign } from '@mobi/shared/configs'
 import {
+  Images,
   Replace,
   Search,
   WandSparkles,
@@ -49,6 +50,10 @@ function openReplace() {
     uiStore.openSearchTab(selected, true)
   }
 }
+
+function openBlockLibrary() {
+  uiStore.toggleBlockLibrary()
+}
 </script>
 
 <template>
@@ -86,6 +91,13 @@ function openReplace() {
           <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">H</kbd>
         </MenubarShortcut>
       </MenubarItem>
+
+      <MenubarSeparator />
+
+      <MenubarItem @click="openBlockLibrary()">
+        <Images class="mr-2 h-4 w-4" />
+        换样子
+      </MenubarItem>
     </MenubarSubContent>
   </MenubarSub>
 
@@ -122,6 +134,13 @@ function openReplace() {
           <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">{{ ctrlSign }}</kbd>
           <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">H</kbd>
         </MenubarShortcut>
+      </MenubarItem>
+
+      <MenubarSeparator />
+
+      <MenubarItem @click="openBlockLibrary()">
+        <Images class="mr-2 h-4 w-4" />
+        换样子
       </MenubarItem>
     </MenubarContent>
   </MenubarMenu>

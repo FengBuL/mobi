@@ -5,6 +5,81 @@ export type MediaAspectRatio = 'auto' | '16:9' | '4:3' | '1:1' | '3:4' | '9:16'
 
 export const MEDIA_LAYOUT_MAX_SLOTS = 4
 
+/** 预览里标出的微信白名单已知差异。只存在编辑器，复制前必须剥掉。 */
+export const WECHAT_PREVIEW_DIFF_ATTR = `data-mobi-wechat-diff`
+export const WECHAT_EDITOR_ONLY_ATTR = `data-mobi-editor-only`
+export const WECHAT_PREVIEW_DIFF_HINT_CLASS = `md-wechat-diff-hint`
+export const WECHAT_PREVIEW_DIFF_HINT_ITEM_CLASS = `md-wechat-diff-hint__item`
+
+export const WECHAT_PREVIEW_DIFF_LABELS = {
+  crop: `不会按比例裁，会按图片自身比例铺满`,
+  scroll: `贴完会整幅展开`,
+  badge: `角标会落到图下`,
+} as const
+
+export type WechatPreviewDiffKind = keyof typeof WECHAT_PREVIEW_DIFF_LABELS
+
+function wechatPreviewDiffAttr(kinds: WechatPreviewDiffKind[]) {
+  const unique = [...new Set(kinds)]
+  return unique.length ? ` ${WECHAT_PREVIEW_DIFF_ATTR}="${unique.join(` `)}"` : ``
+}
+
+function readWechatPreviewDiffKinds(value: string | null) {
+  return (value || ``)
+    .split(/\s+/u)
+    .filter((item): item is WechatPreviewDiffKind => item in WECHAT_PREVIEW_DIFF_LABELS)
+}
+
+export function resolveWechatPreviewDiffKinds(figure: HTMLElement): WechatPreviewDiffKind[] {
+  const kinds = new Set<WechatPreviewDiffKind>()
+  const marked = [
+    figure.getAttribute(WECHAT_PREVIEW_DIFF_ATTR),
+    ...Array.from(figure.querySelectorAll(`[${WECHAT_PREVIEW_DIFF_ATTR}]`))
+      .map(element => element.getAttribute(WECHAT_PREVIEW_DIFF_ATTR)),
+  ].join(` `)
+
+  readWechatPreviewDiffKinds(marked).forEach(kind => kinds.add(kind))
+
+  if (
+    !figure.classList.contains(`md-media-figure--auto`)
+    && /--md-media-aspect/.test(figure.getAttribute(`style`) || ``)
+  ) {
+    kinds.add(`crop`)
+  }
+  if (figure.querySelector(`.md-media-scroll-window`)) {
+    kinds.add(`scroll`)
+  }
+  if (figure.querySelector(`.md-media-x-badge`)) {
+    kinds.add(`badge`)
+  }
+
+  return [...kinds]
+}
+
+export function applyWechatPreviewDiffHints(root: HTMLElement) {
+  root.querySelectorAll(`[${WECHAT_EDITOR_ONLY_ATTR}="wechat-diff"]`).forEach(node => node.remove())
+
+  root.querySelectorAll<HTMLElement>(`.md-media-figure`).forEach((figure) => {
+    const kinds = resolveWechatPreviewDiffKinds(figure)
+    if (!kinds.length) {
+      return
+    }
+
+    const host = figure.querySelector<HTMLElement>(`.md-media-figure__frame`) || figure
+    const hint = document.createElement(`span`)
+    hint.className = WECHAT_PREVIEW_DIFF_HINT_CLASS
+    hint.setAttribute(WECHAT_EDITOR_ONLY_ATTR, `wechat-diff`)
+    hint.setAttribute(`aria-hidden`, `true`)
+    kinds.forEach((kind) => {
+      const item = document.createElement(`span`)
+      item.className = WECHAT_PREVIEW_DIFF_HINT_ITEM_CLASS
+      item.textContent = WECHAT_PREVIEW_DIFF_LABELS[kind]
+      hint.appendChild(item)
+    })
+    host.appendChild(hint)
+  })
+}
+
 export const mediaAspectRatioOptions: Array<{ value: MediaAspectRatio, label: string }> = [
   { value: `auto`, label: `原图比例` },
   { value: `16:9`, label: `横版 16:9` },
@@ -622,10 +697,17 @@ function renderImageFigure(
   const caption = !options.suppressCaption && hasText(slot.caption)
     ? `<figcaption class="md-media-figure__caption"${captionStyle}>${formatText(slot.caption)}</figcaption>`
     : ``
+  const diffKinds: WechatPreviewDiffKind[] = []
+  if (slot.aspectRatio !== `auto`) {
+    diffKinds.push(`crop`)
+  }
+  if (overlay.includes(`md-media-x-badge`)) {
+    diffKinds.push(`badge`)
+  }
 
   return `
     <figure class="${className}"${style}>
-      <span class="md-media-figure__frame"${frameStyle}>
+      <span class="md-media-figure__frame"${wechatPreviewDiffAttr(diffKinds)}${frameStyle}>
         <img class="md-media-figure__image" src="${url}" alt="${alt}"${imageStyle} />
         ${overlay}
       </span>
@@ -643,8 +725,8 @@ function renderScrollableFigure(slot: MediaLayoutImageSlot, index: number, previ
     : ``
 
   return `
-    <figure class="md-media-figure md-media-figure--scroll">
-      <div class="md-media-scroll-window" style="--md-media-scroll-height:${viewportHeight}px">
+    <figure class="md-media-figure md-media-figure--scroll"${wechatPreviewDiffAttr([`scroll`])}>
+      <div class="md-media-scroll-window"${wechatPreviewDiffAttr([`scroll`])} style="--md-media-scroll-height:${viewportHeight}px">
         <img class="md-media-scroll-window__image" src="${url}" alt="${alt}" />
       </div>
       ${caption}
@@ -747,7 +829,7 @@ function renderBadge(text: string) {
   if (!hasText(text)) {
     return ``
   }
-  return `<span class="md-media-x-badge" style="${extendedBadgeBaseStyle}">${formatText(text)}</span>`
+  return `<span class="md-media-x-badge"${wechatPreviewDiffAttr([`badge`])} style="${extendedBadgeBaseStyle}">${formatText(text)}</span>`
 }
 
 function renderExtendedGrid(columns: string, gap: string, children: string[], extraStyle = ``) {

@@ -185,7 +185,7 @@ const themeSelectValue = computed({
 const activeCustomVisualTheme = computed(() => customVisualThemes.value.find(item => item.id === visualThemeDraft.value.sourceId) || null)
 const isThemeSelectFocused = ref(false)
 
-const { isMobile, isOpenRightSlider } = storeToRefs(uiStore)
+const { isMobile, isOpenRightSlider, isSimpleWorkspace } = storeToRefs(uiStore)
 
 const editorStore = useEditorStore()
 const renderStore = useRenderStore()
@@ -729,360 +729,365 @@ watch(isOpen, () => {
           <X class="h-4 w-4" />
         </Button>
       </div>
-      <div class="inspector-mode-switch" aria-label="右侧检查器模式">
-        <button
-          type="button"
-          :class="{ 'inspector-mode-switch__item--active': activeInspectorPanel === 'component' }"
-          class="inspector-mode-switch__item"
-          @click="activeInspectorPanel = 'component'"
-        >
-          当前组件
-        </button>
-        <button
-          type="button"
-          :class="{ 'inspector-mode-switch__item--active': activeInspectorPanel === 'style' }"
-          class="inspector-mode-switch__item"
-          @click="activeInspectorPanel = 'style'"
-        >
-          全局样式
-        </button>
-      </div>
 
-      <section v-show="activeInspectorPanel === 'component'" id="block-inspector-slot" class="block-inspector-slot">
-        <HeadingBlockWorkspace
-          v-if="blockSelection"
-          :category-id="blockSelection.category"
-          mode="inspector"
-        />
-        <div v-else class="block-inspector-empty">
-          <span>COMPONENT</span>
-          <strong>从板块库选择一个组件</strong>
-          <p>组件列表会保留当前位置，选中后可在这里直接修改文字和字号。</p>
+      <StyleQuickControls v-if="isSimpleWorkspace" variant="compact" />
+
+      <template v-else>
+        <div class="inspector-mode-switch" aria-label="右侧检查器模式">
+          <button
+            type="button"
+            :class="{ 'inspector-mode-switch__item--active': activeInspectorPanel === 'component' }"
+            class="inspector-mode-switch__item"
+            @click="activeInspectorPanel = 'component'"
+          >
+            当前组件
+          </button>
+          <button
+            type="button"
+            :class="{ 'inspector-mode-switch__item--active': activeInspectorPanel === 'style' }"
+            class="inspector-mode-switch__item"
+            @click="activeInspectorPanel = 'style'"
+          >
+            全局样式
+          </button>
         </div>
-      </section>
 
-      <Tabs v-show="activeInspectorPanel === 'style'" v-model="activeStylePanel" class="w-full">
-        <TabsList class="grid w-full grid-cols-4">
-          <TabsTrigger value="template">
-            版式
-          </TabsTrigger>
-          <TabsTrigger value="text">
-            文字
-          </TabsTrigger>
-          <TabsTrigger value="block">
-            区块
-          </TabsTrigger>
-          <TabsTrigger value="detail">
-            细节
-          </TabsTrigger>
-        </TabsList>
+        <section v-show="activeInspectorPanel === 'component'" id="block-inspector-slot" class="block-inspector-slot">
+          <HeadingBlockWorkspace
+            v-if="blockSelection"
+            :category-id="blockSelection.category"
+            mode="inspector"
+          />
+          <div v-else class="block-inspector-empty">
+            <span>COMPONENT</span>
+            <strong>从板块库选择一个组件</strong>
+            <p>组件列表会保留当前位置，选中后可在这里直接修改文字和字号。</p>
+          </div>
+        </section>
 
-        <TabsContent value="template" class="mt-4 space-y-4">
-          <div class="style-card space-y-3">
-            <div class="flex items-center justify-between gap-2">
-              <h2 class="text-sm font-semibold">
-                方案
-              </h2>
-              <Button
-                v-if="presetSelectValue !== CUSTOM_STYLE_PRESET_PLACEHOLDER"
-                variant="ghost"
-                size="sm"
-                class="h-8 shrink-0 px-2.5 text-xs"
-                @click="cancelActiveStylePreset"
-              >
-                取消方案
-              </Button>
-            </div>
-            <Select v-model="presetSelectValue">
-              <SelectTrigger class="h-9 w-full">
-                <SelectValue placeholder="当前自定义" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem :value="CUSTOM_STYLE_PRESET_PLACEHOLDER">
-                  当前自定义
-                </SelectItem>
-                <SelectItem v-for="preset in stylePresetOptions" :key="preset.value" :value="preset.value">
-                  内置 · {{ preset.label }}
-                </SelectItem>
-                <SelectItem v-for="preset in customStylePresets" :key="preset.value" :value="preset.value">
-                  我的 · {{ preset.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <div v-if="activeCustomStylePreset" class="flex justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                class="h-8 px-2.5 text-xs text-destructive"
-                :aria-label="`删除方案 ${activeCustomStylePreset.label}`"
-                @click="deleteCustomStylePreset(activeCustomStylePreset)"
-              >
-                删除方案
-              </Button>
-            </div>
-            <div class="flex items-start gap-2">
-              <div class="min-w-0 flex-1">
-                <Input
-                  v-model="savePresetName"
-                  class="h-9"
-                  placeholder="方案名称"
-                  aria-label="方案名称"
-                  :aria-invalid="Boolean(savePresetError)"
-                  @update:model-value="savePresetError = ''; savePresetFeedback = ''"
-                  @keydown.enter="saveCurrentStylePreset"
-                />
-                <p v-if="savePresetError" role="alert" class="mt-1.5 text-xs text-destructive">
-                  {{ savePresetError }}
-                </p>
-                <p v-else-if="savePresetFeedback" role="status" class="mt-1.5 text-xs text-primary">
-                  {{ savePresetFeedback }}
-                </p>
+        <Tabs v-show="activeInspectorPanel === 'style'" v-model="activeStylePanel" class="w-full">
+          <TabsList class="grid w-full grid-cols-4">
+            <TabsTrigger value="template">
+              版式
+            </TabsTrigger>
+            <TabsTrigger value="text">
+              文字
+            </TabsTrigger>
+            <TabsTrigger value="block">
+              区块
+            </TabsTrigger>
+            <TabsTrigger value="detail">
+              细节
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="template" class="mt-4 space-y-4">
+            <div class="style-card space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="text-sm font-semibold">
+                  方案
+                </h2>
+                <Button
+                  v-if="presetSelectValue !== CUSTOM_STYLE_PRESET_PLACEHOLDER"
+                  variant="ghost"
+                  size="sm"
+                  class="h-8 shrink-0 px-2.5 text-xs"
+                  @click="cancelActiveStylePreset"
+                >
+                  取消方案
+                </Button>
               </div>
-              <Button size="sm" class="h-9 shrink-0 px-3 text-xs" @click="saveCurrentStylePreset">
-                保存方案
-              </Button>
-            </div>
-          </div>
-
-          <div class="style-card space-y-3">
-            <div class="flex items-center justify-between gap-2">
-              <h2 class="text-sm font-semibold">
-                版式
-              </h2>
-              <Button variant="ghost" size="sm" class="h-8 shrink-0 px-3 text-xs" @click="restoreCurrentLayout">
-                恢复当前版式
-              </Button>
-            </div>
-            <Select v-model="themeSelectValue">
-              <SelectTrigger
-                data-theme-select-trigger
-                class="h-9 w-full"
-                @focus="isThemeSelectFocused = true"
-                @blur="isThemeSelectFocused = false"
-                @wheel="handleThemeWheel"
-                @keydown.down.prevent="handleThemeKeyStep(1)"
-                @keydown.up.prevent="handleThemeKeyStep(-1)"
-              >
-                <SelectValue placeholder="选择版式" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="option in themeSelectOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div v-if="activeCustomVisualTheme" class="flex flex-wrap gap-1.5">
-              <Button variant="outline" size="sm" class="h-8 px-2.5 text-xs" @click="editCustomVisualTheme(activeCustomVisualTheme.id)">
-                编辑
-              </Button>
-              <Button variant="outline" size="sm" class="h-8 px-2.5 text-xs" @click="renameCustomVisualTheme(activeCustomVisualTheme)">
-                重命名
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                  <Button variant="outline" size="sm" class="h-8 px-2.5 text-xs">
-                    导出
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem @click="exportCustomVisualThemeCSS(activeCustomVisualTheme)">
-                    导出 CSS
-                  </DropdownMenuItem>
-                  <DropdownMenuItem @click="exportCustomVisualThemeJSON(activeCustomVisualTheme)">
-                    导出 JSON
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                variant="ghost"
-                size="sm"
-                class="h-8 px-2.5 text-xs text-destructive"
-                :aria-label="`删除版式 ${activeCustomVisualTheme.name}`"
-                @click="deleteCustomVisualTheme(activeCustomVisualTheme)"
-              >
-                删除版式
-              </Button>
-            </div>
-
-            <ThemeDraftControls />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="text" class="mt-4 space-y-4">
-          <div class="flex items-center justify-end">
-            <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="resetTextGroup">
-              重置本组
-            </Button>
-          </div>
-
-          <StyleQuickControls variant="full" />
-
-          <div class="style-card space-y-3">
-            <h2 class="text-sm font-semibold">
-              段落阅读方式
-            </h2>
-            <div class="grid gap-3">
-              <div class="rounded-xl border p-3">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="text-sm font-medium">
-                    首行缩进
-                  </div>
-                  <div class="grid grid-cols-2 gap-2">
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isUseIndent }" @click="setUseIndent(true)">
-                      开
-                    </Button>
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isUseIndent }" @click="setUseIndent(false)">
-                      关
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <div class="rounded-xl border p-3">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="text-sm font-medium">
-                    两端对齐
-                  </div>
-                  <div class="grid grid-cols-2 gap-2">
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isUseJustify }" @click="setUseJustify(true)">
-                      开
-                    </Button>
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isUseJustify }" @click="setUseJustify(false)">
-                      关
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <div class="px-1 text-xs font-medium text-muted-foreground">
-              精细调节
-            </div>
-            <ThemeDesignerGroupCard :group="getDesignerGroup('base')" />
-            <ThemeDesignerHeadingCard />
-            <ThemeDesignerGroupCard :group="getDesignerGroup('paragraph')" />
-            <ThemeDesignerGroupCard :group="getDesignerGroup('link')" />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="block" class="mt-4 space-y-2">
-          <ThemeDesignerGroupCard :group="getDesignerGroup('blockquote')" />
-          <ThemeDesignerGroupCard :group="getDesignerGroup('list')" />
-          <ThemeDesignerGroupCard :group="getDesignerGroup('table')" />
-          <ThemeDesignerGroupCard :group="getDesignerGroup('divider')" />
-          <ThemeDesignerGroupCard :group="getDesignerGroup('image')" />
-          <ThemeDesignerGroupCard :group="getDesignerGroup('figcaption')" />
-        </TabsContent>
-
-        <TabsContent value="detail" class="mt-4 space-y-4">
-          <div class="flex items-center justify-end">
-            <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="resetDetailGroup">
-              重置本组
-            </Button>
-          </div>
-
-          <div class="style-card space-y-3">
-            <h2 class="text-sm font-semibold">
-              代码块
-            </h2>
-            <div class="space-y-2">
-              <div class="text-xs text-muted-foreground">
-                代码块主题
-              </div>
-              <Select v-model="codeBlockTheme" @update:model-value="codeBlockThemeChanged">
-                <SelectTrigger>
-                  <SelectValue placeholder="选择代码块主题" />
+              <Select v-model="presetSelectValue">
+                <SelectTrigger class="h-9 w-full">
+                  <SelectValue placeholder="当前自定义" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem v-for="{ label, value } in codeBlockThemeOptions" :key="label" :value="value">
-                    {{ label }}
+                  <SelectItem :value="CUSTOM_STYLE_PRESET_PLACEHOLDER">
+                    当前自定义
+                  </SelectItem>
+                  <SelectItem v-for="preset in stylePresetOptions" :key="preset.value" :value="preset.value">
+                    内置 · {{ preset.label }}
+                  </SelectItem>
+                  <SelectItem v-for="preset in customStylePresets" :key="preset.value" :value="preset.value">
+                    我的 · {{ preset.label }}
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div class="grid gap-3">
-              <div class="rounded-xl border p-3">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="text-sm font-medium">
-                    代码块语言标注
-                  </div>
-                  <div class="grid grid-cols-2 gap-2">
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isShowCodeLanguage }" @click="setShowCodeLanguage(true)">
-                      开
-                    </Button>
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isShowCodeLanguage }" @click="setShowCodeLanguage(false)">
-                      关
-                    </Button>
-                  </div>
-                </div>
+              <div v-if="activeCustomStylePreset" class="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="h-8 px-2.5 text-xs text-destructive"
+                  :aria-label="`删除方案 ${activeCustomStylePreset.label}`"
+                  @click="deleteCustomStylePreset(activeCustomStylePreset)"
+                >
+                  删除方案
+                </Button>
               </div>
-              <div class="rounded-xl border p-3">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="text-sm font-medium">
-                    代码块行号
-                  </div>
-                  <div class="grid grid-cols-2 gap-2">
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isShowLineNumber }" @click="setShowLineNumber(true)">
-                      开
-                    </Button>
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isShowLineNumber }" @click="setShowLineNumber(false)">
-                      关
-                    </Button>
-                  </div>
+              <div class="flex items-start gap-2">
+                <div class="min-w-0 flex-1">
+                  <Input
+                    v-model="savePresetName"
+                    class="h-9"
+                    placeholder="方案名称"
+                    aria-label="方案名称"
+                    :aria-invalid="Boolean(savePresetError)"
+                    @update:model-value="savePresetError = ''; savePresetFeedback = ''"
+                    @keydown.enter="saveCurrentStylePreset"
+                  />
+                  <p v-if="savePresetError" role="alert" class="mt-1.5 text-xs text-destructive">
+                    {{ savePresetError }}
+                  </p>
+                  <p v-else-if="savePresetFeedback" role="status" class="mt-1.5 text-xs text-primary">
+                    {{ savePresetFeedback }}
+                  </p>
                 </div>
+                <Button size="sm" class="h-9 shrink-0 px-3 text-xs" @click="saveCurrentStylePreset">
+                  保存方案
+                </Button>
               </div>
             </div>
-          </div>
 
-          <div class="style-card space-y-3">
-            <h2 class="text-sm font-semibold">
-              公众号细节
-            </h2>
-            <div class="grid gap-3">
-              <div class="rounded-xl border p-3">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="text-sm font-medium">
-                    微信外链转底部引用
-                  </div>
-                  <div class="grid grid-cols-2 gap-2">
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isCiteStatus }" @click="setCiteStatus(true)">
-                      开
-                    </Button>
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isCiteStatus }" @click="setCiteStatus(false)">
-                      关
-                    </Button>
-                  </div>
-                </div>
+            <div class="style-card space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="text-sm font-semibold">
+                  版式
+                </h2>
+                <Button variant="ghost" size="sm" class="h-8 shrink-0 px-3 text-xs" @click="restoreCurrentLayout">
+                  恢复当前版式
+                </Button>
               </div>
-              <div class="rounded-xl border p-3">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="text-sm font-medium">
-                    字数与阅读时间
-                  </div>
-                  <div class="grid grid-cols-2 gap-2">
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isCountStatus }" @click="setCountStatus(true)">
-                      开
-                    </Button>
-                    <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isCountStatus }" @click="setCountStatus(false)">
-                      关
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+              <Select v-model="themeSelectValue">
+                <SelectTrigger
+                  data-theme-select-trigger
+                  class="h-9 w-full"
+                  @focus="isThemeSelectFocused = true"
+                  @blur="isThemeSelectFocused = false"
+                  @wheel="handleThemeWheel"
+                  @keydown.down.prevent="handleThemeKeyStep(1)"
+                  @keydown.up.prevent="handleThemeKeyStep(-1)"
+                >
+                  <SelectValue placeholder="选择版式" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="option in themeSelectOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
 
-          <div class="space-y-2">
-            <div class="px-1 text-xs font-medium text-muted-foreground">
-              精细调节
+              <div v-if="activeCustomVisualTheme" class="flex flex-wrap gap-1.5">
+                <Button variant="outline" size="sm" class="h-8 px-2.5 text-xs" @click="editCustomVisualTheme(activeCustomVisualTheme.id)">
+                  编辑
+                </Button>
+                <Button variant="outline" size="sm" class="h-8 px-2.5 text-xs" @click="renameCustomVisualTheme(activeCustomVisualTheme)">
+                  重命名
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger as-child>
+                    <Button variant="outline" size="sm" class="h-8 px-2.5 text-xs">
+                      导出
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem @click="exportCustomVisualThemeCSS(activeCustomVisualTheme)">
+                      导出 CSS
+                    </DropdownMenuItem>
+                    <DropdownMenuItem @click="exportCustomVisualThemeJSON(activeCustomVisualTheme)">
+                      导出 JSON
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="h-8 px-2.5 text-xs text-destructive"
+                  :aria-label="`删除版式 ${activeCustomVisualTheme.name}`"
+                  @click="deleteCustomVisualTheme(activeCustomVisualTheme)"
+                >
+                  删除版式
+                </Button>
+              </div>
+
+              <ThemeDraftControls />
             </div>
-            <ThemeDesignerGroupCard :group="getDesignerGroup('codeBlock')" />
-            <ThemeDesignerGroupCard :group="getDesignerGroup('inlineCode')" />
-          </div>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+
+          <TabsContent value="text" class="mt-4 space-y-4">
+            <div class="flex items-center justify-end">
+              <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="resetTextGroup">
+                重置本组
+              </Button>
+            </div>
+
+            <StyleQuickControls variant="full" />
+
+            <div class="style-card space-y-3">
+              <h2 class="text-sm font-semibold">
+                段落阅读方式
+              </h2>
+              <div class="grid gap-3">
+                <div class="rounded-xl border p-3">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="text-sm font-medium">
+                      首行缩进
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isUseIndent }" @click="setUseIndent(true)">
+                        开
+                      </Button>
+                      <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isUseIndent }" @click="setUseIndent(false)">
+                        关
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div class="rounded-xl border p-3">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="text-sm font-medium">
+                      两端对齐
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isUseJustify }" @click="setUseJustify(true)">
+                        开
+                      </Button>
+                      <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isUseJustify }" @click="setUseJustify(false)">
+                        关
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="px-1 text-xs font-medium text-muted-foreground">
+                精细调节
+              </div>
+              <ThemeDesignerGroupCard :group="getDesignerGroup('base')" />
+              <ThemeDesignerHeadingCard />
+              <ThemeDesignerGroupCard :group="getDesignerGroup('paragraph')" />
+              <ThemeDesignerGroupCard :group="getDesignerGroup('link')" />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="block" class="mt-4 space-y-2">
+            <ThemeDesignerGroupCard :group="getDesignerGroup('blockquote')" />
+            <ThemeDesignerGroupCard :group="getDesignerGroup('list')" />
+            <ThemeDesignerGroupCard :group="getDesignerGroup('table')" />
+            <ThemeDesignerGroupCard :group="getDesignerGroup('divider')" />
+            <ThemeDesignerGroupCard :group="getDesignerGroup('image')" />
+            <ThemeDesignerGroupCard :group="getDesignerGroup('figcaption')" />
+          </TabsContent>
+
+          <TabsContent value="detail" class="mt-4 space-y-4">
+            <div class="flex items-center justify-end">
+              <Button variant="ghost" size="sm" class="h-8 px-3 text-xs" @click="resetDetailGroup">
+                重置本组
+              </Button>
+            </div>
+
+            <div class="style-card space-y-3">
+              <h2 class="text-sm font-semibold">
+                代码块
+              </h2>
+              <div class="space-y-2">
+                <div class="text-xs text-muted-foreground">
+                  代码块主题
+                </div>
+                <Select v-model="codeBlockTheme" @update:model-value="codeBlockThemeChanged">
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择代码块主题" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="{ label, value } in codeBlockThemeOptions" :key="label" :value="value">
+                      {{ label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="grid gap-3">
+                <div class="rounded-xl border p-3">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="text-sm font-medium">
+                      代码块语言标注
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isShowCodeLanguage }" @click="setShowCodeLanguage(true)">
+                        开
+                      </Button>
+                      <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isShowCodeLanguage }" @click="setShowCodeLanguage(false)">
+                        关
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div class="rounded-xl border p-3">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="text-sm font-medium">
+                      代码块行号
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isShowLineNumber }" @click="setShowLineNumber(true)">
+                        开
+                      </Button>
+                      <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isShowLineNumber }" @click="setShowLineNumber(false)">
+                        关
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="style-card space-y-3">
+              <h2 class="text-sm font-semibold">
+                公众号细节
+              </h2>
+              <div class="grid gap-3">
+                <div class="rounded-xl border p-3">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="text-sm font-medium">
+                      微信外链转底部引用
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isCiteStatus }" @click="setCiteStatus(true)">
+                        开
+                      </Button>
+                      <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isCiteStatus }" @click="setCiteStatus(false)">
+                        关
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div class="rounded-xl border p-3">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="text-sm font-medium">
+                      字数与阅读时间
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': isCountStatus }" @click="setCountStatus(true)">
+                        开
+                      </Button>
+                      <Button variant="outline" class="h-8 px-3 text-xs" :class="{ 'border-black dark:border-white border-2': !isCountStatus }" @click="setCountStatus(false)">
+                        关
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="px-1 text-xs font-medium text-muted-foreground">
+                精细调节
+              </div>
+              <ThemeDesignerGroupCard :group="getDesignerGroup('codeBlock')" />
+              <ThemeDesignerGroupCard :group="getDesignerGroup('inlineCode')" />
+            </div>
+          </TabsContent>
+        </Tabs>
+      </template>
     </div>
   </div>
 </template>

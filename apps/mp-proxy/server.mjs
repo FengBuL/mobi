@@ -1,4 +1,5 @@
 import { createServer } from 'node:http'
+import { fetchSafeImage, parseHttpImageUrl } from './safe-image-url.mjs'
 
 const HOST = process.env.HOST || `0.0.0.0`
 const PORT = Number(process.env.PORT || 8788)
@@ -10,8 +11,21 @@ const ALLOWED_PATHS = new Set([
 ])
 const IMAGE_FETCH_PATH = `/fetch-image`
 const WECHAT_API_ORIGIN = `https://api.weixin.qq.com`
+const DEV_ALLOWED_ORIGINS = `http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:4173,http://localhost:4173`
+
+function defaultAllowedOrigins() {
+  if (process.env.ALLOWED_ORIGINS) {
+    return process.env.ALLOWED_ORIGINS
+  }
+  // 不再默认 *。开发只放本机站点，生产必须显式配置。
+  if (process.env.NODE_ENV === `production`) {
+    return ``
+  }
+  return DEV_ALLOWED_ORIGINS
+}
+
 const allowedOrigins = new Set(
-  (process.env.ALLOWED_ORIGINS || `*`)
+  defaultAllowedOrigins()
     .split(`,`)
     .map(item => item.trim())
     .filter(Boolean),
@@ -26,7 +40,7 @@ function getHeaderValue(value) {
 
 function resolveCorsOrigin(origin = ``) {
   if (!origin) {
-    return `*`
+    return ``
   }
   if (allowedOrigins.has(`*`) || allowedOrigins.has(origin)) {
     return origin
@@ -35,6 +49,9 @@ function resolveCorsOrigin(origin = ``) {
 }
 
 function applyCorsHeaders(res, origin = ``) {
+  if (!origin) {
+    return true
+  }
   const allowedOrigin = resolveCorsOrigin(origin)
   if (!allowedOrigin) {
     return false
@@ -89,29 +106,7 @@ function sanitizeResponseHeaders(headers) {
 }
 
 function ensureHttpImageUrl(rawUrl) {
-  if (!rawUrl) {
-    const error = new Error(`缺少图片地址`)
-    error.statusCode = 400
-    throw error
-  }
-
-  let parsedUrl
-  try {
-    parsedUrl = new URL(rawUrl)
-  }
-  catch {
-    const error = new Error(`图片地址无效`)
-    error.statusCode = 400
-    throw error
-  }
-
-  if (![`http:`, `https:`].includes(parsedUrl.protocol)) {
-    const error = new Error(`只支持抓取 http/https 图片`)
-    error.statusCode = 400
-    throw error
-  }
-
-  return parsedUrl.toString()
+  return parseHttpImageUrl(rawUrl).toString()
 }
 
 const server = createServer(async (req, res) => {
@@ -142,7 +137,7 @@ const server = createServer(async (req, res) => {
 
     try {
       const targetImageUrl = ensureHttpImageUrl(requestUrl.searchParams.get(`url`) || ``)
-      const response = await fetch(targetImageUrl, { method: `GET`, redirect: `follow` })
+      const response = await fetchSafeImage(targetImageUrl)
 
       if (!response.ok) {
         const error = new Error(`抓取图片失败：${response.status}`)

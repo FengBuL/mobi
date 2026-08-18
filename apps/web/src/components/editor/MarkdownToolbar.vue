@@ -104,14 +104,6 @@ function insertImage() {
   openQuickInsert(`single`)
 }
 
-function insertImageBatch() {
-  openQuickInsert(`batch`)
-}
-
-function insertImageByLink() {
-  openQuickInsert(`link`)
-}
-
 function insertTable() {
   uiStore.toggleShowInsertFormDialog(true)
 }
@@ -162,26 +154,6 @@ function insertMpCard() {
         >
           <ImagePlus class="size-4" />
           <span>插入图片</span>
-        </button>
-        <button
-          type="button"
-          class="markdown-toolbar__button"
-          title="批量插入图片"
-          @mousedown.prevent
-          @click="insertImageBatch"
-        >
-          <ImagePlus class="size-4" />
-          <span>批量图片</span>
-        </button>
-        <button
-          type="button"
-          class="markdown-toolbar__button"
-          title="按链接插入图片"
-          @mousedown.prevent
-          @click="insertImageByLink"
-        >
-          <Link2 class="size-4" />
-          <span>图片链接</span>
         </button>
         <button
           type="button"

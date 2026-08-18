@@ -11,7 +11,7 @@ PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 
 PORT="${PORT:-8788}"
 HOST="${HOST:-0.0.0.0}"
-ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-*}"
+ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:4173,http://localhost:4173}"
 
 NODE_BIN="$(command -v node || true)"
 if [[ -z "$NODE_BIN" ]]; then

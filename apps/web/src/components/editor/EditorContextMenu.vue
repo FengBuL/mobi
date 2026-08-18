@@ -18,13 +18,10 @@ import {
   Heading4,
   Heading5,
   Heading6,
-  History,
   Image,
-  ImagePlus,
   Import,
   Italic,
   Link,
-  Link2,
   List,
   ListOrdered,
   Paintbrush,
@@ -168,23 +165,11 @@ function downloadAsCardImage() {
         <ContextMenuSubContent class="w-48">
           <ContextMenuItem @click="openQuickInsert('single')">
             <Image class="mr-2 h-4 w-4" />
-            图片
-          </ContextMenuItem>
-          <ContextMenuItem @click="openQuickInsert('batch')">
-            <ImagePlus class="mr-2 h-4 w-4" />
-            批量插入图片
-          </ContextMenuItem>
-          <ContextMenuItem @click="openQuickInsert('link')">
-            <Link2 class="mr-2 h-4 w-4" />
-            按链接插入图片
-          </ContextMenuItem>
-          <ContextMenuItem @click="openQuickInsert('recent')">
-            <History class="mr-2 h-4 w-4" />
-            最近使用的图片
+            插入图片
           </ContextMenuItem>
           <ContextMenuItem @click="openMediaLayout">
             <FileImage class="mr-2 h-4 w-4" />
-            板块库
+            换样子
           </ContextMenuItem>
           <ContextMenuItem @click="toggleShowInsertFormDialog()">
             <Table class="mr-2 h-4 w-4" />

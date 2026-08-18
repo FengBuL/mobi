@@ -87,6 +87,20 @@ export const themeOptionsMap = Object.fromEntries(
 ) as Record<ThemeName, IThemeOption>
 
 /**
+ * 预览上方第一层五套。对外名覆盖专栏 / 科技 / 教程 / 克制 / 中式，
+ * value 仍是现有 theme id，不另起一套主题。
+ */
+export const featuredThemeOptions = [
+  { label: `专栏`, value: `default` },
+  { label: `科技`, value: `blueprint` },
+  { label: `教程`, value: `sequence` },
+  { label: `克制`, value: `minimalist` },
+  { label: `中式`, value: `ink` },
+] as const satisfies ReadonlyArray<{ label: string, value: ThemeName }>
+
+export const featuredThemeIds: readonly ThemeName[] = featuredThemeOptions.map(option => option.value)
+
+/**
  * 旧主题名到保留主题的映射。
  *
  * 用户的 localStorage 里存着他们上次选的主题名。砍掉一套主题却不留映射，

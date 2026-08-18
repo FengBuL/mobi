@@ -22,6 +22,9 @@ import {
 
   mediaLayoutPresets,
   parseMediaLayoutBlocks,
+  WECHAT_EDITOR_ONLY_ATTR,
+  WECHAT_PREVIEW_DIFF_ATTR,
+  WECHAT_PREVIEW_DIFF_HINT_CLASS,
 } from '@/utils/image-layouts'
 import { materializeWeChatDecorations } from '@/utils/wechat-compat'
 import { compactWeChatMarkup, renderWeChatRow, renderWeChatStack, renderWeChatVerticalScroller } from '@/utils/wechat-layout'
@@ -358,6 +361,15 @@ function removeSourcePositionAttributes(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>(`[data-src-kind], [data-src-ordinal]`).forEach((element) => {
     element.removeAttribute(`data-src-kind`)
     element.removeAttribute(`data-src-ordinal`)
+  })
+}
+
+/** 预览差异角标只服务编辑器，不能进剪贴板。 */
+export function stripEditorOnlyWechatDiffMarkers(root: HTMLElement) {
+  root.querySelectorAll(`[${WECHAT_EDITOR_ONLY_ATTR}]`).forEach(node => node.remove())
+  root.querySelectorAll(`.${WECHAT_PREVIEW_DIFF_HINT_CLASS}, .preview-wechat-diff-hint`).forEach(node => node.remove())
+  root.querySelectorAll(`[${WECHAT_PREVIEW_DIFF_ATTR}]`).forEach((element) => {
+    element.removeAttribute(WECHAT_PREVIEW_DIFF_ATTR)
   })
 }
 
@@ -1282,7 +1294,7 @@ function convertMediaLayoutsForWeChat(clipboardDiv: HTMLElement, primaryColor: s
  * 这里按选择器把死规则清掉，整段空了就把 <style> 一起删。
  */
 function prunePreviewOnlyClipboardStyles(clipboardDiv: HTMLElement) {
-  const deadSelector = /\.md-media-|\.md-layout-preview/
+  const deadSelector = /\.md-media-|\.md-layout-preview|\.md-wechat-diff-hint|\.preview-wechat-diff-hint/
 
   Array.from(clipboardDiv.querySelectorAll(`style`)).forEach((styleElement) => {
     const sheet = styleElement.sheet
@@ -1880,6 +1892,7 @@ function normalizeClipboardInlineStyles(root: HTMLElement) {
 
 export async function processClipboardContent(primaryColor: string) {
   const clipboardDiv = document.getElementById(`output`)!
+  stripEditorOnlyWechatDiffMarkers(clipboardDiv)
   const codeBlockSnapshots = snapshotCodeBlockStyles(clipboardDiv)
   const imageMetrics = captureClipboardImageMetrics(clipboardDiv)
 
@@ -1917,6 +1930,7 @@ export async function processClipboardContent(primaryColor: string) {
   materializeWeChatDecorations(clipboardDiv)
   removeSourcePositionAttributes(clipboardDiv)
   prunePreviewOnlyClipboardStyles(clipboardDiv)
+  stripEditorOnlyWechatDiffMarkers(clipboardDiv)
 
   const rootSkin = withLightAppearance(() => {
     convertMarkdownFiguresForWeChat(clipboardDiv, imageMetrics)

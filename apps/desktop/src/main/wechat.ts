@@ -5,6 +5,8 @@ import type {
   WechatUploadImageRequest,
   WechatUploadImageResult,
 } from '@mobi/shared/types/desktop'
+// @ts-expect-error mp-proxy 的 URL 校验是独立 ESM，与 /fetch-image 共用同一套实现。
+import { fetchSafeImage, parseHttpImageUrl } from '../../../mp-proxy/safe-image-url.mjs'
 
 /**
  * 主进程版的微信接口转发，对应 apps/mp-proxy/server.mjs 的四条路径。
@@ -124,29 +126,25 @@ export async function uploadImage(
 }
 
 function ensureHttpImageUrl(rawUrl: string): string {
-  if (!rawUrl) {
-    throw new TransferError(`缺少图片地址`)
-  }
-
-  let parsed: URL
   try {
-    parsed = new URL(rawUrl)
+    return parseHttpImageUrl(rawUrl).toString()
   }
-  catch {
-    throw new TransferError(`图片地址无效`)
+  catch (error) {
+    throw new TransferError(error instanceof Error ? error.message : String(error))
   }
-
-  if (![`http:`, `https:`].includes(parsed.protocol)) {
-    throw new TransferError(`只支持抓取 http/https 图片`)
-  }
-
-  return parsed.toString()
 }
 
 /** 复制链路遇到跨域拿不到的外链图时回源用，等价于 mp-proxy 的 /fetch-image */
 export async function fetchRemoteImage(rawUrl: string): Promise<RemoteImage> {
-  const target = ensureHttpImageUrl(rawUrl)
-  const response = await fetch(target, { method: `GET`, redirect: `follow` })
+  ensureHttpImageUrl(rawUrl)
+
+  let response: Response
+  try {
+    response = await fetchSafeImage(rawUrl)
+  }
+  catch (error) {
+    throw new TransferError(error instanceof Error ? error.message : String(error))
+  }
 
   if (!response.ok) {
     throw new TransferError(`抓取图片失败：${response.status}`)

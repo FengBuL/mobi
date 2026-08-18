@@ -37,7 +37,7 @@ const isOpenAddDialog = ref(false)
 const addPostInputVal = ref(``)
 watch(isOpenAddDialog, (o) => {
   if (o) {
-    addPostInputVal.value = ``
+    addPostInputVal.value = `未命名`
     parentId.value = null
   }
 })
@@ -50,11 +50,10 @@ function openAddPostDialog(id: string) {
 }
 
 function addPost() {
-  if (!addPostInputVal.value.trim())
-    return toast.error(`内容标题不可为空`)
-  if (posts.value.some(post => post.title === addPostInputVal.value.trim()))
+  const title = addPostInputVal.value.trim() || `未命名`
+  if (posts.value.some(post => post.title === title))
     return toast.error(`内容标题已存在`)
-  postStore.addPost(addPostInputVal.value.trim(), parentId.value)
+  postStore.addPost(title, parentId.value)
   isOpenAddDialog.value = false
   toast.success(`内容新增成功`)
 }

@@ -1,4 +1,6 @@
 import type { IStylePreset } from '@mobi/shared/configs'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   buildThemeSelectOptions,
@@ -121,5 +123,32 @@ describe(`全局样式面板交互`, () => {
     expect(loadStylePresetSession(memoryStorage, `session`)).toEqual(session)
     expect(clearStylePresetSession(memoryStorage, `session`)).toBe(true)
     expect(loadStylePresetSession(memoryStorage, `session`)).toBeNull()
+  })
+
+  it(`简洁样式面板只留字体字号主题色`, () => {
+    const styles = readFileSync(resolve(process.cwd(), `apps/web/src/components/editor/RightSlider.vue`), `utf8`)
+
+    expect(styles).toContain(`v-if="isSimpleWorkspace"`)
+    expect(styles).toContain(`<StyleQuickControls v-if="isSimpleWorkspace" variant="compact"`)
+    expect(styles).toContain(`<template v-else>`)
+    expect(styles).toContain(`ThemeDraftControls`)
+    expect(styles).toContain(`ThemeDesignerGroupCard`)
+    expect(styles).toContain(`data-theme-select-trigger`)
+  })
+
+  it(`第一层五套映射现有主题且 23 套与别名仍在`, () => {
+    const theme = readFileSync(resolve(process.cwd(), `packages/shared/src/configs/theme.ts`), `utf8`)
+    const themeCss = readFileSync(resolve(process.cwd(), `packages/shared/src/configs/theme-css/index.ts`), `utf8`)
+    const themeMapKeys = [...themeCss.matchAll(/^\s+'([a-z]+)'\s*:/gm)].map(match => match[1])
+
+    expect(theme).toContain(`featuredThemeOptions`)
+    expect(theme).toContain(`label: \`专栏\`, value: \`default\``)
+    expect(theme).toContain(`label: \`科技\`, value: \`blueprint\``)
+    expect(theme).toContain(`label: \`教程\`, value: \`sequence\``)
+    expect(theme).toContain(`label: \`克制\`, value: \`minimalist\``)
+    expect(theme).toContain(`label: \`中式\`, value: \`ink\``)
+    expect(theme).toContain(`export const legacyThemeAliasMap`)
+    expect(themeMapKeys).toHaveLength(23)
+    expect(themeMapKeys).toEqual(expect.arrayContaining([`default`, `insight`, `cyber`, `vermilion`]))
   })
 })

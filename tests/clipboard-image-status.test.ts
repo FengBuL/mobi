@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { isBlockingClipboardImageFailure, isUnsafeClipboardImage } from '../apps/web/src/utils/clipboard-image-status'
+import {
+  countUnsafeClipboardImagesFromHtml,
+  formatLostWechatImageHint,
+  isBlockingClipboardImageFailure,
+  isUnsafeClipboardImage,
+} from '../apps/web/src/utils/clipboard-image-status'
 
 describe('clipboard image safety', () => {
   it('reports a failed crop upload even when the fallback URL contains a WeChat host', () => {
@@ -17,5 +22,11 @@ describe('clipboard image safety', () => {
     expect(isBlockingClipboardImageFailure('公众号图片代理连接失败', true)).toBe(true)
     expect(isBlockingClipboardImageFailure('', true)).toBe(false)
     expect(isBlockingClipboardImageFailure('公众号图片代理连接失败', false)).toBe(false)
+  })
+
+  it('counts local and non-mmbiz images as lost wechat images', () => {
+    const html = '<img src="data:image/png;base64,x"><img src="https://example.com/a.png"><img src="https://mmbiz.qpic.cn/a">'
+    expect(countUnsafeClipboardImagesFromHtml(html)).toBe(2)
+    expect(formatLostWechatImageHint(2)).toBe('还有 2 张会在公众号里丢')
   })
 })

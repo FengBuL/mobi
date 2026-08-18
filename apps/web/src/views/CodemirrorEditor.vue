@@ -36,7 +36,7 @@ import {
 } from '@/utils/editor-content-visibility'
 import { shouldSyncPreviewFromEditorUpdate } from '@/utils/editor-preview-sync'
 import { fileUpload } from '@/utils/file'
-import { parseMediaLayoutBlocks, repairIndentedMediaLayoutBlocks } from '@/utils/image-layouts'
+import { applyWechatPreviewDiffHints, parseMediaLayoutBlocks, repairIndentedMediaLayoutBlocks } from '@/utils/image-layouts'
 import { store } from '@/utils/storage'
 import { resolveWechatPreviewFrame } from '@/utils/wechat-preview'
 
@@ -70,7 +70,7 @@ const editorSourceFlashField = StateField.define({
 })
 
 const { editor } = storeToRefs(editorStore)
-const { output, readingTime } = storeToRefs(renderStore)
+const { output } = storeToRefs(renderStore)
 const { isDark } = storeToRefs(uiStore)
 const { posts, currentPostIndex, currentPost } = storeToRefs(postStore)
 const {
@@ -111,6 +111,7 @@ watch(output, () => {
     if (outputElement) {
       highlightPendingBlocks(hljs, outputElement)
       applyBlockSelectionHighlight()
+      applyWechatPreviewDiffHints(outputElement)
     }
   })
 })
@@ -135,10 +136,11 @@ function endCopy() {
   }, 800)
 }
 
-// 简洁模式把这些面板交给抽屉，只有专业模式才让它们占一栏
+// 简洁模式把这些面板交给抽屉，只有专业模式才让它们占一栏。
+// 板块库不插进编辑器和预览中间：点预览再换，从左边抽屉出来，预览留在场上。
 const showPostRail = computed(() => !isSimpleWorkspace.value && isOpenPostSlider.value)
 const showFolderRail = computed(() => !isSimpleWorkspace.value && isOpenFolderPanel.value)
-const showBlockRail = computed(() => !isSimpleWorkspace.value && isOpenBlockWorkspace.value)
+const showBlockRail = computed(() => false)
 const showStyleRail = computed(() => !isSimpleWorkspace.value && isOpenRightSlider.value)
 
 // 是否有侧面板挤占编辑器与预览
@@ -213,33 +215,7 @@ const previewFrameStyle = computed(() => resolveWechatPreviewFrame({
   compactViewport: isMobile.value,
 }))
 
-function formatRelativeTime(date?: Date | string | null) {
-  if (!date)
-    return `刚刚`
-
-  const now = Date.now()
-  const target = new Date(date).getTime()
-  const diff = Math.max(0, now - target)
-  const minutes = Math.floor(diff / (1000 * 60))
-
-  if (minutes < 1)
-    return `刚刚`
-  if (minutes < 60)
-    return `${minutes} 分钟前`
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24)
-    return `${hours} 小时前`
-
-  const days = Math.floor(hours / 24)
-  if (days < 30)
-    return `${days} 天前`
-
-  return new Date(date).toLocaleDateString(`zh-CN`)
-}
-
 const currentPostTitle = computed(() => currentPost.value?.title?.trim() || `未命名内容`)
-const currentPostUpdateLabel = computed(() => formatRelativeTime(currentPost.value?.updateDatetime))
 const editorVisibleContent = computed(() => stripEmbeddedContent(currentPost.value?.content ?? ``))
 const editorLineCount = computed(() => {
   return Math.max(1, editorVisibleContent.value.split(/\r?\n/).length)
@@ -249,9 +225,6 @@ const previewDeviceLabel = computed(() => {
   if (isMobile.value)
     return `自适应预览`
   return previewDevice.value === `mobile` ? `移动端画板` : `桌面端画板`
-})
-const readingTimeLabel = computed(() => {
-  return readingTime.value.minutes > 0 ? `${readingTime.value.minutes} 分钟阅读` : `少于 1 分钟`
 })
 
 const previewRef = useTemplateRef<HTMLDivElement>(`previewRef`)
@@ -1772,14 +1745,22 @@ onUnmounted(() => {
                           <span class="workspace-panel__label">预览</span>
                         </div>
                         <div class="workspace-panel__chips">
+                          <button
+                            v-if="!isMobile"
+                            type="button"
+                            class="workspace-chip"
+                            :class="{ 'workspace-chip--accent': isOpenBlockWorkspace }"
+                            title="点预览里的标题、引用或列表，再换样子"
+                            @click="uiStore.toggleBlockLibrary()"
+                          >
+                            换样子
+                          </button>
                           <span class="workspace-chip workspace-chip--accent">{{ previewDeviceLabel }}</span>
-                          <span class="workspace-chip">{{ readingTimeLabel }}</span>
-                          <span class="workspace-chip">{{ currentPostUpdateLabel }}</span>
                         </div>
                       </div>
                     </div>
 
-                    <ThemeQuickBar v-if="isSimpleWorkspace" />
+                    <ThemeQuickBar />
 
                     <div class="workspace-panel__body preview-panel__body">
                       <div
@@ -2348,6 +2329,37 @@ onUnmounted(() => {
   outline-offset: 4px;
   border-radius: 6px;
   box-shadow: 0 0 0 6px hsl(var(--primary) / 0.12);
+}
+
+/* 微信保不住的构图：只在预览叠一层说明，不进复制产物 */
+:deep(#output .md-media-figure--scroll),
+:deep(#output .md-media-figure__frame) {
+  position: relative;
+}
+
+:deep(#output .md-wechat-diff-hint) {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.5rem;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  max-width: calc(100% - 1rem);
+  pointer-events: none;
+}
+
+:deep(#output .md-wechat-diff-hint__item) {
+  display: inline-block;
+  padding: 0.16rem 0.52rem;
+  border-radius: 999px;
+  background: hsl(24 9% 13% / 0.78);
+  color: hsl(40 22% 95%);
+  font-size: 11px;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 16%);
 }
 
 .codeMirror-wrapper,

@@ -5,6 +5,7 @@ import * as yup from 'yup'
 import { isDesktopRuntime } from '@/services/desktop/bridge'
 import { DEFAULT_MP_PROXY_ORIGIN, OFFICIAL_MP_PROXY_ORIGIN } from '@/services/wechat'
 import { useUIStore } from '@/stores/ui'
+import { CUSTOM_UPLOAD_SCRIPT_STORAGE_KEY } from '@/utils/file'
 import { prepareMpProxySubmission, sanitizeStoredMpProxyOrigin, saveAndSelectImageHost, validateMpProxyBeforeSave } from '@/utils/image-host-config'
 import { store } from '@/utils/storage'
 import { trackEvent } from '@/utils/telemetry'
@@ -188,7 +189,8 @@ const isProxyRequired = computed(() => {
   return !isPluginMode && !isCfWorkers && !isDesktopApp
 })
 
-const showCustomMpProxy = ref(false)
+const isDevRuntime = import.meta.env.DEV
+const showCustomMpProxy = ref(true)
 const mpSchema = computed(() =>
   toTypedSchema(yup.object({
     proxyOrigin: yup.string().optional(),
@@ -365,13 +367,28 @@ const options = [
 ]
 
 const useCompression = store.reactive(`useCompression`, false)
-const activeName = ref(`general`)
+const formCustomScriptConfirmed = store.reactive(CUSTOM_UPLOAD_SCRIPT_STORAGE_KEY, false)
+const activeName = ref(`mp`)
+const otherHostOptions = options.filter(item => item.value !== `default` && item.value !== `mp`)
+const isOtherHostTab = computed(() => activeName.value !== `mp`)
+const secretRiskHint = `AppSecret / Token 存在本机 localStorage，共用设备或扩展可能被读走。`
+
+function openOtherHosts() {
+  if (activeName.value === `mp`) {
+    activeName.value = imgHost.value !== `mp` && imgHost.value !== `default`
+      ? imgHost.value
+      : `general`
+  }
+}
 
 // 别处（板块库、复制警告）可以要求打开时直接定位到某个图床页签
 watch(() => uiStore.isShowUploadImgDialog, (open) => {
   if (open && uiStore.uploadImgDialogInitialTab) {
     activeName.value = uiStore.uploadImgDialogInitialTab
     uiStore.uploadImgDialogInitialTab = null
+  }
+  else if (open && !uiStore.uploadImgDialogInitialTab) {
+    activeName.value = `mp`
   }
 })
 
@@ -398,22 +415,66 @@ function onTabScroll(e: WheelEvent) {
       <DialogHeader>
         <DialogTitle>图床设置</DialogTitle>
         <DialogDescription>
-          选择并配置图片存储服务。配好「公众号图床」后，复制到公众号时会自动把图片转成微信地址。
+          对外只强调公众号素材库。配好后，复制到公众号时会自动把图片转成微信地址。其余图床收在「其他图床」。
         </DialogDescription>
       </DialogHeader>
+      <p class="text-xs leading-5 text-amber-700 dark:text-amber-300">
+        {{ secretRiskHint }}
+      </p>
       <Tabs v-model="activeName" class="w-full md:w-full flex flex-col flex-1 overflow-hidden">
-        <TabsList
-          class="flex w-full justify-start overflow-x-auto flex-nowrap gap-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-          @wheel="onTabScroll"
-        >
-          <TabsTrigger value="general" class="text-xs md:text-sm whitespace-nowrap">
+        <div class="flex w-full flex-wrap items-center gap-2 pb-2">
+          <button
+            type="button"
+            class="rounded-md border px-3 py-1.5 text-xs md:text-sm"
+            :class="activeName === 'mp'
+              ? 'border-foreground bg-foreground text-background'
+              : 'border-border text-muted-foreground hover:text-foreground'"
+            @click="activeName = 'mp'"
+          >
+            公众号素材库
+          </button>
+          <button
+            type="button"
+            class="rounded-md border px-3 py-1.5 text-xs md:text-sm"
+            :class="isOtherHostTab
+              ? 'border-foreground bg-foreground text-background'
+              : 'border-border text-muted-foreground hover:text-foreground'"
+            @click="openOtherHosts"
+          >
+            其他图床
+          </button>
+        </div>
+        <div v-if="isOtherHostTab" class="pb-2">
+          <Select v-model="activeName">
+            <SelectTrigger>
+              <SelectValue placeholder="选择其他图床" />
+            </SelectTrigger>
+            <SelectContent class="max-h-64 md:max-h-96">
+              <SelectItem value="general" label="通用设置">
+                通用设置
+              </SelectItem>
+              <SelectItem
+                v-for="item in otherHostOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              >
+                {{ item.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <TabsList class="hidden" @wheel="onTabScroll">
+          <TabsTrigger value="mp">
+            公众号素材库
+          </TabsTrigger>
+          <TabsTrigger value="general">
             通用设置
           </TabsTrigger>
           <TabsTrigger
-            v-for="item in options.filter(item => item.value !== 'default')"
+            v-for="item in otherHostOptions"
             :key="item.value"
             :value="item.value"
-            class="text-xs md:text-sm whitespace-nowrap"
           >
             {{ item.label }}
           </TabsTrigger>
@@ -974,6 +1035,12 @@ function onTabScroll(e: WheelEvent) {
               <p v-if="isDesktopApp" class="mb-3 text-xs leading-5 text-muted-foreground">
                 桌面版由本机直接转发微信接口，不用另开代理，填好 AppID 和 AppSecret 就能用。
               </p>
+              <p class="mb-3 text-xs leading-5 text-amber-700 dark:text-amber-300">
+                {{ secretRiskHint }}
+              </p>
+              <p v-if="isProxyRequired" class="mb-3 text-xs leading-5 text-muted-foreground">
+                官方代理尚未就绪，不能把 api.mobieditor.cn 当成默认能用。网页版必须填写已通过 /health 检查的代理地址。{{ isDevRuntime ? '本地开发可填 http://127.0.0.1:8788。' : '' }}
+              </p>
 
               <div v-if="isProxyRequired" class="mb-3">
                 <Button
@@ -982,7 +1049,7 @@ function onTabScroll(e: WheelEvent) {
                   class="h-auto p-0 text-xs"
                   @click="showCustomMpProxy = !showCustomMpProxy"
                 >
-                  {{ showCustomMpProxy ? '收起自定义代理' : '自定义代理' }}
+                  {{ showCustomMpProxy ? '收起代理地址' : '填写代理地址' }}
                 </Button>
               </div>
 
@@ -991,14 +1058,14 @@ function onTabScroll(e: WheelEvent) {
                 v-slot="{ field, errorMessage }"
                 name="proxyOrigin"
               >
-                <FormItem label="自定义代理地址" :error="errorMessage">
+                <FormItem label="公众号代理地址" :error="errorMessage">
                   <Input
                     v-bind="field"
                     v-model="field.value"
-                    placeholder="如：https://proxy.example.com"
+                    placeholder="如：http://127.0.0.1:8788"
                   />
                   <p class="mt-2 text-xs leading-5 text-muted-foreground">
-                    留空使用默认服务；本地开发可填 `http://127.0.0.1:8788`。
+                    不能留空当官方默认。保存前会检查该地址的 /health。
                   </p>
                 </FormItem>
               </Field>
@@ -1277,6 +1344,20 @@ function onTabScroll(e: WheelEvent) {
         </TabsContent>
 
         <TabsContent value="formCustom" class="flex-1 flex flex-col overflow-hidden">
+          <div class="space-y-3 p-1">
+            <p class="text-xs leading-5 text-amber-700 dark:text-amber-300">
+              {{ secretRiskHint }}自定义脚本默认关闭，确认后才会在本机执行。
+            </p>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm">
+                我确认允许执行自定义上传脚本
+              </span>
+              <Switch
+                v-model:checked="formCustomScriptConfirmed"
+                name="FormCustomScriptConfirmed"
+              />
+            </div>
+          </div>
           <CustomUploadForm />
         </TabsContent>
       </Tabs>

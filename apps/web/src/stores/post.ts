@@ -31,7 +31,7 @@ export const usePostStore = defineStore(`post`, () => {
   const posts = store.reactive<Post[]>(addPrefix(`posts`), [
     {
       id: uuid(),
-      title: `内容1`,
+      title: `写完的稿，怎样变成能贴出去的样子`,
       content: DEFAULT_CONTENT,
       history: [
         { datetime: new Date().toLocaleString(`zh-cn`), content: DEFAULT_CONTENT },
@@ -83,12 +83,13 @@ export const usePostStore = defineStore(`post`, () => {
 
   // 添加文章
   const addPost = (title: string, parentId: string | null = null) => {
+    const resolvedTitle = title.trim() || `未命名`
     const newPost: Post = {
       id: uuid(),
-      title,
-      content: `# ${title}`,
+      title: resolvedTitle,
+      content: `# ${resolvedTitle}`,
       history: [
-        { datetime: new Date().toLocaleString(`zh-cn`), content: `# ${title}` },
+        { datetime: new Date().toLocaleString(`zh-cn`), content: `# ${resolvedTitle}` },
       ],
       createDatetime: new Date(),
       updateDatetime: new Date(),

@@ -32,16 +32,18 @@ describe(`编辑工作流`, () => {
     expect(store).toContain(`loadNativeFileTree`)
   })
 
-  it(`插入动作位于内容工具栏，最近图片位于文件菜单`, () => {
+  it(`插入动作位于内容工具栏，文件菜单不再单独放最近图片`, () => {
     const toolbar = readSource(`apps/web/src/components/editor/MarkdownToolbar.vue`)
     const fileMenu = readSource(`apps/web/src/components/editor/editor-header/FileDropdown.vue`)
     const settingsMenu = readSource(`apps/web/src/components/editor/editor-header/SettingsDropdown.vue`)
     const header = readSource(`apps/web/src/components/editor/editor-header/index.vue`)
 
-    for (const label of [`插入图片`, `批量插入图片`, `按链接插入图片`, `插入表格`, `公众号名片`]) {
-      expect(toolbar).toContain(label)
-    }
-    expect(fileMenu).toContain(`最近使用的图片`)
+    expect(toolbar).toContain(`插入图片`)
+    expect(toolbar).toContain(`插入表格`)
+    expect(toolbar).toContain(`公众号名片`)
+    expect(toolbar).not.toContain(`批量图片`)
+    expect(toolbar).not.toContain(`图片链接`)
+    expect(fileMenu).not.toContain(`最近使用的图片`)
     expect(settingsMenu).toContain(`图床配置`)
     expect(settingsMenu).not.toContain(`排版样式`)
     expect(header).toContain(`<SettingsDropdown`)
@@ -58,16 +60,18 @@ describe(`编辑工作流`, () => {
     expect(editor).not.toContain(`@upload-image="uploadImage"`)
   })
 
-  it(`单张、批量和链接入口打开互不重叠的独立模式`, () => {
+  it(`工具栏只保留一个插图入口，对话框内再切换模式`, () => {
     const toolbar = readSource(`apps/web/src/components/editor/MarkdownToolbar.vue`)
     const quickInsert = readSource(`apps/web/src/components/editor/ImageQuickInsertDialog.vue`)
 
     expect(toolbar).toContain("openQuickInsert(`single`)")
-    expect(toolbar).toContain("openQuickInsert(`batch`)")
-    expect(toolbar).toContain("openQuickInsert(`link`)")
+    expect(toolbar).not.toContain("openQuickInsert(`batch`)")
+    expect(toolbar).not.toContain("openQuickInsert(`link`)")
     expect(quickInsert).not.toContain(`<Tabs v-model="activeTab"`)
     expect(quickInsert).toContain(`activeTab === 'single'`)
     expect(quickInsert).toContain(`:multiple="activeTab === 'batch'"`)
+    expect(quickInsert).toContain(`id: \`batch\``)
+    expect(quickInsert).toContain(`id: \`link\``)
   })
 
   it(`预览中的普通图片和图文排版复用板块删除浮层`, () => {
@@ -102,6 +106,26 @@ describe(`编辑工作流`, () => {
     expect(toolbar).not.toContain(`markdown-toolbar__lead`)
     expect(toolbar).toContain(`scrollbar-width: thin`)
     expect(toolbar).toContain(`::-webkit-scrollbar`)
+  })
+
+  it(`板块库不占顶栏和第二栏，入口在预览上方`, () => {
+    const header = readSource(`apps/web/src/components/editor/editor-header/index.vue`)
+    const editor = readSource(`apps/web/src/views/CodemirrorEditor.vue`)
+    const drawer = readSource(`apps/web/src/components/editor/WorkspaceDrawer.vue`)
+    const editMenu = readSource(`apps/web/src/components/editor/editor-header/EditDropdown.vue`)
+
+    expect(header).not.toContain(`板块库`)
+    expect(header).toContain(`复制到公众号`)
+    expect(header).toContain(`v-if="workspaceMode === 'professional'"`)
+    expect(editor).toContain(`换样子`)
+    expect(editor).toContain(`const showBlockRail = computed(() => false)`)
+    expect(editor).not.toContain(`readingTimeLabel`)
+    expect(editor).not.toContain(`currentPostUpdateLabel`)
+    expect(drawer).toContain(`active === \`blocks\``)
+    expect(drawer).toContain(`left-0`)
+    expect(drawer).toContain(`translateX(-100%)`)
+    expect(drawer).toContain(`panel.value === \`posts\` || panel.value === \`folder\``)
+    expect(editMenu).toContain(`换样子`)
   })
 
   it(`编辑区、样式区和板块库顶部只保留必要信息`, () => {
@@ -241,13 +265,20 @@ describe(`编辑工作流`, () => {
     expect(heading).toContain(`全部标题恢复默认`)
   })
 
-  it(`预览快捷条只显示当前值并跳转唯一编辑入口`, () => {
+  it(`预览快捷条可切换第一层主题并打开更多`, () => {
     const quickBar = readSource(`apps/web/src/components/editor/ThemeQuickBar.vue`)
 
-    expect(quickBar).toContain(`currentStyleSummary`)
+    expect(quickBar).toContain(`专栏`)
+    expect(quickBar).toContain(`科技`)
+    expect(quickBar).toContain(`教程`)
+    expect(quickBar).toContain(`克制`)
+    expect(quickBar).toContain(`中式`)
+    expect(quickBar).toContain(`更多`)
+    expect(quickBar).toContain(`themeChanged`)
+    expect(quickBar).toContain(`applyCurrentTheme`)
+    expect(quickBar).toContain(`全局样式`)
     expect(quickBar).toContain("focusStyleGroup(`text`, `base`)")
     expect(quickBar).not.toContain(`<StyleQuickControls`)
-    expect(quickBar).not.toContain(`@click="themeChanged`)
   })
 
   it(`方案删除、取消和刷新恢复共享首次应用前快照`, () => {

@@ -6,7 +6,7 @@ set -euo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 export HOST="${HOST:-0.0.0.0}"
 export PORT="${PORT:-8788}"
-export ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-*}"
+export ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:4173,http://localhost:4173}"
 
 APP_DIR="${MP_PROXY_DIR:-$HOME/Library/Application Support/mobi/mp-proxy}"
 

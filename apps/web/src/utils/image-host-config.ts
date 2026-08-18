@@ -65,6 +65,9 @@ export async function validateMpProxyBeforeSave({
   }
 
   const origin = proxyOrigin.trim().replace(/\/+$/, ``)
+  if (!origin) {
+    throw new Error(`官方代理尚未就绪，请填写已通过健康检查的公众号代理地址`)
+  }
   let result: ProxyHealthResult
 
   try {

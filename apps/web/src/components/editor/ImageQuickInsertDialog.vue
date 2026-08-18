@@ -28,6 +28,13 @@ interface PendingImage {
 }
 
 const { isOpen, activeTab, setOpen } = useImageQuickInsert()
+
+const insertModes: Array<{ id: typeof activeTab.value, label: string }> = [
+  { id: `single`, label: `单张` },
+  { id: `batch`, label: `批量` },
+  { id: `link`, label: `链接` },
+  { id: `recent`, label: `最近` },
+]
 const { upload } = useImageUploader()
 const editorStore = useEditorStore()
 const postStore = usePostStore()
@@ -346,6 +353,20 @@ function insertImages() {
         <DialogDescription>
           {{ dialogCopy.description }}
         </DialogDescription>
+        <div class="mt-3 flex flex-wrap gap-1">
+          <button
+            v-for="item in insertModes"
+            :key="item.id"
+            type="button"
+            class="rounded-md border px-2.5 py-1 text-xs"
+            :class="activeTab === item.id
+              ? 'border-foreground bg-foreground text-background'
+              : 'border-border text-muted-foreground hover:text-foreground'"
+            @click="activeTab = item.id"
+          >
+            {{ item.label }}
+          </button>
+        </div>
       </DialogHeader>
 
       <div class="flex-1 space-y-5 overflow-auto px-6 py-5">
