@@ -6,6 +6,7 @@ import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
 import { useUIStore } from '@/stores/ui'
+import { blockStateToPlainMarkdown } from '@/utils/blocks/plain-markdown'
 import {
   BLOCK_FONT_SCALE_OPTIONS,
   blockCategories,
@@ -211,6 +212,20 @@ function deleteSelected() {
   toast.success(`已删除当前${category.value.name}板块`)
 }
 
+function restoreToPlainMarkdown() {
+  if (!editingRange.value) {
+    return
+  }
+
+  const markdown = blockStateToPlainMarkdown(category.value.id, state)
+  const { from, to } = editingRange.value
+  const current = editorStore.getContent()
+  persistContent(`${current.slice(0, from)}${markdown}${current.slice(to)}`)
+  editingRange.value = null
+  blockSelectionStore.clear()
+  toast.success(`已还原为普通文本，会跟随当前主题`)
+}
+
 function persistContent(nextContent: string, options: { preserveBlockSelection?: boolean } = {}) {
   editorStore.importContent(nextContent, options)
   if (postStore.currentPost) {
@@ -274,6 +289,9 @@ function writeBlock(preset: BlockPreset, message?: string) {
           <p>{{ editingRange ? '点任意样式，原地替换当前板块。' : '点任意样式，直接生成到光标位置。' }}</p>
           <p v-if="showCustomBlockThemeNote">
             这一块是单独处理的，所以还是它自己的颜色。
+            <button type="button" class="heading-block-restore" @click="restoreToPlainMarkdown">
+              还原为普通文本
+            </button>
           </p>
         </div>
         <span class="heading-block-count">{{ presets.length }} 种</span>
@@ -309,6 +327,9 @@ function writeBlock(preset: BlockPreset, message?: string) {
           <p>{{ editingRange ? '文字和字号会实时同步到正文与预览。' : '点上方任意样式即可直接生成。' }}</p>
           <p v-if="showCustomBlockThemeNote">
             这一块是单独处理的，所以还是它自己的颜色。
+            <button type="button" class="heading-block-restore" @click="restoreToPlainMarkdown">
+              还原为普通文本
+            </button>
           </p>
         </div>
         <Button variant="ghost" size="sm" @click="resetState">
@@ -447,6 +468,20 @@ function writeBlock(preset: BlockPreset, message?: string) {
   font-size: 0.76rem;
   line-height: 1.5;
   color: hsl(var(--muted-foreground));
+}
+
+.heading-block-restore {
+  display: inline;
+  margin-left: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: hsl(var(--primary));
+  font-size: inherit;
+  line-height: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+  cursor: pointer;
 }
 
 .heading-block-count {

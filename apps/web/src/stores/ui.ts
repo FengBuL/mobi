@@ -114,6 +114,13 @@ export const useUIStore = defineStore(`ui`, () => {
 
   // 板块库不占中间栏；点预览后从左边抽屉出来
   const isOpenBlockWorkspace = ref(false)
+  const hasSeenPreviewBlockPickHint = store.reactive(addPrefix(`preview_block_pick_hint_seen`), false)
+  const showPreviewBlockPickHint = ref(false)
+
+  function dismissPreviewBlockPickHint() {
+    hasSeenPreviewBlockPickHint.value = true
+    showPreviewBlockPickHint.value = false
+  }
 
   // 移动端只有一栏，专业模式的多栏布局在这里没有落脚点
   const isSimpleWorkspace = computed(() => isMobile.value || workspaceMode.value === `simple`)
@@ -358,6 +365,9 @@ export const useUIStore = defineStore(`ui`, () => {
     workspaceMode,
     hasChosenWorkspaceMode,
     isOpenBlockWorkspace,
+    hasSeenPreviewBlockPickHint,
+    showPreviewBlockPickHint,
+    dismissPreviewBlockPickHint,
     isSimpleWorkspace,
     activeAuxPanel,
     closeAuxPanels,

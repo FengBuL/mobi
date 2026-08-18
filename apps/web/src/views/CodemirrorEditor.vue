@@ -37,9 +37,16 @@ import {
 } from '@/utils/editor-content-visibility'
 import { shouldSyncPreviewFromEditorUpdate } from '@/utils/editor-preview-sync'
 import { fileUpload } from '@/utils/file'
-import { applyWechatPreviewDiffHints, parseMediaLayoutBlocks, repairIndentedMediaLayoutBlocks } from '@/utils/image-layouts'
+import {
+  applyWechatPreviewDiffHints,
+  expandScrollWindowToFullImage,
+  parseMediaLayoutBlocks,
+  repairIndentedMediaLayoutBlocks,
+  WECHAT_EDITOR_ONLY_ATTR,
+  WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION,
+} from '@/utils/image-layouts'
 import { store } from '@/utils/storage'
-import { resolveWechatPreviewFrame } from '@/utils/wechat-preview'
+import { applyWechatPreviewTextureDowngrade, resolveWechatPreviewFrame } from '@/utils/wechat-preview'
 
 const blockSelectionStore = useBlockSelectionStore()
 const editorStore = useEditorStore()
@@ -82,6 +89,7 @@ const {
   isOpenFolderPanel,
   isOpenRightSlider,
   isOpenBlockWorkspace,
+  showPreviewBlockPickHint,
   isOpenConfirmDialog,
   isSimpleWorkspace,
   enableImageReupload,
@@ -115,12 +123,36 @@ watch(output, () => {
       highlightPendingBlocks(hljs, outputElement)
       applyBlockSelectionHighlight()
       applyWechatPreviewDiffHints(outputElement)
+      applyWechatPreviewTextureDowngrade(outputElement)
+      applyPreviewBlockPickHint()
     }
   })
 })
 
 watch(blockSelection, () => {
   nextTick(applyBlockSelectionHighlight)
+})
+
+watch(isOpenBlockWorkspace, (open) => {
+  if (!open) {
+    if (showPreviewBlockPickHint.value) {
+      uiStore.dismissPreviewBlockPickHint()
+      nextTick(applyPreviewBlockPickHint)
+    }
+    return
+  }
+
+  if (!uiStore.hasSeenPreviewBlockPickHint && !blockSelection.value) {
+    showPreviewBlockPickHint.value = true
+    nextTick(applyPreviewBlockPickHint)
+  }
+  else if (blockSelection.value) {
+    uiStore.dismissPreviewBlockPickHint()
+  }
+})
+
+watch(showPreviewBlockPickHint, () => {
+  nextTick(applyPreviewBlockPickHint)
 })
 
 const backLight = ref(false)
@@ -740,6 +772,52 @@ function applyBlockSelectionHighlight() {
   })
 }
 
+function applyPreviewBlockPickHint() {
+  document.querySelectorAll<HTMLElement>(`#output`).forEach((outputElement) => {
+    outputElement.querySelectorAll(`.preview-block-pick-hint`).forEach(element => element.classList.remove(`preview-block-pick-hint`))
+    outputElement.querySelectorAll(`[${WECHAT_EDITOR_ONLY_ATTR}="block-pick-hint"]`).forEach(node => node.remove())
+
+    if (!showPreviewBlockPickHint.value) {
+      return
+    }
+
+    const clickable = outputElement.querySelectorAll<HTMLElement>(`section.md-block, [data-src-kind][data-src-ordinal], section.md-media-block`)
+    clickable.forEach((element, index) => {
+      element.classList.add(`preview-block-pick-hint`)
+      if (index === 0) {
+        const label = document.createElement(`span`)
+        label.className = `preview-block-pick-hint-label`
+        label.setAttribute(WECHAT_EDITOR_ONLY_ATTR, `block-pick-hint`)
+        label.textContent = `点这里换样子`
+        element.appendChild(label)
+      }
+    })
+  })
+}
+
+function expandSelectedScrollWindow(button: HTMLElement) {
+  const mediaBlock = button.closest<HTMLElement>(`.md-media-block`)
+  const blocks = [...(previewRef.value?.querySelectorAll<HTMLElement>(`.md-media-block`) ?? [])]
+  const index = mediaBlock ? blocks.indexOf(mediaBlock) : -1
+  if (index < 0) {
+    toast.error(`没有找到可展开的长图视窗`)
+    return
+  }
+
+  const next = expandScrollWindowToFullImage(editorStore.getContent(), index)
+  if (!next) {
+    toast.error(`没有找到可展开的长图视窗`)
+    return
+  }
+
+  editorStore.importContent(next)
+  if (currentPost.value) {
+    postStore.updatePostContent(currentPost.value.id, next)
+  }
+  renderStore.render(next)
+  toast.success(`已改成整幅长图`)
+}
+
 // 悬停在已插入板块上时，在其右上角浮出一个删除按钮。
 // 用浮层而不是往预览 DOM 里插节点，避免按钮混进公众号复制产物。
 const hoveredBlockElement = shallowRef<HTMLElement | null>(null)
@@ -939,6 +1017,18 @@ function handlePreviewContentClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null
   if (!target)
     return
+
+  const expandButton = target.closest<HTMLElement>(`[data-mobi-wechat-diff-action="${WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION}"]`)
+  if (expandButton) {
+    event.preventDefault()
+    event.stopPropagation()
+    expandSelectedScrollWindow(expandButton)
+    return
+  }
+
+  if (showPreviewBlockPickHint.value) {
+    uiStore.dismissPreviewBlockPickHint()
+  }
 
   const styleTarget = resolveStyleTarget(target)
   if (styleTarget) {
@@ -2353,7 +2443,8 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-:deep(#output .md-wechat-diff-hint__item) {
+:deep(#output .md-wechat-diff-hint__item),
+:deep(#output .md-wechat-diff-hint__advice) {
   display: inline-block;
   padding: 0.16rem 0.52rem;
   border-radius: 999px;
@@ -2363,6 +2454,44 @@ onUnmounted(() => {
   line-height: 1.45;
   letter-spacing: 0.01em;
   box-shadow: 0 1px 4px rgb(0 0 0 / 16%);
+}
+
+:deep(#output .md-wechat-diff-hint__advice) {
+  border-radius: 8px;
+  background: hsl(24 9% 13% / 0.88);
+}
+
+:deep(#output .md-wechat-diff-hint__button) {
+  pointer-events: auto;
+  padding: 0.18rem 0.58rem;
+  border: 0;
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-size: 11px;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+:deep(#output .preview-block-pick-hint) {
+  position: relative;
+  outline: 2px dashed hsl(var(--primary) / 0.45);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+:deep(#output .preview-block-pick-hint-label) {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 5;
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: none;
 }
 
 .codeMirror-wrapper,

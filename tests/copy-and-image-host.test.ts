@@ -23,18 +23,20 @@ describe(`复制未转存图`, () => {
     const copy = readSource(`apps/web/src/composables/useEditorCopyActions.ts`)
     expect(copy).toContain(`getUnsafeClipboardImages`)
     expect(copy).toContain(`toast.warning`)
+    expect(copy).toContain(`不配图床也可以直接贴`)
+    expect(copy).not.toContain(`会在公众号里丢`)
     expect(copy).not.toMatch(/if \(localImages\.length > 0\) \{[\s\S]*toast\.error[\s\S]*return/)
     expect(copy).not.toContain(`已停止复制`)
   })
 
-  it(`按钮旁常驻还有 N 张会在公众号里丢`, () => {
+  it(`按钮旁常驻还有 N 张不是公众号地址`, () => {
     const html = `
       <p><img src="data:image/png;base64,aaa"></p>
       <p><img src="https://cdn.example.com/a.png"></p>
       <p><img src="https://mmbiz.qpic.cn/mmbiz_png/example/0"></p>
     `
     expect(countUnsafeClipboardImagesFromHtml(html)).toBe(2)
-    expect(formatLostWechatImageHint(2)).toBe(`还有 2 张会在公众号里丢`)
+    expect(formatLostWechatImageHint(2)).toBe(`还有 2 张不是公众号地址，微信可能留下或丢掉`)
 
     const header = readSource(`apps/web/src/components/editor/editor-header/index.vue`)
     expect(header).toContain(`formatLostWechatImageHint`)

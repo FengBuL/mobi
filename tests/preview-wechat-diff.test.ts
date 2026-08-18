@@ -8,7 +8,9 @@ import {
   createDefaultMediaLayoutState,
   mediaLayoutPresets,
   WECHAT_EDITOR_ONLY_ATTR,
+  WECHAT_PREVIEW_DIFF_ADVICE,
   WECHAT_PREVIEW_DIFF_ATTR,
+  WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION,
   WECHAT_PREVIEW_DIFF_HINT_CLASS,
   WECHAT_PREVIEW_DIFF_LABELS,
 } from '@/utils/image-layouts'
@@ -59,11 +61,18 @@ describe(`预览微信差异打标`, () => {
       readSource(`apps/web/src/utils/image-layouts.ts`),
       readSource(`apps/web/src/views/CodemirrorEditor.vue`),
       readSource(`apps/web/src/utils/index.ts`),
+      readSource(`apps/web/src/stores/ui.ts`),
     ].join(`\n`)
 
     expect(source).toContain(WECHAT_PREVIEW_DIFF_LABELS.crop)
     expect(source).toContain(WECHAT_PREVIEW_DIFF_LABELS.scroll)
     expect(source).toContain(WECHAT_PREVIEW_DIFF_LABELS.badge)
+    expect(source).toContain(WECHAT_PREVIEW_DIFF_ADVICE.crop)
+    expect(source).toContain(WECHAT_PREVIEW_DIFF_ADVICE.scroll)
+    expect(source).toContain(WECHAT_PREVIEW_DIFF_ADVICE.badge)
+    expect(source).toContain(`改成整幅长图`)
+    expect(source).toContain(`点这里换样子`)
+    expect(source).toContain(`preview_block_pick_hint_seen`)
     expect(source).toContain(`stripEditorOnlyWechatDiffMarkers`)
     expect(source).toContain(`applyWechatPreviewDiffHints`)
   })
@@ -99,6 +108,10 @@ describe(`预览微信差异打标`, () => {
     expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_LABELS.crop)
     expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_LABELS.scroll)
     expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_LABELS.badge)
+    expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_ADVICE.crop)
+    expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_ADVICE.badge)
+    expect(root.innerHTML).toContain(`改成整幅长图`)
+    expect(root.querySelector(`[data-mobi-wechat-diff-action="${WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION}"]`)).toBeTruthy()
     expect(root.querySelectorAll(`.${WECHAT_PREVIEW_DIFF_HINT_CLASS}`).length).toBeGreaterThan(0)
 
     stripEditorOnlyWechatDiffMarkers(root)

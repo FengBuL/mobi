@@ -42,6 +42,8 @@ describe(`板块库点选`, () => {
     const workspace = readSource(`apps/web/src/components/editor/HeadingBlockWorkspace.vue`)
 
     expect(workspace).toContain(`这一块是单独处理的，所以还是它自己的颜色。`)
+    expect(workspace).toContain(`还原为普通文本`)
+    expect(workspace).toContain(`function restoreToPlainMarkdown`)
     expect(workspace).toContain(`const showCustomBlockThemeNote = computed(() => {`)
     expect(workspace).toContain(`editingRange.value && blockSelection.value?.presetId`)
   })

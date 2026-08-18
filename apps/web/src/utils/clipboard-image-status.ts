@@ -58,5 +58,5 @@ export function formatLostWechatImageHint(count: number) {
   if (count <= 0) {
     return ``
   }
-  return `还有 ${count} 张会在公众号里丢`
+  return `还有 ${count} 张不是公众号地址，微信可能留下或丢掉`
 }

@@ -119,10 +119,9 @@ try {
     }, 100)
   })`)
 
-  // 板块库不再默认常驻：简洁模式里不出现，专业模式里也是收起的。
-  // 这段只负责按真实入口把工作区摆到板块库可见的状态，下面的断言一条没动。
-  const clickHeaderAction = text => page.evaluate(`(() => {
-    const target = [...document.querySelectorAll('header button')]
+  // 板块库从预览顶「换样子」出来，没选中时只有提示，不摊类别。
+  const clickAction = text => page.evaluate(`(() => {
+    const target = [...document.querySelectorAll('button')]
       .filter(item => item.textContent.trim() === ${JSON.stringify(text)})
       .pop()
     if (!target) {
@@ -132,9 +131,8 @@ try {
     return true
   })()`)
 
-  await waitFor(() => clickHeaderAction(`专业`))
-  await waitFor(() => clickHeaderAction(`板块库`))
-  await waitFor(() => page.evaluate(`!!document.querySelector('.block-library-nav__item')`))
+  await waitFor(() => clickAction(`换样子`))
+  await waitFor(() => page.evaluate(`!!document.querySelector('.block-library-empty')`))
 
   const result = await page.evaluate(`(async () => {
     const [{ useEditorStore }, { usePostStore }, { useRenderStore }, registry] = await Promise.all([
@@ -170,16 +168,16 @@ try {
 
     const quote = document.querySelector('#output [data-src-kind="quote"]')
     quote?.click()
-    await new Promise(resolve => setTimeout(resolve, 50))
-    const quoteCategory = document.querySelector('.block-library-nav__item--active strong')?.textContent?.trim()
-    const quoteValue = document.querySelector('#heading-block-quote')?.value
+    await new Promise(resolve => setTimeout(resolve, 120))
+    const quoteEmpty = Boolean(document.querySelector('.block-library-empty'))
+    const quotePresets = document.querySelectorAll('.heading-block-preset').length
 
     const heading = document.querySelector('#output [data-src-kind="heading-2"]')
     heading?.click()
-    await new Promise(resolve => setTimeout(resolve, 50))
-    const headingCategory = document.querySelector('.block-library-nav__item--active strong')?.textContent?.trim()
+    await new Promise(resolve => setTimeout(resolve, 120))
+    const headingEmpty = Boolean(document.querySelector('.block-library-empty'))
+    const headingPresets = document.querySelectorAll('.heading-block-preset').length
     const selectedBefore = heading?.classList.contains('preview-block-selected')
-    const headingValue = document.querySelector('#heading-block-title')?.value
 
     const presets = document.querySelectorAll('.heading-block-preset')
     presets[1]?.click()
@@ -196,29 +194,27 @@ try {
     const secondBlock = secondBlocks[0]
 
     document.querySelector('#output [data-src-kind="list-ul"]')?.click()
-    await new Promise(resolve => setTimeout(resolve, 50))
-    const listCategory = document.querySelector('.block-library-nav__item--active strong')?.textContent?.trim()
-    const listItems = [1, 2, 3].map(index => document.querySelector('#heading-block-item' + index)?.value)
+    await new Promise(resolve => setTimeout(resolve, 120))
+    const listEmpty = Boolean(document.querySelector('.block-library-empty'))
+    const listPresets = document.querySelectorAll('.heading-block-preset').length
 
     document.querySelector('#output [data-src-kind="divider"]')?.click()
-    await new Promise(resolve => setTimeout(resolve, 50))
-    const dividerCategory = document.querySelector('.block-library-nav__item--active strong')?.textContent?.trim()
+    await new Promise(resolve => setTimeout(resolve, 120))
+    const dividerEmpty = Boolean(document.querySelector('.block-library-empty'))
+    const dividerPresets = document.querySelectorAll('.heading-block-preset').length
 
     const checks = {
-      quoteCategory: quoteCategory === '引用',
-      quoteContent: quoteValue === '第一行引用\\n第二行引用',
-      headingCategory: headingCategory === '标题',
+      quoteReady: !quoteEmpty && quotePresets > 0,
+      headingReady: !headingEmpty && headingPresets > 0,
       selectedBefore,
-      headingContent: headingValue === title,
       sourceReplaced: firstBlocks.length === 1 && !firstSource.includes('## ' + title),
       contentPreserved: firstBlock?.state.title === title,
       selectedAfter,
       repeatedInPlace: secondBlocks.length === 1 && secondBlock?.state.title === title,
       styleChanged: firstBlock?.presetId !== secondBlock?.presetId,
       boundariesPreserved: secondSource.includes('> 第一行引用') && secondSource.endsWith('结尾正文'),
-      listCategory: listCategory === '列表',
-      listContent: listItems.join('|') === '一级 A|二级 B|一级 C',
-      dividerCategory: dividerCategory === '分隔',
+      listReady: !listEmpty && listPresets > 0,
+      dividerReady: !dividerEmpty && dividerPresets > 0,
     }
     return {
       checks,

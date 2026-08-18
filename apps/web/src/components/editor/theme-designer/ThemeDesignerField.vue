@@ -82,6 +82,5 @@ function reset() {
         {{ currentValue ? '已开启' : '已关闭' }}
       </span>
     </div>
-
   </div>
 </template>

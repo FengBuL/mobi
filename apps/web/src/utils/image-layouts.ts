@@ -13,9 +13,19 @@ export const WECHAT_PREVIEW_DIFF_HINT_ITEM_CLASS = `md-wechat-diff-hint__item`
 
 export const WECHAT_PREVIEW_DIFF_LABELS = {
   crop: `不会按比例裁，会按图片自身比例铺满`,
-  scroll: `贴完会整幅展开`,
+  scroll: `贴完会变成公众号长图`,
   badge: `角标会落到图下`,
 } as const
+
+export const WECHAT_PREVIEW_DIFF_ADVICE = {
+  crop: `贴进去会按原图比例铺满，不再是现在的宽屏裁。`,
+  scroll: `后台可以上下滑看整幅，不再是预览里那个小视窗。`,
+  badge: `贴进去后角标会落到图下，图还在。`,
+} as const
+
+export const WECHAT_PREVIEW_DIFF_HINT_ADVICE_CLASS = `md-wechat-diff-hint__advice`
+export const WECHAT_PREVIEW_DIFF_HINT_BUTTON_CLASS = `md-wechat-diff-hint__button`
+export const WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION = `expand-scroll`
 
 export type WechatPreviewDiffKind = keyof typeof WECHAT_PREVIEW_DIFF_LABELS
 
@@ -69,13 +79,26 @@ export function applyWechatPreviewDiffHints(root: HTMLElement) {
     const hint = document.createElement(`span`)
     hint.className = WECHAT_PREVIEW_DIFF_HINT_CLASS
     hint.setAttribute(WECHAT_EDITOR_ONLY_ATTR, `wechat-diff`)
-    hint.setAttribute(`aria-hidden`, `true`)
     kinds.forEach((kind) => {
       const item = document.createElement(`span`)
       item.className = WECHAT_PREVIEW_DIFF_HINT_ITEM_CLASS
       item.textContent = WECHAT_PREVIEW_DIFF_LABELS[kind]
       hint.appendChild(item)
     })
+
+    const advice = document.createElement(`span`)
+    advice.className = WECHAT_PREVIEW_DIFF_HINT_ADVICE_CLASS
+    advice.textContent = kinds.map(kind => WECHAT_PREVIEW_DIFF_ADVICE[kind]).join(``)
+    hint.appendChild(advice)
+
+    if (kinds.includes(`scroll`)) {
+      const button = document.createElement(`button`)
+      button.type = `button`
+      button.className = WECHAT_PREVIEW_DIFF_HINT_BUTTON_CLASS
+      button.setAttribute(`data-mobi-wechat-diff-action`, WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION)
+      button.textContent = `改成整幅长图`
+      hint.appendChild(button)
+    }
     host.appendChild(hint)
   })
 }
@@ -1458,6 +1481,30 @@ export function parseMediaLayoutBlocks(content: string): MediaLayoutBlockEntry[]
   }
 
   return entries
+}
+
+/** 把长图视窗换成微信保得住的整幅长图（留白头图 + 原图比例）。 */
+export function expandScrollWindowToFullImage(content: string, mediaBlockIndex: number) {
+  const block = parseMediaLayoutBlocks(content)[mediaBlockIndex]
+  if (!block) {
+    return null
+  }
+
+  const preset = mediaLayoutPresets.find(item => item.id === `hero-image`)
+  if (!preset) {
+    return null
+  }
+
+  const state = cloneMediaLayoutState(block.form)
+  if (state.images[0]) {
+    state.images[0] = {
+      ...state.images[0],
+      aspectRatio: `auto`,
+      minHeight: 420,
+    }
+  }
+
+  return `${content.slice(0, block.from)}${buildMediaLayoutMarkup(preset, state)}${content.slice(block.to)}`
 }
 
 function parseStyleNumericValue(style: string, propertyName: string) {

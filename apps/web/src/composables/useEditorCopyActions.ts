@@ -4,7 +4,7 @@ import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 import { addPrefix, generatePureHTML, processClipboardContent } from '@/utils'
-import { isLocalClipboardImageSrc, isUnsafeClipboardImage } from '@/utils/clipboard-image-status'
+import { formatLostWechatImageHint, isLocalClipboardImageSrc, isUnsafeClipboardImage } from '@/utils/clipboard-image-status'
 import { hasMpUploadConfig } from '@/utils/file'
 import { store } from '@/utils/storage'
 import { trackEvent } from '@/utils/telemetry'
@@ -175,11 +175,11 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
             const longHint = unsafeImages.some(item => item.isLong)
               ? `长图容易超过公众号图床的体积上限，可以先压缩或裁短。`
               : ``
-            const lostHint = `还有 ${unsafeImages.length} 张会在公众号里丢。`
+            const lostHint = `${formatLostWechatImageHint(unsafeImages.length)}。`
 
             if (localImages.length > 0 && remoteImages.length === 0) {
               toast.warning(
-                `${lostHint}${localImages.length} 张还是本地地址（${blocker.label}），公众号读不到。已照常复制，粘贴后这些图会丢。`,
+                `${lostHint}${localImages.length} 张还是本地地址（${blocker.label}）。已照常复制。真机后台本机图有时还能看见，发出去或换环境不一定稳。`,
                 {
                   duration: 10000,
                   action: { label: `去配置图床`, onClick: () => uiStore.openUploadImgDialog(`mp`) },
@@ -188,13 +188,13 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
             }
             else if (hasConfig) {
               toast.warning(
-                `${lostHint}${unsafeImages.length} 张图片没能转成公众号地址，卡在${blocker.label}。${blocker.error ? `原因：${blocker.error}。` : ``}已按外链复制，粘贴后请确认图片是否显示。${longHint}`,
+                `${lostHint}${unsafeImages.length} 张没能转成公众号地址，卡在${blocker.label}。${blocker.error ? `原因：${blocker.error}。` : ``}已按外链复制。微信不会保证自动转存：能热链的可能还在，防盗链的会丢。${longHint}`,
                 { duration: 10000 },
               )
             }
             else {
               toast.warning(
-                `${lostHint}${unsafeImages.length} 张图片是外链或本地地址。微信编辑器转存外链图时，很可能把这段内容的排版清洗掉。配置「公众号图床」后重新复制更稳。${longHint}`,
+                `${lostHint}不配图床也可以直接贴。微信会留下能打开的外链，防盗链或插入失败的会丢。要稳再配「公众号图床」。${longHint}`,
                 {
                   duration: 12000,
                   action: { label: `去配置图床`, onClick: () => uiStore.openUploadImgDialog(`mp`) },
