@@ -15,15 +15,15 @@ describe(`编辑工作流`, () => {
     expect(source).not.toContain(`更新到正文`)
   })
 
-  it(`本地文件夹按授权目录读写，不再只做只读导入`, () => {
+  it(`本地文件夹是导入源，编辑器不写回原文件`, () => {
     const panel = readSource(`apps/web/src/components/editor/FolderSourcePanel.vue`)
     const store = readSource(`apps/web/src/stores/folderSource.ts`)
     const sync = readSource(`apps/web/src/composables/useDraftFileSync.ts`)
 
     expect(panel).toContain(`draftFileSyncKey`)
     expect(panel).toContain(`全部写出`)
+    expect(panel).toContain(`不会写回原文件`)
     expect(panel).toContain(`稿子存在浏览器里，清缓存会丢`)
-    expect(panel).not.toContain(`编辑不会修改本地文件`)
     expect(panel).not.toContain(`同步`)
     expect(store).toContain("mode: `readwrite`")
     expect(store).toContain(`createWritable`)
@@ -34,8 +34,11 @@ describe(`编辑工作流`, () => {
     expect(store).toContain(`getDesktopBridge()?.folders`)
     expect(store).toContain(`loadNativeFileTree`)
     expect(sync).toContain(`exportAllPostsToFolder`)
-    expect(sync).toContain(`在外部被改过`)
-    expect(sync).toContain(`重新加载`)
+    expect(sync).toContain(`importedFrom`)
+    expect(sync).toContain(`不写回原文件`)
+    expect(sync).toContain(`unarchiveFile`)
+    expect(sync).not.toContain(`writeBoundPost`)
+    expect(sync).not.toContain(`watchDebounced`)
     expect(sync).not.toContain(`three-way`)
   })
 

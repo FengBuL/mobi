@@ -6,6 +6,8 @@ import {
   saveFolderHandle,
 } from '@/services/folder/handleStore'
 import { addPrefix } from '@/utils'
+import { canDeleteDraftDirectory, canMoveDraftEntry, describeFolderPickerBlocker, draftFileName, joinDraftPath, parentDraftDirectory, relocateDraftPath } from '@/utils/draft-folder'
+import { releaseFolderNodeHandles, removeChildDirectory } from '@/utils/folder-handle'
 import { readFolderLevel } from '@/utils/folder-tree'
 import { store } from '@/utils/storage'
 
@@ -47,6 +49,9 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
 
   // 加载错误信息
   const loadError = ref<string>(``)
+  const createFolderDialogOpen = ref(false)
+  const pendingDeletePath = ref(``)
+  const pendingMovePath = ref(``)
 
   // 当前运行时文件夹
   const currentRuntimeFolder = computed(() => {
@@ -77,8 +82,14 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
    * 选择并打开本地文件夹
    */
   async function selectFolder() {
-    if (!isFileSystemAPISupported.value) {
-      toast.error(`这个浏览器不能写本地文件夹。稿子还在浏览器里，清缓存会丢，建议定期导出。`)
+    const blocker = describeFolderPickerBlocker({
+      hasDesktopFolders: Boolean(getDesktopBridge()?.folders),
+      isSecureContext: typeof window !== `undefined` && window.isSecureContext,
+      hasDirectoryPicker: typeof window !== `undefined` && `showDirectoryPicker` in window,
+      origin: typeof location !== `undefined` ? location.origin : ``,
+    })
+    if (blocker) {
+      toast.error(blocker)
       return
     }
 
@@ -111,6 +122,13 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
         mode: `readwrite`,
         startIn: `documents`,
       })
+      if (typeof handle.requestPermission === `function`) {
+        const permission = await handle.requestPermission({ mode: `readwrite` })
+        if (permission !== `granted`) {
+          toast.error(`没有写入权限，文件夹没有打开`)
+          return
+        }
+      }
 
       // 检查是否已经打开过这个文件夹
       let folderId: string
@@ -150,7 +168,7 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
     }
     catch (error: any) {
       if (error.name === `AbortError`) {
-        // 用户取消了选择
+        toast.message(`没有选文件夹`)
         return
       }
       loadError.value = error.message || `打开文件夹失败`
@@ -285,17 +303,31 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
     }]
   }
 
-  async function reloadCurrentFolder(): Promise<void> {
+  async function reloadCurrentFolder(expandedPaths?: Iterable<string>): Promise<void> {
     const current = currentRuntimeFolder.value
     if (!current) {
       return
     }
     if (current.nativePath) {
       await loadNativeFileTree(current.name, current.nativePath)
-      return
     }
-    if (current.handle) {
+    else if (current.handle) {
       await loadFileTree(current.handle)
+    }
+    if (expandedPaths) {
+      await restoreExpandedDirectories(expandedPaths)
+    }
+  }
+
+  async function restoreExpandedDirectories(expandedPaths: Iterable<string>): Promise<void> {
+    const paths = [...expandedPaths].sort((left, right) => (
+      left.split(/[\\/]/u).length - right.split(/[\\/]/u).length
+    ))
+    for (const path of paths) {
+      const node = findNodeByPath(fileTree.value, path)
+      if (node?.type === `directory` && !node.children) {
+        await loadDirectoryChildren(node)
+      }
     }
   }
 
@@ -406,23 +438,257 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
   }
 
   /**
-   * 在当前文件夹根目录新建一稿。
+   * 在指定目录（默认根目录）新建一稿。
    */
-  async function createMarkdownFile(fileName: string, content: string): Promise<string> {
+  async function createMarkdownFile(
+    fileName: string,
+    content: string,
+    directoryPath?: string,
+  ): Promise<string> {
+    if (!currentRuntimeFolder.value) {
+      throw new Error(`未选择文件夹`)
+    }
+    const filePath = directoryPath
+      ? joinDraftPath(directoryPath, fileName)
+      : currentRuntimeFolder.value.nativePath
+        ? joinNativePath(fileName)
+        : `${currentRuntimeFolder.value.name}/${fileName}`
+    await writeFile(filePath, content)
+    await reloadCurrentFolder()
+    return filePath
+  }
+
+  async function createDirectory(directoryPath: string, options?: { reload?: boolean }): Promise<void> {
     if (!currentRuntimeFolder.value) {
       throw new Error(`未选择文件夹`)
     }
     if (currentRuntimeFolder.value.nativePath) {
-      const filePath = joinNativePath(fileName)
-      await writeFile(filePath, content)
-      await reloadCurrentFolder()
-      return filePath
+      const folders = getDesktopBridge()?.folders
+      if (!folders?.ensureDirectory) {
+        throw new Error(`当前桌面版还不能新建子文件夹`)
+      }
+      await folders.ensureDirectory(directoryPath)
+      if (options?.reload !== false) {
+        await reloadCurrentFolder()
+      }
+      return
     }
+    const root = currentRuntimeFolder.value.handle
+    if (!root) {
+      throw new Error(`未选择文件夹`)
+    }
+    const parts = directoryPath.split(`/`).filter(Boolean)
+    const segments = parts[0] === root.name ? parts.slice(1) : parts
+    let directory = root
+    for (const segment of segments) {
+      directory = await directory.getDirectoryHandle(segment, { create: true })
+    }
+    if (options?.reload !== false) {
+      await reloadCurrentFolder()
+    }
+  }
 
-    const filePath = `${currentRuntimeFolder.value.name}/${fileName}`
-    await writeFile(filePath, content)
-    await reloadCurrentFolder()
-    return filePath
+  async function removeDirectory(directoryPath: string, options?: { reload?: boolean }): Promise<void> {
+    const rootPath = fileTree.value[0]?.path ?? currentRuntimeFolder.value?.name ?? ``
+    if (!canDeleteDraftDirectory(rootPath, directoryPath)) {
+      throw new Error(`不能删除已打开的根目录`)
+    }
+    if (!currentRuntimeFolder.value) {
+      throw new Error(`未选择文件夹`)
+    }
+    if (currentRuntimeFolder.value.nativePath) {
+      const folders = getDesktopBridge()?.folders
+      if (!folders?.deleteDirectory) {
+        throw new Error(`当前桌面版还不能删除子文件夹`)
+      }
+      await folders.deleteDirectory(directoryPath)
+      if (options?.reload !== false) {
+        await reloadCurrentFolder()
+      }
+      return
+    }
+    const root = currentRuntimeFolder.value.handle
+    if (!root) {
+      throw new Error(`未选择文件夹`)
+    }
+    const node = findNodeByPath(fileTree.value, directoryPath)
+    const parentPath = parentDraftDirectory(directoryPath)
+    const parentNode = parentPath
+      ? findNodeByPath(fileTree.value, parentPath)
+      : fileTree.value[0]
+    const name = draftFileName(directoryPath)
+    if (!name) {
+      throw new Error(`不能删除已打开的根目录`)
+    }
+    const targetHandle = node?.handle as (FileSystemDirectoryHandle & {
+      remove?: (options?: { recursive?: boolean }) => Promise<void>
+    }) | undefined
+    if (typeof targetHandle?.remove === `function`) {
+      try {
+        await targetHandle.remove({ recursive: true })
+        if (options?.reload !== false) {
+          await reloadCurrentFolder()
+        }
+        return
+      }
+      catch {
+        // 句柄还被树握着时，走下面放开后再删
+      }
+    }
+    releaseFolderNodeHandles(node)
+    const parentHandle = (parentNode?.handle as FileSystemDirectoryHandle | undefined) ?? root
+    await removeChildDirectory(parentHandle, name)
+    if (options?.reload !== false) {
+      await reloadCurrentFolder()
+    }
+  }
+
+  async function removeMarkdownFile(filePath: string): Promise<void> {
+    if (!currentRuntimeFolder.value) {
+      throw new Error(`未选择文件夹`)
+    }
+    if (currentRuntimeFolder.value.nativePath) {
+      const folders = getDesktopBridge()?.folders
+      if (!folders?.deleteFile) {
+        throw new Error(`当前桌面版还不能归档到子目录`)
+      }
+      await folders.deleteFile(filePath)
+      return
+    }
+    const root = currentRuntimeFolder.value.handle
+    if (!root) {
+      throw new Error(`未选择文件夹`)
+    }
+    const parts = filePath.split(`/`).filter(Boolean)
+    const segments = parts[0] === root.name ? parts.slice(1) : parts
+    if (segments.length === 0) {
+      throw new Error(`无效的文件路径`)
+    }
+    let directory = root
+    for (const segment of segments.slice(0, -1)) {
+      directory = await directory.getDirectoryHandle(segment)
+    }
+    await directory.removeEntry(segments[segments.length - 1])
+  }
+
+  async function moveMarkdownFile(fromPath: string, toPath: string, options?: { reload?: boolean }): Promise<string> {
+    if (fromPath === toPath) {
+      return fromPath
+    }
+    const content = await readFile(fromPath)
+    await writeFile(toPath, content)
+    await removeMarkdownFile(fromPath)
+    if (options?.reload !== false) {
+      await reloadCurrentFolder()
+    }
+    return toPath
+  }
+
+  async function ensureChildrenLoaded(node: FileSystemNode): Promise<void> {
+    if (node.type !== `directory`) {
+      return
+    }
+    await loadDirectoryChildren(node)
+    for (const child of node.children ?? []) {
+      if (child.type === `directory`) {
+        await ensureChildrenLoaded(child)
+      }
+    }
+  }
+
+  function collectDirectoryNodes(nodes: FileSystemNode[] = fileTree.value): FileSystemNode[] {
+    const directories: FileSystemNode[] = []
+    for (const node of nodes) {
+      if (node.type !== `directory`) {
+        continue
+      }
+      directories.push(node)
+      if (node.children) {
+        directories.push(...collectDirectoryNodes(node.children))
+      }
+    }
+    return directories
+  }
+
+  async function directoryHasMarkdown(directoryPath: string): Promise<boolean> {
+    const node = findNodeByPath(fileTree.value, directoryPath)
+    if (!node || node.type !== `directory`) {
+      return false
+    }
+    await ensureChildrenLoaded(node)
+    return getAllMarkdownFiles([node]).length > 0
+  }
+
+  async function listMoveDirectories() {
+    const root = fileTree.value[0]
+    if (root) {
+      await ensureChildrenLoaded(root)
+    }
+    return collectDirectoryNodes().map(node => ({
+      path: node.path,
+      name: node.name,
+    }))
+  }
+
+  async function collectMoveJobs(fromPath: string, toPath: string): Promise<Array<{ from: string, to: string, type: `file` | `directory` }>> {
+    const node = findNodeByPath(fileTree.value, fromPath)
+    if (!node) {
+      throw new Error(`找不到要移动的项`)
+    }
+    if (node.type === `file`) {
+      return [{ from: fromPath, to: toPath, type: `file` }]
+    }
+    await ensureChildrenLoaded(node)
+    const jobs: Array<{ from: string, to: string, type: `file` | `directory` }> = [
+      { from: fromPath, to: toPath, type: `directory` },
+    ]
+    for (const child of node.children ?? []) {
+      jobs.push(...await collectMoveJobs(child.path, joinDraftPath(toPath, child.name)))
+    }
+    return jobs
+  }
+
+  async function moveEntry(fromPath: string, destinationDirectory: string, options?: { reload?: boolean }): Promise<string> {
+    const rootPath = fileTree.value[0]?.path ?? currentRuntimeFolder.value?.name ?? ``
+    if (!canMoveDraftEntry(rootPath, fromPath, destinationDirectory)) {
+      throw new Error(`不能移到这里`)
+    }
+    const toPath = relocateDraftPath(fromPath, destinationDirectory)
+    const destinationNode = findNodeByPath(fileTree.value, destinationDirectory)
+    if (destinationNode?.type === `directory`) {
+      await loadDirectoryChildren(destinationNode)
+    }
+    if (findNodeByPath(fileTree.value, toPath)) {
+      throw new Error(`目标里已经有同名的「${draftFileName(fromPath)}」`)
+    }
+    const jobs = await collectMoveJobs(fromPath, toPath)
+    for (const job of jobs) {
+      if (job.type === `directory`) {
+        await createDirectory(job.to, { reload: false })
+      }
+    }
+    for (const job of jobs) {
+      if (job.type === `file`) {
+        const content = await readFile(job.from)
+        await writeFile(job.to, content)
+        await removeMarkdownFile(job.from)
+      }
+    }
+    for (const job of [...jobs].reverse()) {
+      if (job.type === `directory`) {
+        await removeDirectory(job.from, { reload: false })
+      }
+    }
+    if (options?.reload !== false) {
+      await reloadCurrentFolder()
+    }
+    return toPath
+  }
+
+  function markdownNamesInDirectory(directoryPath: string) {
+    return getAllMarkdownFiles()
+      .filter(node => parentDraftDirectory(node.path) === directoryPath)
+      .map(node => node.name || draftFileName(node.path))
   }
 
   /**
@@ -472,6 +738,9 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
     selectedFilePath,
     isLoading,
     loadError,
+    createFolderDialogOpen,
+    pendingDeletePath,
+    pendingMovePath,
 
     // Computed
     isFileSystemAPISupported,
@@ -483,10 +752,18 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
     removeFolder,
     loadFileTree,
     reloadCurrentFolder,
+    restoreExpandedDirectories,
     loadDirectoryChildren,
     readFile,
     writeFile,
     createMarkdownFile,
+    createDirectory,
+    removeDirectory,
+    moveMarkdownFile,
+    moveEntry,
+    directoryHasMarkdown,
+    listMoveDirectories,
+    markdownNamesInDirectory,
     findNodeByPath,
     getAllMarkdownFiles,
   }

@@ -20,8 +20,10 @@ export interface Post {
   parentId?: string | null
   // 展开状态
   collapsed?: boolean
-  // 磁盘上的 Markdown 路径；没有就是还只在浏览器缓存里
+  // 磁盘上的 Markdown 路径；编辑器只导入，不再自动写回
   filePath?: string | null
+  // 从哪个文件夹文件导入的，只作来源，不写回
+  importedFrom?: string | null
   // 上次成功写盘时的正文哈希，用来发现外部改动
   syncedHash?: string | null
   // 属于哪个号；缺省或孤儿在打开时落回默认号

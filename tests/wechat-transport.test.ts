@@ -152,6 +152,9 @@ describe(`桌面传输：改走 IPC`, () => {
       readDirectory: async () => [],
       readFile: async () => ``,
       writeFile: async () => undefined,
+      ensureDirectory: async () => undefined,
+      deleteFile: async () => undefined,
+      deleteDirectory: async () => undefined,
     },
     wechat: {
       requestStableToken: (payload) => {

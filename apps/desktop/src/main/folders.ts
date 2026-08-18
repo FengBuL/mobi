@@ -77,23 +77,49 @@ export async function rememberFolder(folderPath: string): Promise<DesktopFolderR
   }
 }
 
-async function assertWritableMarkdownPath(candidate: string): Promise<string> {
+function assertUnderApprovedRoot(candidate: string): string {
   const resolved = path.resolve(candidate)
-  if (!resolved.toLowerCase().endsWith(`.md`)) {
-    throw new Error(`仅支持写入 Markdown 文件`)
-  }
-
-  const parentReal = await fs.realpath(path.dirname(resolved))
-  const approved = Array.from(approvedRoots).some(root => (
-    parentReal === root || parentReal.startsWith(`${root}${path.sep}`)
+  const approved = Array.from(approvedRoots).find(root => (
+    resolved === root || resolved.startsWith(`${root}${path.sep}`)
   ))
   if (!approved) {
     throw new Error(`该路径尚未获得用户授权`)
   }
-  return path.join(parentReal, path.basename(resolved))
+  return resolved
+}
+
+async function assertWritableMarkdownPath(candidate: string): Promise<string> {
+  const resolved = assertUnderApprovedRoot(candidate)
+  if (!resolved.toLowerCase().endsWith(`.md`)) {
+    throw new Error(`仅支持写入 Markdown 文件`)
+  }
+  await fs.mkdir(path.dirname(resolved), { recursive: true })
+  return resolved
 }
 
 export async function writeFolderFile(filePath: string, content: string): Promise<void> {
   const target = await assertWritableMarkdownPath(filePath)
   await fs.writeFile(target, content, `utf8`)
+}
+
+export async function ensureFolderDirectory(directoryPath: string): Promise<void> {
+  const resolved = assertUnderApprovedRoot(directoryPath)
+  await fs.mkdir(resolved, { recursive: true })
+}
+
+export async function deleteFolderFile(filePath: string): Promise<void> {
+  const resolved = await assertApprovedPath(filePath)
+  if (!resolved.toLowerCase().endsWith(`.md`)) {
+    throw new Error(`仅支持删除 Markdown 文件`)
+  }
+  await fs.unlink(resolved)
+}
+
+export async function deleteFolderDirectory(directoryPath: string): Promise<void> {
+  const resolved = assertUnderApprovedRoot(directoryPath)
+  const isRoot = Array.from(approvedRoots).includes(resolved)
+  if (isRoot) {
+    throw new Error(`不能删除已打开的根目录`)
+  }
+  await fs.rm(resolved, { recursive: true })
 }

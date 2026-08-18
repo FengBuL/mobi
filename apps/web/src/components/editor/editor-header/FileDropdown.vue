@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { Download, FileCode, FileText, FolderKanban, FolderOpen, Upload } from 'lucide-vue-next'
+import { Archive, Download, FileCode, FileText, FolderInput, FolderKanban, FolderOpen, FolderPlus, Trash2, Upload } from 'lucide-vue-next'
+import { useBrowserDraftExportReminder } from '@/composables/useBrowserDraftExportReminder'
+import { draftFileSyncKey } from '@/composables/useDraftFileSync'
 import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
+import { useFolderSourceStore } from '@/stores/folderSource'
 import { useUIStore } from '@/stores/ui'
+import { canDeleteDraftDirectory } from '@/utils/draft-folder'
 
 const props = withDefaults(defineProps<{
   asSub?: boolean
@@ -15,6 +19,14 @@ const { asSub } = toRefs(props)
 const editorStore = useEditorStore()
 const exportStore = useExportStore()
 const uiStore = useUIStore()
+const folderStore = useFolderSourceStore()
+const draftFileSync = inject(draftFileSyncKey)
+const { maybeRemind, markExported } = useBrowserDraftExportReminder()
+const { currentFolderHandle } = storeToRefs(folderStore)
+
+onMounted(() => {
+  maybeRemind()
+})
 
 const { isOpenPostSlider, isOpenFolderPanel } = storeToRefs(uiStore)
 const { toggleShowImportMdDialog } = uiStore
@@ -30,6 +42,7 @@ function exportEditorContent2PureHTML() {
 
 function exportEditorContent2MD() {
   exportStore.exportEditorContent2MD(editorStore.getContent())
+  markExported()
 }
 
 function downloadAsCardImage() {
@@ -38,6 +51,66 @@ function downloadAsCardImage() {
 
 function exportEditorContent2PDF() {
   exportStore.exportEditorContent2PDF()
+}
+
+function openFolderPanel() {
+  isOpenFolderPanel.value = true
+}
+
+function openFolder() {
+  isOpenFolderPanel.value = true
+}
+
+async function ensureFolderOpen() {
+  isOpenFolderPanel.value = true
+  if (currentFolderHandle.value) {
+    return true
+  }
+  await folderStore.selectFolder()
+  return Boolean(currentFolderHandle.value)
+}
+
+async function archiveDraft() {
+  if (!(await ensureFolderOpen()) || !draftFileSync) {
+    return
+  }
+  await draftFileSync.archiveCurrentPost()
+}
+
+async function createSubfolder() {
+  if (!(await ensureFolderOpen())) {
+    return
+  }
+  await nextTick()
+  folderStore.createFolderDialogOpen = true
+}
+
+async function deleteSelectedSubfolder() {
+  if (!(await ensureFolderOpen())) {
+    return
+  }
+  await nextTick()
+  const rootPath = folderStore.fileTree[0]?.path ?? ``
+  const selectedPath = folderStore.selectedFilePath
+  if (!selectedPath || !canDeleteDraftDirectory(rootPath, selectedPath)) {
+    toast.error(`先在左边点选要删的子文件夹`)
+    return
+  }
+  folderStore.pendingDeletePath = selectedPath
+}
+
+async function moveSelected() {
+  if (!(await ensureFolderOpen())) {
+    return
+  }
+  await nextTick()
+  const rootPath = folderStore.fileTree[0]?.path ?? ``
+  const selectedPath = folderStore.selectedFilePath
+  if (!selectedPath || selectedPath === rootPath) {
+    toast.error(`先在左边点选要移动的稿或子文件夹`)
+    return
+  }
+  folderStore.pendingMovePath = selectedPath
 }
 </script>
 
@@ -49,9 +122,29 @@ function exportEditorContent2PDF() {
     </MenubarSubTrigger>
     <MenubarSubContent class="w-56">
       <!-- 本地文件夹 -->
-      <MenubarItem @click="isOpenFolderPanel = !isOpenFolderPanel">
+      <MenubarItem @click="openFolder">
+        <FolderOpen class="mr-2 size-4" />
+        打开文件夹
+      </MenubarItem>
+      <MenubarItem @click="openFolderPanel">
         <FolderOpen class="mr-2 size-4" />
         本地文件夹
+      </MenubarItem>
+      <MenubarItem @click="createSubfolder">
+        <FolderPlus class="mr-2 size-4" />
+        新建子文件夹
+      </MenubarItem>
+      <MenubarItem @click="moveSelected">
+        <FolderInput class="mr-2 size-4" />
+        移动到…
+      </MenubarItem>
+      <MenubarItem @click="deleteSelectedSubfolder">
+        <Trash2 class="mr-2 size-4" />
+        删除子文件夹
+      </MenubarItem>
+      <MenubarItem @click="archiveDraft">
+        <Archive class="mr-2 size-4" />
+        归档这篇
       </MenubarItem>
 
       <MenubarSeparator />
@@ -111,9 +204,29 @@ function exportEditorContent2PDF() {
     </MenubarTrigger>
     <MenubarContent class="w-56" align="start">
       <!-- 本地文件夹 -->
-      <MenubarItem @click="isOpenFolderPanel = !isOpenFolderPanel">
+      <MenubarItem @click="openFolder">
+        <FolderOpen class="mr-2 size-4" />
+        打开文件夹
+      </MenubarItem>
+      <MenubarItem @click="openFolderPanel">
         <FolderOpen class="mr-2 size-4" />
         本地文件夹
+      </MenubarItem>
+      <MenubarItem @click="createSubfolder">
+        <FolderPlus class="mr-2 size-4" />
+        新建子文件夹
+      </MenubarItem>
+      <MenubarItem @click="moveSelected">
+        <FolderInput class="mr-2 size-4" />
+        移动到…
+      </MenubarItem>
+      <MenubarItem @click="deleteSelectedSubfolder">
+        <Trash2 class="mr-2 size-4" />
+        删除子文件夹
+      </MenubarItem>
+      <MenubarItem @click="archiveDraft">
+        <Archive class="mr-2 size-4" />
+        归档这篇
       </MenubarItem>
 
       <MenubarSeparator />

@@ -35,6 +35,9 @@ const bridge: DesktopBridge = {
     readDirectory: path => invoke(DESKTOP_IPC_CHANNELS.folderReadDirectory, path),
     readFile: path => invoke(DESKTOP_IPC_CHANNELS.folderReadFile, path),
     writeFile: (path, content) => invoke(DESKTOP_IPC_CHANNELS.folderWriteFile, { path, content }),
+    ensureDirectory: path => invoke(DESKTOP_IPC_CHANNELS.folderEnsureDirectory, path),
+    deleteFile: path => invoke(DESKTOP_IPC_CHANNELS.folderDeleteFile, path),
+    deleteDirectory: path => invoke(DESKTOP_IPC_CHANNELS.folderDeleteDirectory, path),
   },
   wechat: {
     requestStableToken: (payload: WechatStableTokenRequest) =>

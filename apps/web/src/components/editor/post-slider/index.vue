@@ -58,7 +58,6 @@ function addPost() {
   postStore.addPost(title, parentId.value)
   isOpenAddDialog.value = false
   toast.success(`内容新增成功`)
-  void draftFileSync?.ensurePostHasFile(postStore.currentPostId)
 }
 
 /* ============ 重命名 / 删除 / 历史 对象 ============ */

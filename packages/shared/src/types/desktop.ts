@@ -25,6 +25,9 @@ export const DESKTOP_IPC_CHANNELS = {
   folderReadDirectory: `mobi:folder:read-directory`,
   folderReadFile: `mobi:folder:read-file`,
   folderWriteFile: `mobi:folder:write-file`,
+  folderEnsureDirectory: `mobi:folder:ensure-directory`,
+  folderDeleteFile: `mobi:folder:delete-file`,
+  folderDeleteDirectory: `mobi:folder:delete-directory`,
 } as const
 
 export interface DesktopFolderRoot {
@@ -112,6 +115,9 @@ export interface DesktopBridge {
     readDirectory: (path: string) => Promise<DesktopFolderEntry[]>
     readFile: (path: string) => Promise<string>
     writeFile: (path: string, content: string) => Promise<void>
+    ensureDirectory: (path: string) => Promise<void>
+    deleteFile: (path: string) => Promise<void>
+    deleteDirectory: (path: string) => Promise<void>
   }
   readonly wechat: {
     requestStableToken: (payload: WechatStableTokenRequest) => Promise<WechatStableTokenResult>
