@@ -281,6 +281,8 @@ describe(`编辑工作流`, () => {
     expect(quickBar).toContain(`克制`)
     expect(quickBar).toContain(`中式`)
     expect(quickBar).toContain(`更多`)
+    expect(quickBar).toContain(`buildMoreThemeSamples`)
+    expect(quickBar).toContain(`theme-sample`)
     expect(quickBar).toContain(`themeChanged`)
     expect(quickBar).toContain(`applyCurrentTheme`)
     expect(quickBar).toContain(`全局样式`)

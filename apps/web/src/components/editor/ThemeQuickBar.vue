@@ -4,7 +4,6 @@ import {
   featuredThemeIds,
   featuredThemeOptions,
   getThemeDefaultPrimaryColor,
-  themeCategoryOptions,
 } from '@mobi/shared/configs'
 import { SlidersHorizontal } from 'lucide-vue-next'
 import {
@@ -23,6 +22,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useUIStore } from '@/stores/ui'
 import { trackEvent } from '@/utils/telemetry'
+import { buildMoreThemeSamples } from '@/utils/theme-sample'
 import { getThemeSwatch } from '@/utils/theme-swatch'
 import AccountProfileMenu from './AccountProfileMenu.vue'
 
@@ -46,14 +46,7 @@ const featuredCards = featuredThemeOptions.map(option => ({
 
 const isFeaturedTheme = computed(() => featuredIdSet.has(theme.value as ThemeName))
 
-const moreThemeCategories = computed(() => themeCategoryOptions
-  .map(category => ({
-    category: category.category,
-    themes: category.themes.filter(option =>
-      !featuredIdSet.has(option.value) && !hiddenThemes.value.includes(option.value),
-    ),
-  }))
-  .filter(category => category.themes.length > 0))
+const moreThemeSamples = computed(() => buildMoreThemeSamples(hiddenThemes.value))
 
 function editorRefresh() {
   themeStore.updateCodeTheme()
@@ -130,22 +123,25 @@ function openStylePanel() {
               <span class="theme-card__label">更多</span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" class="max-h-80 w-56 overflow-y-auto">
-            <template v-for="(category, index) in moreThemeCategories" :key="category.category">
+          <DropdownMenuContent align="start" class="theme-more-panel max-h-[28rem] w-[34rem] overflow-y-auto p-2">
+            <template v-for="(category, index) in moreThemeSamples" :key="category.category">
               <DropdownMenuSeparator v-if="index > 0" />
               <DropdownMenuGroup>
-                <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">
+                <DropdownMenuLabel class="px-1 pb-1 text-xs text-muted-foreground font-normal">
                   {{ category.category }}
                 </DropdownMenuLabel>
-                <DropdownMenuItem
-                  v-for="option in category.themes"
-                  :key="option.value"
-                  :data-theme-id="option.value"
-                  class="text-sm"
-                  @click="themeChanged(option.value)"
-                >
-                  {{ option.label }}
-                </DropdownMenuItem>
+                <div class="theme-more-grid">
+                  <DropdownMenuItem
+                    v-for="item in category.themes"
+                    :key="item.id"
+                    :data-theme-id="item.id"
+                    class="theme-sample h-auto flex-col items-stretch"
+                    @click="themeChanged(item.id)"
+                  >
+                    <span :id="item.scopeId" class="theme-sample__frame" v-html="item.markup" />
+                    <span class="theme-sample__label">{{ item.label }}</span>
+                  </DropdownMenuItem>
+                </div>
               </DropdownMenuGroup>
             </template>
           </DropdownMenuContent>
@@ -305,5 +301,49 @@ function openStylePanel() {
     outline: 2px solid hsl(var(--primary));
     outline-offset: 1px;
   }
+}
+
+.theme-more-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  padding: 0 0.15rem 0.35rem;
+}
+
+.theme-sample {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.28rem;
+  height: auto;
+  padding: 0.3rem;
+  cursor: pointer;
+}
+
+.theme-sample__frame {
+  display: block;
+  height: 7.2rem;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.35rem;
+  background: hsl(var(--background));
+  pointer-events: none;
+}
+
+.theme-sample__page {
+  display: block;
+  width: 238%;
+  transform: scale(0.42);
+  transform-origin: top left;
+}
+
+.theme-sample__label {
+  overflow: hidden;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: hsl(var(--muted-foreground));
 }
 </style>
