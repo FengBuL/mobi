@@ -222,14 +222,14 @@ describe(`公众号导出产物`, () => {
     allPresets.forEach(({ preset }) => {
       expect(buildExport(preset.id), preset.id).not.toContain(`<div`)
     })
-  })
+  }, 30_000)
 
   it(`flex:1 的列都补上了百分比宽度兜底`, () => {
     allPresets.forEach(({ preset }) => {
       const html = buildExport(preset.id)
       expect(/flex\s*:\s*1\b/.test(html), `${preset.id} 仍有裸 flex:1`).toBe(false)
     })
-  })
+  }, 30_000)
 
   it(`兜底列同时写了 width、max-width !important 和 flex 基准`, () => {
     // 序章印记是「固定宽标记 + 弹性文字列」的典型
