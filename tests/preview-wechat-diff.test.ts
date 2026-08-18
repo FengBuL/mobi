@@ -67,9 +67,11 @@ describe(`预览微信差异打标`, () => {
     expect(source).toContain(WECHAT_PREVIEW_DIFF_LABELS.crop)
     expect(source).toContain(WECHAT_PREVIEW_DIFF_LABELS.scroll)
     expect(source).toContain(WECHAT_PREVIEW_DIFF_LABELS.badge)
+    expect(source).toContain(WECHAT_PREVIEW_DIFF_LABELS.overlay)
     expect(source).toContain(WECHAT_PREVIEW_DIFF_ADVICE.crop)
     expect(source).toContain(WECHAT_PREVIEW_DIFF_ADVICE.scroll)
     expect(source).toContain(WECHAT_PREVIEW_DIFF_ADVICE.badge)
+    expect(source).toContain(WECHAT_PREVIEW_DIFF_ADVICE.overlay)
     expect(source).toContain(`改成整幅长图`)
     expect(source).toContain(`点这里换样子`)
     expect(source).toContain(`preview_block_pick_hint_seen`)
@@ -77,29 +79,35 @@ describe(`预览微信差异打标`, () => {
     expect(source).toContain(`applyWechatPreviewDiffHints`)
   })
 
-  it(`图文版式给裁切、长图、压图角标打 data 标记`, () => {
+  it(`图文版式给裁切、长图、压图角标、渐变标题条打 data 标记`, () => {
     const cropPreset = mediaLayoutPresets.find(item => item.id === `hero-image`)!
     const scrollPreset = mediaLayoutPresets.find(item => item.id === `scroll-window`)!
     const badgePreset = mediaLayoutPresets.find(item => item.id === `numbered-figure`)!
+    const overlayPreset = mediaLayoutPresets.find(item => item.id === `gradient-caption`)!
 
     const crop = buildMediaLayoutMarkup(cropPreset, stateWithImages(cropPreset.slotCount))
     const scroll = buildMediaLayoutMarkup(scrollPreset, stateWithImages(scrollPreset.slotCount))
     const badge = buildMediaLayoutMarkup(badgePreset, stateWithImages(badgePreset.slotCount))
+    const overlay = buildMediaLayoutMarkup(overlayPreset, stateWithImages(overlayPreset.slotCount))
 
     expect(crop).toContain(`${WECHAT_PREVIEW_DIFF_ATTR}="crop"`)
     expect(scroll).toContain(`${WECHAT_PREVIEW_DIFF_ATTR}="scroll"`)
     expect(badge).toContain(`${WECHAT_PREVIEW_DIFF_ATTR}="crop badge"`)
     expect(badge).toContain(`${WECHAT_PREVIEW_DIFF_ATTR}="badge"`)
+    expect(overlay).toContain(`${WECHAT_PREVIEW_DIFF_ATTR}="crop overlay"`)
+    expect(overlay).toContain(`md-media-x-gradient`)
   })
 
   it(`预览会插入三类角标，剥离函数会去掉 editor-only 标记`, () => {
     const cropPreset = mediaLayoutPresets.find(item => item.id === `hero-image`)!
     const scrollPreset = mediaLayoutPresets.find(item => item.id === `scroll-window`)!
     const badgePreset = mediaLayoutPresets.find(item => item.id === `numbered-figure`)!
+    const overlayPreset = mediaLayoutPresets.find(item => item.id === `gradient-caption`)!
     const html = [
       buildMediaLayoutMarkup(cropPreset, stateWithImages(cropPreset.slotCount)),
       buildMediaLayoutMarkup(scrollPreset, stateWithImages(scrollPreset.slotCount)),
       buildMediaLayoutMarkup(badgePreset, stateWithImages(badgePreset.slotCount)),
+      buildMediaLayoutMarkup(overlayPreset, stateWithImages(overlayPreset.slotCount)),
     ].join(`\n`)
 
     const root = installClipboardFixture(html)
@@ -108,8 +116,10 @@ describe(`预览微信差异打标`, () => {
     expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_LABELS.crop)
     expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_LABELS.scroll)
     expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_LABELS.badge)
+    expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_LABELS.overlay)
     expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_ADVICE.crop)
     expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_ADVICE.badge)
+    expect(root.innerHTML).toContain(WECHAT_PREVIEW_DIFF_ADVICE.overlay)
     expect(root.innerHTML).toContain(`改成整幅长图`)
     expect(root.querySelector(`[data-mobi-wechat-diff-action="${WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION}"]`)).toBeTruthy()
     expect(root.querySelectorAll(`.${WECHAT_PREVIEW_DIFF_HINT_CLASS}`).length).toBeGreaterThan(0)
@@ -122,16 +132,19 @@ describe(`预览微信差异打标`, () => {
     expect(root.innerHTML).not.toContain(WECHAT_PREVIEW_DIFF_LABELS.crop)
     expect(root.innerHTML).not.toContain(WECHAT_PREVIEW_DIFF_LABELS.scroll)
     expect(root.innerHTML).not.toContain(WECHAT_PREVIEW_DIFF_LABELS.badge)
+    expect(root.innerHTML).not.toContain(WECHAT_PREVIEW_DIFF_LABELS.overlay)
   })
 
   it(`复制产物不含 editor-only 角标，也不新增非法 CSS`, async () => {
     const cropPreset = mediaLayoutPresets.find(item => item.id === `hero-image`)!
     const scrollPreset = mediaLayoutPresets.find(item => item.id === `scroll-window`)!
     const badgePreset = mediaLayoutPresets.find(item => item.id === `numbered-figure`)!
+    const overlayPreset = mediaLayoutPresets.find(item => item.id === `gradient-caption`)!
     const html = [
       buildMediaLayoutMarkup(cropPreset, stateWithImages(cropPreset.slotCount)),
       buildMediaLayoutMarkup(scrollPreset, stateWithImages(scrollPreset.slotCount)),
       buildMediaLayoutMarkup(badgePreset, stateWithImages(badgePreset.slotCount)),
+      buildMediaLayoutMarkup(overlayPreset, stateWithImages(overlayPreset.slotCount)),
     ].join(`\n`)
 
     const root = installClipboardFixture(html)
@@ -144,6 +157,7 @@ describe(`预览微信差异打标`, () => {
     expect(root.innerHTML).not.toContain(WECHAT_PREVIEW_DIFF_LABELS.crop)
     expect(root.innerHTML).not.toContain(WECHAT_PREVIEW_DIFF_LABELS.scroll)
     expect(root.innerHTML).not.toContain(WECHAT_PREVIEW_DIFF_LABELS.badge)
+    expect(root.innerHTML).not.toContain(WECHAT_PREVIEW_DIFF_LABELS.overlay)
     expect(root.innerHTML).not.toContain(`preview-wechat-diff-hint`)
     expect(root.innerHTML).not.toContain(`.md-wechat-diff-hint`)
   })

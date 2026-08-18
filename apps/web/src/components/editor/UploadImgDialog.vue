@@ -1355,9 +1355,14 @@ function onTabScroll(e: WheelEvent) {
 
         <TabsContent value="formCustom" class="flex-1 flex flex-col overflow-hidden">
           <div class="space-y-3 p-1">
-            <p class="text-xs leading-5 text-amber-700 dark:text-amber-300">
-              {{ secretRiskHint }}自定义脚本默认关闭，确认后才会在本机执行。
-            </p>
+            <div class="rounded-xl border border-red-300 bg-red-50 px-3 py-2.5 text-xs leading-5 text-red-900 dark:border-red-800 dark:bg-red-950/50 dark:text-red-100">
+              <p class="font-semibold">
+                自定义脚本会在本机执行任意 JavaScript
+              </p>
+              <p class="mt-1">
+                确认后走 new Function，脚本能读到待上传的图、本机图床密钥和当前环境。不要粘别人给的脚本。默认关闭，只有你自己写的脚本才打开。{{ secretRiskHint }}
+              </p>
+            </div>
             <div class="flex items-center justify-between gap-4">
               <span class="text-sm">
                 我确认允许执行自定义上传脚本

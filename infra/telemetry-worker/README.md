@@ -36,7 +36,7 @@ export const TELEMETRY_ENDPOINT = `https://mobi-telemetry.<子域>.workers.dev`
 ```
 
 重新构建发版后生效。没填之前，客户端一个字节都不会发。
-用户随时可以在「关于墨笔」里关掉统计。
+匿名统计默认关闭。用户可在「设置」里打开。
 
 ## 看数据
 

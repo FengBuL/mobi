@@ -15,12 +15,14 @@ export const WECHAT_PREVIEW_DIFF_LABELS = {
   crop: `不会按比例裁，会按图片自身比例铺满`,
   scroll: `贴完会变成公众号长图`,
   badge: `角标会落到图下`,
+  overlay: `压图标题会落到图下`,
 } as const
 
 export const WECHAT_PREVIEW_DIFF_ADVICE = {
   crop: `贴进去会按原图比例铺满，不再是现在的宽屏裁。`,
   scroll: `后台可以上下滑看整幅，不再是预览里那个小视窗。`,
   badge: `贴进去后角标会落到图下，图还在。`,
+  overlay: `贴进去后标题条会落到图下，图还在。`,
 } as const
 
 export const WECHAT_PREVIEW_DIFF_HINT_ADVICE_CLASS = `md-wechat-diff-hint__advice`
@@ -61,6 +63,9 @@ export function resolveWechatPreviewDiffKinds(figure: HTMLElement): WechatPrevie
   }
   if (figure.querySelector(`.md-media-x-badge`)) {
     kinds.add(`badge`)
+  }
+  if (figure.querySelector(`.md-media-x-gradient`)) {
+    kinds.add(`overlay`)
   }
 
   return [...kinds]
@@ -727,6 +732,9 @@ function renderImageFigure(
   if (overlay.includes(`md-media-x-badge`)) {
     diffKinds.push(`badge`)
   }
+  if (overlay.includes(`md-media-x-gradient`)) {
+    diffKinds.push(`overlay`)
+  }
 
   return `
     <figure class="${className}"${style}>
@@ -916,7 +924,7 @@ function renderGradientOverlay(form: MediaLayoutFormState) {
   }
 
   return `
-    <span class="md-media-x-copy" style="position:absolute;z-index:2;left:0;right:0;bottom:0;display:block;padding:2.6rem 1rem 0.95rem;background-image:linear-gradient(to top, rgba(15,23,42,0.88), rgba(15,23,42,0.52) 46%, rgba(15,23,42,0));">
+    <span class="md-media-x-gradient md-media-x-copy" style="position:absolute;z-index:2;left:0;right:0;bottom:0;display:block;padding:2.6rem 1rem 0.95rem;background-image:linear-gradient(to top, rgba(15,23,42,0.88), rgba(15,23,42,0.52) 46%, rgba(15,23,42,0));">
       ${title}
       ${body}
     </span>

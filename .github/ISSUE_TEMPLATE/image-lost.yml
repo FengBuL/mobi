@@ -1,0 +1,62 @@
+name: 图丢了
+description: 预览有图，贴进公众号后台后图不见了，或插入失败。
+title: 图丢了
+labels: [image]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        微信不会可靠转存外链。Wikimedia 常插入失败；没配图床直接贴是合法路径。请写清图从哪来。
+  - type: dropdown
+    id: theme
+    attributes:
+      label: 主题名
+      options:
+        - 专栏
+        - 科技
+        - 教程
+        - 克制
+        - 中式
+        - 更多里的其他主题（请在描述里写名字）
+    validations:
+      required: true
+  - type: dropdown
+    id: image-host
+    attributes:
+      label: 是否配了图床
+      options:
+        - 没有配
+        - 配了公众号素材库
+        - 配了其他图床
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: 图的来源
+      options:
+        - 外链（写域名）
+        - 本机上传
+        - 已经是 mmbiz 地址
+        - 不清楚
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 丢了什么
+      description: 复制按钮旁有没有写「还有 N 张不是公众号地址」？后台是裂图、插入失败，还是整块没了？
+    validations:
+      required: true
+  - type: input
+    id: preview-shot
+    attributes:
+      label: 墨笔预览截图
+    validations:
+      required: true
+  - type: input
+    id: editor-shot
+    attributes:
+      label: 公众号后台截图
+    validations:
+      required: true

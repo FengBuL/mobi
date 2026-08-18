@@ -1,0 +1,55 @@
+name: 贴进去不一样
+description: 预览里看见的，和贴进公众号后台的不一样。
+title: 贴进去不一样
+labels: [paste]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        对照方法与发版六格相同：主题名、预览截图、后台截图、是否配了图床。不要只写「样式丢了」。
+  - type: dropdown
+    id: theme
+    attributes:
+      label: 主题名
+      description: 预览上方第一层五套，或「更多」里的名字。
+      options:
+        - 专栏
+        - 科技
+        - 教程
+        - 克制
+        - 中式
+        - 更多里的其他主题（请在描述里写名字）
+    validations:
+      required: true
+  - type: dropdown
+    id: image-host
+    attributes:
+      label: 是否配了图床
+      options:
+        - 没有配
+        - 配了公众号素材库
+        - 配了其他图床
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 哪里不一样
+      description: 写预览里是什么、后台变成了什么。长图展开、裁切失效、角标下落是已知差异，预览已打标则不必当新 bug。
+      placeholder: 例如：预览里引用是蓝条侧栏，后台塌成普通引用。
+    validations:
+      required: true
+  - type: input
+    id: preview-shot
+    attributes:
+      label: 墨笔预览截图
+      description: 把截图拖进评论，或先贴图床地址。必须能看见主题和出问题的那一块。
+    validations:
+      required: true
+  - type: input
+    id: editor-shot
+    attributes:
+      label: 公众号后台截图
+      description: 电脑后台编辑器，不要只交手机预览。
+    validations:
+      required: true

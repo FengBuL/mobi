@@ -5,6 +5,6 @@
  *
  * 部署 infra/telemetry-worker 之后，把 Worker 地址填在这里，例如：
  *   export const TELEMETRY_ENDPOINT = `https://mobi-telemetry.xxx.workers.dev`
- * 填上并发版后，统计才会真正生效；用户仍可在「关于墨笔」里一键关闭。
+ * 填上并发版后，统计仍默认关闭；用户可在「设置」里打开。
  */
 export const TELEMETRY_ENDPOINT = `https://mobi-telemetry.shovy-mobi.workers.dev`
