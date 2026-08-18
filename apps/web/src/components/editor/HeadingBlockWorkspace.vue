@@ -15,6 +15,7 @@ import {
   parseBlockEntries,
 } from '@/utils/blocks/registry'
 import { trackEvent } from '@/utils/telemetry'
+import { applyWechatPreviewTextureDowngradeToHtml } from '@/utils/wechat-preview'
 
 const props = withDefaults(defineProps<{
   categoryId?: string
@@ -42,7 +43,9 @@ const state = reactive<BlockState>({
 const editingRange = ref<{ from: number, to: number } | null>(null)
 
 const selectedPreset = computed(() => presets.value.find(preset => preset.id === selectedPresetId.value) ?? presets.value[0])
-const previewMarkup = computed(() => buildBlockMarkup(selectedPreset.value, state, true))
+const previewMarkup = computed(() => applyWechatPreviewTextureDowngradeToHtml(
+  buildBlockMarkup(selectedPreset.value, state, true),
+))
 const fontScale = computed({
   get: () => Number(state.fontScale ?? DEFAULT_BLOCK_FONT_SCALE),
   set: value => state.fontScale = value,
@@ -67,7 +70,9 @@ const thumbZoom = computed(() => {
 const thumbnails = computed(() => new Map(
   presets.value.map(preset => [
     preset.id,
-    buildBlockMarkup(preset, category.value.createDefaultState(preset), true),
+    applyWechatPreviewTextureDowngradeToHtml(
+      buildBlockMarkup(preset, category.value.createDefaultState(preset), true),
+    ),
   ]),
 ))
 const content = computed(() => postStore.currentPost?.content ?? editorStore.getContent())

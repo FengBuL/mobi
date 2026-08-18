@@ -81,3 +81,11 @@ export function applyWechatPreviewTextureDowngrade(root: HTMLElement) {
     element.style.setProperty(`background-image`, `none`, `important`)
   })
 }
+
+/** 板块库缩略图、检查器预览也走同一套降级，避免选择器里看见贴不进去的纹路。 */
+export function applyWechatPreviewTextureDowngradeToHtml(html: string) {
+  const root = document.createElement(`div`)
+  root.innerHTML = html
+  applyWechatPreviewTextureDowngrade(root)
+  return root.innerHTML
+}

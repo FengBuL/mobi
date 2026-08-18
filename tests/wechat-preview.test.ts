@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   applyWechatPreviewTextureDowngrade,
+  applyWechatPreviewTextureDowngradeToHtml,
   isWeChatUnpastableTexture,
   resolveWechatPreviewFrame,
 } from '@/utils/wechat-preview'
@@ -104,5 +105,21 @@ describe(`预览藏掉公众号保不住的纹路`, () => {
 
     expect(source).toContain(`applyWechatPreviewTextureDowngrade`)
     expect(source).toContain(`isWeChatUnpastableTexture`)
+  })
+
+  it(`板块库缩略图 HTML 同样藏掉 SVG 纸纹，单层渐变留下`, () => {
+    const html = applyWechatPreviewTextureDowngradeToHtml(
+      `<div class="paper" style="background-color:#f7f4ec;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2220%22 height=%2212%22%3E%3Ccircle cx=%220%22 cy=%226%22 r=%224%22 fill=%22%23d7b56d%22/%3E%3C/svg%3E')"></div>
+       <div class="wash" style="background-color:#3b2a5a;background-image:linear-gradient(135deg,#3b2a5a,#8f0011)"></div>`,
+    )
+
+    document.body.innerHTML = html
+    expect(getComputedStyle(document.querySelector(`.paper`)!).backgroundImage).toBe(`none`)
+    expect(getComputedStyle(document.querySelector(`.wash`)!).backgroundImage).toContain(`linear-gradient`)
+  })
+
+  it(`板块库与检查器预览走同一套缩略图降级`, () => {
+    const source = readSource(`apps/web/src/components/editor/HeadingBlockWorkspace.vue`)
+    expect(source).toContain(`applyWechatPreviewTextureDowngradeToHtml`)
   })
 })
