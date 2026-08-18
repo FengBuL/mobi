@@ -22,6 +22,8 @@ export interface AccountProfile {
   id: string
   name: string
   isDefault?: boolean
+  /** 这个号上次在看的稿；正文仍只存在稿列表里 */
+  lastPostId?: string | null
   config: AccountProfileConfig
 }
 
@@ -63,18 +65,21 @@ export function assignPostProfileId(currentProfileId: string) {
   return currentProfileId
 }
 
-/** 切到某个号时：已属于它的稿优先；没有就留在当前稿，不改稿的归属。 */
+/** 切到某个号时：只打开属于它的稿。优先上次在看的那篇，没有就新建，绝不能继续用另一号的稿。 */
 export function pickPostForProfile(
   posts: ProfilePostRef[],
   profileId: string,
   currentPostId?: string | null,
+  lastPostId?: string | null,
 ) {
+  if (lastPostId && posts.some(post => post.id === lastPostId && post.profileId === profileId)) {
+    return lastPostId
+  }
   const current = posts.find(post => post.id === currentPostId)
   if (current && current.profileId === profileId) {
     return current.id
   }
-  const owned = posts.find(post => post.profileId === profileId)
-  return owned?.id ?? currentPostId ?? undefined
+  return posts.find(post => post.profileId === profileId)?.id
 }
 
 /** 删掉正在看的号时，回到还属于默认号的稿，避免第二号的稿顶掉第一号。 */

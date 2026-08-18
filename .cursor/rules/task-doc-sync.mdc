@@ -1,0 +1,17 @@
+---
+description: 每完成一个任务必须立刻回写文档，未同步不得标完成
+alwaysApply: true
+---
+
+# 任务完成必须同步文档
+
+每张任务卡结束（成功、失败、阻塞、修 bug）必须立刻回写 Obsidian `notes/墨笔-更新版/`：
+
+- `CURRENT.md`：HEAD、未提交改动、当前状态、下一步
+- `DEVELOPMENT-LOG.md`：只追加，不改历史
+- `PROJECT.md`：第 9 / 10 节进度
+- `BASELINE.md`：完整 hash、工作区
+- 对应 `TASK-*.md`：做了什么、验证原文、人要验的
+- 产品形状变了还要改 `PRD.md`；对外可见还要改仓内 `CHANGELOG.md`
+
+代码改完不是完成。未同步文档，不得对用户说「完成」。

@@ -88,7 +88,7 @@ export const usePostStore = defineStore(`post`, () => {
   const currentPost = computed(() => getPostById(currentPostId.value))
 
   // 添加文章
-  const addPost = (title: string, parentId: string | null = null) => {
+  const addPost = (title: string, parentId: string | null = null, profileId?: string | null) => {
     const resolvedTitle = title.trim() || `未命名`
     const newPost: Post = {
       id: uuid(),
@@ -100,9 +100,11 @@ export const usePostStore = defineStore(`post`, () => {
       createDatetime: new Date(),
       updateDatetime: new Date(),
       parentId,
+      profileId: profileId || undefined,
     }
     posts.value.push(newPost)
     currentPostId.value = newPost.id
+    return newPost
   }
 
   // 重命名文章

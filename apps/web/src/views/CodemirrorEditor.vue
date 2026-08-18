@@ -1424,17 +1424,20 @@ function createFormTextArea(dom: HTMLDivElement) {
             blockSelectionStore.clear()
           }
           const value = update.state.doc.toString()
+          const editingPostId = currentPost.value?.id
           clearTimeout(changeTimer.value)
           changeTimer.value = setTimeout(() => {
             editorRefresh()
 
-            const currentPost = posts.value[currentPostIndex.value]
-            if (value === currentPost.content) {
+            const targetPost = editingPostId
+              ? posts.value.find(post => post.id === editingPostId)
+              : undefined
+            if (!targetPost || value === targetPost.content) {
               return
             }
 
-            currentPost.updateDatetime = new Date()
-            currentPost.content = value
+            targetPost.updateDatetime = new Date()
+            targetPost.content = value
           }, 300)
         }
 

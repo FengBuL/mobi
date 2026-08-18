@@ -200,18 +200,32 @@ describe(`我的号：重命名与删除`, () => {
     })).toBe(`draft-a`)
   })
 
-  it(`切号或新建号不抢走当前稿`, () => {
+  it(`切到没有自己稿的号时，不能继续用另一号的稿`, () => {
     expect(pickPostForProfile(
       [{ id: `draft-a`, profileId: DEFAULT_PROFILE_ID }],
       `profile-second`,
       `draft-a`,
-    )).toBe(`draft-a`)
+    )).toBeUndefined()
+  })
+
+  it(`切号只打开属于该号的稿，优先上次在看的那篇`, () => {
+    expect(pickPostForProfile(
+      [
+        { id: `draft-a`, profileId: DEFAULT_PROFILE_ID },
+        { id: `draft-b1`, profileId: `profile-second` },
+        { id: `draft-b2`, profileId: `profile-second` },
+      ],
+      `profile-second`,
+      `draft-a`,
+      `draft-b2`,
+    )).toBe(`draft-b2`)
     expect(pickPostForProfile(
       [
         { id: `draft-a`, profileId: DEFAULT_PROFILE_ID },
         { id: `draft-b`, profileId: `profile-second` },
       ],
       `profile-second`,
+      `draft-a`,
       `draft-a`,
     )).toBe(`draft-b`)
   })

@@ -66,6 +66,31 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
     }
   }
 
+  function rememberLastPost(profileId: string, postId?: string | null) {
+    if (!profileId || !postId) {
+      return
+    }
+    const index = profiles.value.findIndex(profile => profile.id === profileId)
+    if (index < 0 || profiles.value[index].lastPostId === postId) {
+      return
+    }
+    profiles.value[index] = {
+      ...profiles.value[index],
+      lastPostId: postId,
+    }
+  }
+
+  function flushCurrentEditor() {
+    if (!editorStore.editor) {
+      return
+    }
+    const live = editorStore.getContent()
+    const post = postStore.currentPost
+    if (post && live !== post.content) {
+      postStore.updatePostContent(post.id, live)
+    }
+  }
+
   function refreshPreview() {
     themeStore.updateCodeTheme()
     void themeStore.applyCurrentTheme()
@@ -117,15 +142,22 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
 
   function activateProfile(id: string) {
     persistCurrentConfig()
+    rememberLastPost(currentProfileId.value, postStore.currentPostId)
+    flushCurrentEditor()
     applyProfile(id)
     const nextPostId = pickPostForProfile(
       postStore.posts.map(post => ({ id: post.id, profileId: post.profileId })),
       id,
       postStore.currentPostId,
+      profiles.value.find(profile => profile.id === id)?.lastPostId,
     )
-    if (nextPostId && nextPostId !== postStore.currentPostId) {
+    if (!nextPostId) {
+      postStore.addPost(`未命名`, null, id)
+    }
+    else if (nextPostId !== postStore.currentPostId) {
       postStore.currentPostId = nextPostId
     }
+    rememberLastPost(id, postStore.currentPostId)
   }
 
   function hydrate() {
@@ -145,6 +177,19 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
     })
     ready = true
     applyProfile(currentProfileId.value)
+    const nextPostId = pickPostForProfile(
+      postStore.posts.map(post => ({ id: post.id, profileId: post.profileId })),
+      currentProfileId.value,
+      postStore.currentPostId,
+      profiles.value.find(profile => profile.id === currentProfileId.value)?.lastPostId,
+    )
+    if (!nextPostId) {
+      postStore.addPost(`未命名`, null, currentProfileId.value)
+    }
+    else if (nextPostId !== postStore.currentPostId) {
+      postStore.currentPostId = nextPostId
+    }
+    rememberLastPost(currentProfileId.value, postStore.currentPostId)
   }
 
   function switchProfile(id: string) {
@@ -237,6 +282,7 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
     if (resolved !== currentProfileId.value) {
       applyProfile(resolved)
     }
+    rememberLastPost(resolved, postId)
   })
 
   hydrate()
