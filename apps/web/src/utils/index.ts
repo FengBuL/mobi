@@ -1,6 +1,6 @@
 import type { MediaLayoutFormState, MediaLayoutImageSlot, MediaLayoutPreset } from '@/utils/image-layouts'
 import type { WeChatMediaPalette } from '@/utils/wechat-media'
-import { markedAlert, MDKatex } from '@mobi/core'
+import { markdownNeedsMathJax, markedAlert, MDKatex } from '@mobi/core'
 import { prefix } from '@mobi/shared/configs'
 // 直接导入供本文件内部使用
 import {
@@ -30,6 +30,7 @@ import { materializeWeChatDecorations } from '@/utils/wechat-compat'
 import { compactWeChatMarkup, renderWeChatRow, renderWeChatStack, renderWeChatVerticalScroller } from '@/utils/wechat-layout'
 import { buildExtendedWeChatMediaBody, defaultWeChatMediaPalette } from '@/utils/wechat-media'
 import { getMpUploadConfig, hasMpUploadConfig, uploadFileToMp } from './file'
+import { ensureMathJax } from './mathjax'
 import { store } from './storage'
 
 export {
@@ -132,6 +133,9 @@ export async function exportHTML(title: string = `untitled`) {
  * @returns string
  */
 export async function generatePureHTML(raw: string): Promise<string> {
+  if (markdownNeedsMathJax(raw)) {
+    await ensureMathJax().catch(() => undefined)
+  }
   const markedInstance = new Marked()
   markedInstance.use(markedAlert({ withoutStyle: true }))
   markedInstance.use(

@@ -1,5 +1,6 @@
-import { initRenderer } from '@mobi/core'
+import { initRenderer, markdownNeedsMathJax } from '@mobi/core'
 import { postProcessHtml, renderMarkdown } from '@/utils'
+import { ensureMathJax, isMathJaxReady } from '@/utils/mathjax'
 import { useThemeStore } from './theme'
 import { useUIStore } from './ui'
 
@@ -100,6 +101,14 @@ export const useRenderStore = defineStore(`render`, () => {
 
     // 提取标题
     extractTitles()
+
+    if (markdownNeedsMathJax(content) && !isMathJaxReady()) {
+      void ensureMathJax().then(() => {
+        render(content)
+      }).catch((error) => {
+        console.error(error)
+      })
+    }
 
     return output.value
   }

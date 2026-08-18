@@ -4,6 +4,22 @@ export interface MarkedKatexOptions {
   nonStandard?: boolean
 }
 
+interface MathJaxApi {
+  texReset?: () => void
+  tex2svg?: (tex: string, options?: { display?: boolean }) => { firstChild: SVGElement }
+}
+
+function getMathJax(): MathJaxApi | undefined {
+  if (typeof window === `undefined`) {
+    return undefined
+  }
+  return (window as Window & { MathJax?: MathJaxApi }).MathJax
+}
+
+export function markdownNeedsMathJax(source: string) {
+  return /\$\$[\s\S]+?\$\$|(?:^|[^\\$])\$[^$\n]+\$|\\\(|\\\[/m.test(source)
+}
+
 const inlineRule = /^(\${1,2})(?!\$)((?:\\.|[^\\\n])*?(?:\\.|[^\\\n$]))\1(?=[\s?!.,:？！。，：]|$)/
 const inlineRuleNonStandard = /^(\${1,2})(?!\$)((?:\\.|[^\\\n])*?(?:\\.|[^\\\n$]))\1/ // Non-standard, even if there are no spaces before and after $ or $$, try to parse
 
@@ -18,19 +34,24 @@ function createRenderer(defaultDisplay: boolean, withStyle: boolean = true) {
     const display = token.displayMode ?? defaultDisplay
 
     try {
-      // @ts-expect-error MathJax is a global variable
-      window.MathJax.texReset()
-      // @ts-expect-error MathJax is a global variable
-      const mjxContainer = window.MathJax.tex2svg(token.text, { display })
+      const mathJax = getMathJax()
+      if (!mathJax?.tex2svg) {
+        throw new Error(`MathJax is not ready`)
+      }
+
+      mathJax.texReset?.()
+      const mjxContainer = mathJax.tex2svg(token.text, { display })
       const svg = mjxContainer.firstChild
-      const width = svg.style[`min-width`] || svg.getAttribute(`width`)
+      const width = svg.style.getPropertyValue(`min-width`) || svg.getAttribute(`width`)
       svg.removeAttribute(`width`)
 
       if (withStyle) {
         svg.style.display = `initial`
         svg.style.setProperty(`max-width`, `300vw`, `important`)
         svg.style.flexShrink = `0`
-        svg.style.width = width
+        if (width) {
+          svg.style.width = width
+        }
       }
 
       if (!display) {

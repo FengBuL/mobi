@@ -1,4 +1,15 @@
 interface Window {
+  MathJax?: {
+    texReset?: () => void
+    tex2svg?: (tex: string, options?: { display?: boolean }) => { firstChild: SVGElement }
+    startup?: {
+      promise?: Promise<void>
+    }
+    tex?: { tags?: string }
+    svg?: { fontCache?: string }
+    loader?: { paths?: { fonts?: string } }
+  }
+
   __MP_Editor_JSAPI__: {
     invoke: (params: {
       apiName: string
