@@ -372,6 +372,7 @@ const activeName = ref(`mp`)
 const otherHostOptions = options.filter(item => item.value !== `default` && item.value !== `mp`)
 const isOtherHostTab = computed(() => activeName.value !== `mp`)
 const secretRiskHint = `AppSecret / Token 存在本机 localStorage，共用设备或扩展可能被读走。`
+const mpPrerequisiteHint = `这条路不是填完就能用。要同时有 AppID / AppSecret，并把这台电脑当前的公网 IP 加进公众号「API IP 白名单」。没加或宽带换了 IP，接口会报 40164，不是密钥填错。个人主体通常无法做企业微信认证；家用动态 IP 也会让白名单过期。配不了就不要填：直接复制，图仍是外链；或在公众号后台手工传图，再把 mmbiz 地址贴回来。`
 
 function openOtherHosts() {
   if (activeName.value === `mp`) {
@@ -1033,7 +1034,10 @@ function onTabScroll(e: WheelEvent) {
           <Form :validation-schema="mpSchema" :initial-values="mpConfig" class="flex flex-col flex-1 overflow-hidden" @submit="mpSubmit">
             <div class="flex-1 overflow-y-auto p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <p v-if="isDesktopApp" class="mb-3 text-xs leading-5 text-muted-foreground">
-                桌面版由本机直接转发微信接口，不用另开代理，填好 AppID 和 AppSecret 就能用。
+                桌面版由本机直接转发微信接口，不用另开代理。下面的资质仍要满足，不是填完密钥就能转存。
+              </p>
+              <p class="mb-3 text-xs leading-5 text-amber-800 dark:text-amber-200">
+                {{ mpPrerequisiteHint }}
               </p>
               <p class="mb-3 text-xs leading-5 text-amber-700 dark:text-amber-300">
                 {{ secretRiskHint }}
@@ -1100,6 +1104,15 @@ function onTabScroll(e: WheelEvent) {
                     target="_blank"
                   >
                     如何开启公众号开发者模式并获取应用账号密钥？
+                  </Button>
+                  <Button
+                    variant="link"
+                    class="p-0 h-auto text-left whitespace-normal"
+                    as="a"
+                    href="https://developers.weixin.qq.com/doc/oplatform/developers/basic_func/ip_whitelist.html"
+                    target="_blank"
+                  >
+                    官方说明：API IP 白名单与 40164
                   </Button>
                 </div>
               </FormItem>
