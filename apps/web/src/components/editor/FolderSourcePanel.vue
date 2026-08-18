@@ -8,14 +8,14 @@ import {
   PanelLeftClose,
   RefreshCw,
 } from 'lucide-vue-next'
+import { draftFileSyncKey } from '@/composables/useDraftFileSync'
 import { useFolderSourceStore } from '@/stores/folderSource'
-import { usePostStore } from '@/stores/post'
 import { useUIStore } from '@/stores/ui'
 import FolderTree from './FolderTree.vue'
 
 const folderSourceStore = useFolderSourceStore()
-const postStore = usePostStore()
 const uiStore = useUIStore()
+const draftFileSync = inject(draftFileSyncKey)
 
 const {
   currentFolderHandle,
@@ -80,19 +80,24 @@ function handleCollapsePanel() {
 
 async function handleOpenFile(node: any) {
   try {
-    const content = await folderSourceStore.readFile(node.path)
-    // 从文件名中提取标题（移除 .md 扩展名）
-    const title = node.name.replace(/\.md$/i, ``)
-
-    // 创建新文章并设置内容
-    postStore.addPost(title)
-    postStore.updatePostContent(postStore.currentPostId, content)
-
-    toast.success(`已导入副本: ${node.name}，编辑不会修改本地文件`)
+    if (!draftFileSync) {
+      toast.error(`还不能写回文件夹，请从编辑器里打开本地文件夹`)
+      return
+    }
+    await draftFileSync.openFileAsDraft(node)
+    folderSourceStore.selectedFilePath = node.path
   }
   catch (error) {
     console.error(`打开文件失败:`, error)
   }
+}
+
+async function handleExportAll() {
+  if (!draftFileSync) {
+    toast.error(`还不能写回文件夹`)
+    return
+  }
+  await draftFileSync.exportAllPostsToFolder()
 }
 </script>
 
@@ -129,6 +134,16 @@ async function handleOpenFile(node: any) {
           <Loader2 v-else class="h-3 w-3 mr-1 animate-spin" />
           打开文件夹
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          class="text-xs"
+          :disabled="!isFileSystemAPISupported"
+          title="把浏览器里的旧稿全部写成这个文件夹里的文件"
+          @click="handleExportAll"
+        >
+          全部写出
+        </Button>
 
         <Button
           v-if="currentFolderHandle"
@@ -152,10 +167,10 @@ async function handleOpenFile(node: any) {
       >
         <FolderClosed class="h-12 w-12 mb-2 opacity-50" />
         <p class="text-sm">
-          您的浏览器不支持本地文件夹访问
+          这个浏览器不能把稿子写成文件夹里的文件
         </p>
         <p class="text-xs mt-1">
-          请使用 Chrome、Edge 或 Opera 浏览器
+          稿子存在浏览器里，清缓存会丢，建议定期导出。请改用 Chrome / Edge，或用桌面版。
         </p>
       </div>
 
@@ -190,14 +205,22 @@ async function handleOpenFile(node: any) {
           未打开文件夹
         </p>
         <p class="text-xs mt-1">
-          点击上方按钮打开本地文件夹
+          打开后，每篇稿会写成这个文件夹里的 Markdown 文件
         </p>
       </div>
 
       <!-- 文件树 -->
       <div v-else class="file-tree-container">
-        <div class="text-xs text-muted-foreground mb-2 px-2">
-          {{ currentFolderHandle.name }}
+        <div class="text-xs text-muted-foreground mb-2 px-2 flex items-center justify-between gap-2">
+          <span class="truncate">{{ currentFolderHandle.name }}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            class="h-6 px-1.5 text-xs shrink-0"
+            @click="handleExportAll"
+          >
+            全部写出
+          </Button>
         </div>
         <FolderTree
           :nodes="fileTree"

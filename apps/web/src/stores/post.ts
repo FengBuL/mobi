@@ -20,6 +20,10 @@ export interface Post {
   parentId?: string | null
   // 展开状态
   collapsed?: boolean
+  // 磁盘上的 Markdown 路径；没有就是还只在浏览器缓存里
+  filePath?: string | null
+  // 上次成功写盘时的正文哈希，用来发现外部改动
+  syncedHash?: string | null
 }
 
 /**

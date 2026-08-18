@@ -146,6 +146,13 @@ describe(`桌面传输：改走 IPC`, () => {
     version: 1,
     platform: `darwin`,
     imageFetchOrigin: `mobi://app/__mp`,
+    folders: {
+      choose: async () => null,
+      remember: async () => null,
+      readDirectory: async () => [],
+      readFile: async () => ``,
+      writeFile: async () => undefined,
+    },
     wechat: {
       requestStableToken: (payload) => {
         calls.push({ channel: `stable-token`, payload })

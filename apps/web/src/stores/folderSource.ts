@@ -5,7 +5,9 @@ import {
   listSavedFolderHandles,
   saveFolderHandle,
 } from '@/services/folder/handleStore'
+import { addPrefix } from '@/utils'
 import { readFolderLevel } from '@/utils/folder-tree'
+import { store } from '@/utils/storage'
 
 /**
  * 文件系统节点接口
@@ -24,11 +26,12 @@ interface RuntimeFolderInfo {
 
 /**
  * 本地文件夹源 Store
- * 负责以只读方式管理本地文件夹、文件树和文档导入
+ * 负责读写用户指定的本地文件夹。稿件落成磁盘上的 Markdown 文件。
  */
 export const useFolderSourceStore = defineStore(`folderSource`, () => {
   // 内存中的运行时文件夹信息（不持久化）
   const runtimeFolderMap = new Map<string, RuntimeFolderInfo>()
+  const lastNativeFolderPath = store.reactive(addPrefix(`draft_folder_path`), ``)
 
   // 当前激活的文件夹 ID（不持久化）
   const currentFolderId = ref<string | null>(null)
@@ -75,7 +78,7 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
    */
   async function selectFolder() {
     if (!isFileSystemAPISupported.value) {
-      toast.error(`您的浏览器不支持 File System Access API`)
+      toast.error(`这个浏览器不能写本地文件夹。稿子还在浏览器里，清缓存会丢，建议定期导出。`)
       return
     }
 
@@ -98,13 +101,14 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
           nativePath: selected.path,
         })
         currentFolderId.value = folderId
+        lastNativeFolderPath.value = selected.path
         await loadNativeFileTree(selected.name, selected.path)
-        toast.success(`文件夹「${selected.name}」已打开`)
+        toast.success(`文件夹「${selected.name}」已打开，稿子会写进这里`)
         return
       }
 
       const handle = await window.showDirectoryPicker({
-        mode: `read`,
+        mode: `readwrite`,
         startIn: `documents`,
       })
 
@@ -142,7 +146,7 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
         lastOpenedAt: Date.now(),
       })
 
-      toast.success(`文件夹「${handle.name}」已打开`)
+      toast.success(`文件夹「${handle.name}」已打开，稿子会写进这里`)
     }
     catch (error: any) {
       if (error.name === `AbortError`) {
@@ -188,7 +192,27 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
    * 走到这一步就是无感的；浏览器里则是等用户自己再点一次「打开文件夹」。
    */
   async function restoreSavedFolders(): Promise<void> {
-    if (!isFileSystemAPISupported.value || currentFolderId.value || getDesktopBridge()?.folders) {
+    if (!isFileSystemAPISupported.value || currentFolderId.value) {
+      return
+    }
+
+    const desktopFolders = getDesktopBridge()?.folders
+    if (desktopFolders) {
+      if (!lastNativeFolderPath.value) {
+        return
+      }
+      const selected = await desktopFolders.remember(lastNativeFolderPath.value)
+      if (!selected) {
+        return
+      }
+      const folderId = generateFolderId()
+      runtimeFolderMap.set(folderId, {
+        id: folderId,
+        name: selected.name,
+        nativePath: selected.path,
+      })
+      currentFolderId.value = folderId
+      await loadNativeFileTree(selected.name, selected.path)
       return
     }
 
@@ -208,7 +232,7 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
 
     try {
       if (typeof mostRecent.handle.queryPermission === `function`) {
-        const permission = await mostRecent.handle.queryPermission({ mode: `read` })
+        const permission = await mostRecent.handle.queryPermission({ mode: `readwrite` })
         if (permission !== `granted`) {
           return
         }
@@ -333,6 +357,74 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
     }
   }
 
+  async function resolveFileHandle(filePath: string, create: boolean): Promise<FileSystemFileHandle> {
+    const root = currentRuntimeFolder.value?.handle
+    if (!root) {
+      throw new Error(`未选择文件夹`)
+    }
+    const parts = filePath.split(`/`).filter(Boolean)
+    const segments = parts[0] === root.name ? parts.slice(1) : parts
+    if (segments.length === 0) {
+      throw new Error(`无效的文件路径`)
+    }
+    let directory = root
+    for (const segment of segments.slice(0, -1)) {
+      directory = await directory.getDirectoryHandle(segment, { create })
+    }
+    return directory.getFileHandle(segments[segments.length - 1], { create })
+  }
+
+  function joinNativePath(fileName: string) {
+    const root = currentRuntimeFolder.value?.nativePath
+    if (!root) {
+      throw new Error(`未选择文件夹`)
+    }
+    return `${root.replace(/[/\\]$/u, ``)}/${fileName}`
+  }
+
+  /**
+   * 把正文写回已经打开的 Markdown 文件。
+   */
+  async function writeFile(filePath: string, content: string): Promise<void> {
+    if (!currentRuntimeFolder.value) {
+      throw new Error(`未选择文件夹`)
+    }
+
+    if (currentRuntimeFolder.value.nativePath) {
+      const folders = getDesktopBridge()?.folders
+      if (!folders) {
+        throw new Error(`桌面文件夹服务不可用`)
+      }
+      await folders.writeFile(filePath, content)
+      return
+    }
+
+    const fileHandle = await resolveFileHandle(filePath, true)
+    const writable = await fileHandle.createWritable()
+    await writable.write(content)
+    await writable.close()
+  }
+
+  /**
+   * 在当前文件夹根目录新建一稿。
+   */
+  async function createMarkdownFile(fileName: string, content: string): Promise<string> {
+    if (!currentRuntimeFolder.value) {
+      throw new Error(`未选择文件夹`)
+    }
+    if (currentRuntimeFolder.value.nativePath) {
+      const filePath = joinNativePath(fileName)
+      await writeFile(filePath, content)
+      await reloadCurrentFolder()
+      return filePath
+    }
+
+    const filePath = `${currentRuntimeFolder.value.name}/${fileName}`
+    await writeFile(filePath, content)
+    await reloadCurrentFolder()
+    return filePath
+  }
+
   /**
    * 在文件树中查找节点
    */
@@ -393,6 +485,8 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
     reloadCurrentFolder,
     loadDirectoryChildren,
     readFile,
+    writeFile,
+    createMarkdownFile,
     findNodeByPath,
     getAllMarkdownFiles,
   }

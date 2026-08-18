@@ -1,7 +1,7 @@
 import type { DesktopIpcResult } from '@mobi/shared/types/desktop'
 import { DESKTOP_IPC_CHANNELS } from '@mobi/shared/types/desktop'
 import { BrowserWindow, ipcMain } from 'electron'
-import { chooseFolder, readDirectory, readFolderFile } from './folders'
+import { chooseFolder, readDirectory, readFolderFile, rememberFolder, writeFolderFile } from './folders'
 import {
   describeTransferError,
   parseStableTokenRequest,
@@ -39,4 +39,12 @@ export function registerWechatIpc(): void {
 
   ipcMain.handle(DESKTOP_IPC_CHANNELS.folderReadFile, (_event, filePath: unknown) =>
     toResult(() => readFolderFile(String(filePath || ``))))
+
+  ipcMain.handle(DESKTOP_IPC_CHANNELS.folderRemember, (_event, folderPath: unknown) =>
+    toResult(() => rememberFolder(String(folderPath || ``))))
+
+  ipcMain.handle(DESKTOP_IPC_CHANNELS.folderWriteFile, (_event, payload: unknown) => {
+    const body = payload as { path?: string, content?: string } | null
+    return toResult(() => writeFolderFile(String(body?.path || ``), String(body?.content ?? ``)))
+  })
 }

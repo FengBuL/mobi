@@ -61,3 +61,39 @@ export async function readFolderFile(filePath: string): Promise<string> {
   }
   return fs.readFile(resolved, `utf8`)
 }
+
+export async function rememberFolder(folderPath: string): Promise<DesktopFolderRoot | null> {
+  try {
+    const resolved = await fs.realpath(path.resolve(folderPath))
+    const stat = await fs.stat(resolved)
+    if (!stat.isDirectory()) {
+      return null
+    }
+    approvedRoots.add(resolved)
+    return { name: path.basename(resolved), path: resolved }
+  }
+  catch {
+    return null
+  }
+}
+
+async function assertWritableMarkdownPath(candidate: string): Promise<string> {
+  const resolved = path.resolve(candidate)
+  if (!resolved.toLowerCase().endsWith(`.md`)) {
+    throw new Error(`仅支持写入 Markdown 文件`)
+  }
+
+  const parentReal = await fs.realpath(path.dirname(resolved))
+  const approved = Array.from(approvedRoots).some(root => (
+    parentReal === root || parentReal.startsWith(`${root}${path.sep}`)
+  ))
+  if (!approved) {
+    throw new Error(`该路径尚未获得用户授权`)
+  }
+  return path.join(parentReal, path.basename(resolved))
+}
+
+export async function writeFolderFile(filePath: string, content: string): Promise<void> {
+  const target = await assertWritableMarkdownPath(filePath)
+  await fs.writeFile(target, content, `utf8`)
+}

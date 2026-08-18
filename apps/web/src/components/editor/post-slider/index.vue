@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CheckSquare, ChevronsDownUp, ChevronsUpDown, Ellipsis, FileText, PanelLeftClose, Plus, Search, X } from 'lucide-vue-next'
+import { draftFileSyncKey } from '@/composables/useDraftFileSync'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useUIStore } from '@/stores/ui'
@@ -11,6 +12,7 @@ const { isMobile, isOpenPostSlider } = storeToRefs(uiStore)
 
 const postStore = usePostStore()
 const { posts } = storeToRefs(postStore)
+const draftFileSync = inject(draftFileSyncKey)
 
 const editorStore = useEditorStore()
 const { editor } = storeToRefs(editorStore)
@@ -56,6 +58,7 @@ function addPost() {
   postStore.addPost(title, parentId.value)
   isOpenAddDialog.value = false
   toast.success(`内容新增成功`)
+  void draftFileSync?.ensurePostHasFile(postStore.currentPostId)
 }
 
 /* ============ 重命名 / 删除 / 历史 对象 ============ */
@@ -508,6 +511,10 @@ function handleDragEnd() {
             <DropdownMenuItem @click="postStore.expandAllPosts">
               <ChevronsUpDown class="mr-2 size-4" />
               全部展开
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem @click="draftFileSync?.exportAllPostsToFolder()">
+              全部导出到文件夹
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -15,21 +15,28 @@ describe(`编辑工作流`, () => {
     expect(source).not.toContain(`更新到正文`)
   })
 
-  it(`本地文件夹只作为只读导入源`, () => {
+  it(`本地文件夹按授权目录读写，不再只做只读导入`, () => {
     const panel = readSource(`apps/web/src/components/editor/FolderSourcePanel.vue`)
     const store = readSource(`apps/web/src/stores/folderSource.ts`)
+    const sync = readSource(`apps/web/src/composables/useDraftFileSync.ts`)
 
-    expect(panel).not.toContain(`useFolderFileSync`)
-    expect(store).toContain("mode: `read`")
-    expect(store).not.toContain("handle.requestPermission({ mode: `read` })")
+    expect(panel).toContain(`draftFileSyncKey`)
+    expect(panel).toContain(`全部写出`)
+    expect(panel).toContain(`稿子存在浏览器里，清缓存会丢`)
+    expect(panel).not.toContain(`编辑不会修改本地文件`)
+    expect(panel).not.toContain(`同步`)
+    expect(store).toContain("mode: `readwrite`")
+    expect(store).toContain(`createWritable`)
+    expect(store).toContain(`writeFile,`)
     expect(store).toContain(`typeof mostRecent.handle.queryPermission`)
-    expect(store).not.toContain(`createWritable`)
-    expect(store).not.toContain(`writeFile,`)
     expect(store).toContain(`loadDirectoryChildren`)
-    expect(store).not.toContain(`await buildFileTree(entry as FileSystemDirectoryHandle`)
     expect(store).toContain(`void saveFolderHandle({`)
     expect(store).toContain(`getDesktopBridge()?.folders`)
     expect(store).toContain(`loadNativeFileTree`)
+    expect(sync).toContain(`exportAllPostsToFolder`)
+    expect(sync).toContain(`在外部被改过`)
+    expect(sync).toContain(`重新加载`)
+    expect(sync).not.toContain(`three-way`)
   })
 
   it(`插入动作位于内容工具栏，文件菜单不再单独放最近图片`, () => {

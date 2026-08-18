@@ -11,7 +11,7 @@
 export const DESKTOP_BRIDGE_KEY = `mobiDesktop`
 
 /** 契约有破坏性改动时 +1，渲染进程据此决定要不要信任挂进来的 bridge */
-export const DESKTOP_BRIDGE_VERSION = 2
+export const DESKTOP_BRIDGE_VERSION = 3
 
 export const DESKTOP_IPC_CHANNELS = {
   wechatStableToken: `mobi:wechat:stable-token`,
@@ -21,8 +21,10 @@ export const DESKTOP_IPC_CHANNELS = {
   updateInstall: `mobi:update:install`,
   updateState: `mobi:update:state`,
   folderChoose: `mobi:folder:choose`,
+  folderRemember: `mobi:folder:remember`,
   folderReadDirectory: `mobi:folder:read-directory`,
   folderReadFile: `mobi:folder:read-file`,
+  folderWriteFile: `mobi:folder:write-file`,
 } as const
 
 export interface DesktopFolderRoot {
@@ -106,8 +108,10 @@ export interface DesktopBridge {
   readonly imageFetchOrigin: string
   readonly folders: {
     choose: () => Promise<DesktopFolderRoot | null>
+    remember: (path: string) => Promise<DesktopFolderRoot | null>
     readDirectory: (path: string) => Promise<DesktopFolderEntry[]>
     readFile: (path: string) => Promise<string>
+    writeFile: (path: string, content: string) => Promise<void>
   }
   readonly wechat: {
     requestStableToken: (payload: WechatStableTokenRequest) => Promise<WechatStableTokenResult>

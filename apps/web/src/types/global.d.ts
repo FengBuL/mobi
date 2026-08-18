@@ -33,3 +33,11 @@ interface FileSystemDirectoryHandle {
   values: () => AsyncIterableIterator<FileSystemHandle>
   [Symbol.asyncIterator]: () => AsyncIterableIterator<FileSystemHandle>
 }
+
+interface FileSystemFileHandle {
+  getFile: () => Promise<File>
+  createWritable: () => Promise<{
+    write: (data: string) => Promise<void>
+    close: () => Promise<void>
+  }>
+}

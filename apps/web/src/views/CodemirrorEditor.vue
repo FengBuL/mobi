@@ -14,6 +14,7 @@ import {
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
 import { SearchTab } from '@/components/ui/search-tab'
+import { draftFileSyncKey, useDraftFileSync } from '@/composables/useDraftFileSync'
 import { useImageUploader } from '@/composables/useImageUploader'
 import { useBlockSelectionStore } from '@/stores/blockSelection'
 import { blockSelectionTransaction, useEditorStore } from '@/stores/editor'
@@ -46,6 +47,8 @@ const postStore = usePostStore()
 const renderStore = useRenderStore()
 const themeStore = useThemeStore()
 const uiStore = useUIStore()
+const draftFileSync = useDraftFileSync()
+provide(draftFileSyncKey, draftFileSync)
 const { selection: blockSelection } = storeToRefs(blockSelectionStore)
 const { upload } = useImageUploader()
 
