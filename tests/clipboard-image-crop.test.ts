@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   buildClipboardImageCacheKey,
+  describeSlicedImageFallback,
   planVerticalSlices,
   resolveCenterCrop,
   resolveClipboardImageUploadPlan,
+  resolveSlicedImageUrl,
 } from '@/utils/clipboard-image-crop'
 import { createDefaultMediaLayoutState } from '@/utils/image-layouts'
 import { buildExtendedWeChatMediaBody } from '@/utils/wechat-media'
@@ -60,5 +64,23 @@ describe(`公众号图片实体裁切`, () => {
     expect(planVerticalSlices(800, 1200, 1600)).toEqual([
       { sourceY: 0, sourceHeight: 1200, outputWidth: 800, outputHeight: 1200 },
     ])
+  })
+
+  it(`公众号 IP 白名单失败时切片落到本机图，并写出人话`, async () => {
+    const file = new File([`slice`], `slice.jpg`, { type: `image/jpeg` })
+    const result = await resolveSlicedImageUrl(file, {
+      toDataUrl: async () => `data:image/jpeg;base64,abc`,
+      uploadToMp: async () => {
+        throw new Error(`invalid ip 123.146.171.195 ipv6 ::ffff:123.146.171.195, not in whitelist rid: 6a845c22`)
+      },
+    })
+
+    expect(result.url).toBe(`data:image/jpeg;base64,abc`)
+    expect(result.fallback).toContain(`123.146.171.195`)
+    expect(result.fallback).toContain(`白名单`)
+    expect(result.fallback).not.toContain(`not in whitelist`)
+    expect(describeSlicedImageFallback(new Error(`40164 invalid ip`))).toContain(`40164`)
+    const editor = readFileSync(resolve(process.cwd(), `apps/web/src/views/CodemirrorEditor.vue`), `utf8`)
+    expect(editor).toContain(`resolveSlicedImageUrl`)
   })
 })

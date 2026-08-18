@@ -29,7 +29,7 @@ import {
   resolveMarkdownSourceAtPosition,
   resolveMarkdownSourceRange,
 } from '@/utils/blocks/source-selection'
-import { loadImageFileFromUrl, sliceImageFileVertically } from '@/utils/clipboard-image-crop'
+import { loadImageFileFromUrl, resolveSlicedImageUrl, sliceImageFileVertically } from '@/utils/clipboard-image-crop'
 import {
   embeddedContentProjectionTheme,
   embeddedContentVisibility,
@@ -827,20 +827,6 @@ function expandSelectedScrollWindow(button: HTMLElement) {
   toast.success(`已改成整幅长图`)
 }
 
-async function publishSlicedImage(file: File) {
-  if (await hasMpUploadConfig()) {
-    return uploadFileToMp(file)
-  }
-
-  try {
-    const content = await toBase64(file)
-    return await fileUpload(content, file)
-  }
-  catch {
-    return toBase64(file)
-  }
-}
-
 async function sliceSelectedScrollWindow(button: HTMLElement) {
   const mediaBlock = button.closest<HTMLElement>(`.md-media-block`)
   const blocks = [...(previewRef.value?.querySelectorAll<HTMLElement>(`.md-media-block`) ?? [])]
@@ -866,9 +852,17 @@ async function sliceSelectedScrollWindow(button: HTMLElement) {
       return
     }
 
+    const canUploadToMp = Boolean(mpConfig?.appID && mpConfig?.appsecret)
     const urls: string[] = []
+    let fallbackHint = ``
     for (const slice of slices) {
-      urls.push(await publishSlicedImage(slice.file))
+      const published = await resolveSlicedImageUrl(slice.file, {
+        toDataUrl: file => toBase64(file),
+        uploadToMp: canUploadToMp ? file => uploadFileToMp(file) : undefined,
+        uploadToHost: canUploadToMp ? undefined : (content, file) => fileUpload(content, file),
+      })
+      urls.push(published.url)
+      fallbackHint ||= published.fallback || ``
     }
 
     const next = replaceScrollWindowWithSlicedImages(editorStore.getContent(), index, urls)
@@ -883,6 +877,9 @@ async function sliceSelectedScrollWindow(button: HTMLElement) {
     }
     renderStore.render(next)
     toast.success(`已切成 ${urls.length} 张`)
+    if (fallbackHint) {
+      toast.warning(fallbackHint)
+    }
   }
   catch (error) {
     toast.error(error instanceof Error ? error.message : `切片失败`)

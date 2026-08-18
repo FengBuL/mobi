@@ -234,3 +234,54 @@ export async function sliceImageFileVertically(file: File, sliceHeight = 1600) {
     bitmap.close()
   }
 }
+
+export function isWechatIpWhitelistError(message: string) {
+  return /40164|not in whitelist|invalid ip/iu.test(message)
+}
+
+export function describeSlicedImageFallback(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || ``)
+  if (isWechatIpWhitelistError(message)) {
+    const ip = message.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/u)?.[0]
+    return ip
+      ? `公众号图床当前 IP ${ip} 不在白名单，切片已留在稿里。把这个 IP 加进 API IP 白名单后再转存，不是密钥填错。`
+      : `公众号图床当前 IP 不在白名单（40164），切片已留在稿里。不是密钥填错。`
+  }
+  return `图床上传没成功，切片已留在稿里。`
+}
+
+export async function resolveSlicedImageUrl(
+  file: File,
+  options: {
+    toDataUrl: (file: File) => Promise<string>
+    uploadToMp?: (file: File) => Promise<string>
+    uploadToHost?: (dataUrl: string, file: File) => Promise<string>
+  },
+) {
+  if (options.uploadToMp) {
+    try {
+      return { url: await options.uploadToMp(file) }
+    }
+    catch (error) {
+      return {
+        url: await options.toDataUrl(file),
+        fallback: describeSlicedImageFallback(error),
+      }
+    }
+  }
+
+  const dataUrl = await options.toDataUrl(file)
+  if (!options.uploadToHost) {
+    return { url: dataUrl }
+  }
+
+  try {
+    return { url: await options.uploadToHost(dataUrl, file) }
+  }
+  catch (error) {
+    return {
+      url: dataUrl,
+      fallback: describeSlicedImageFallback(error),
+    }
+  }
+}
