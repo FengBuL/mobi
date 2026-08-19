@@ -44,6 +44,7 @@
 - 微信不会可靠地把外链转成 mmbiz。Wikimedia 常插入失败；Unsplash / picsum / httpbin / 本机图后台有时还在
 - `scroll-window` 复制产物仍带 `overflow` / `transform`，粘贴安全脚本会标红，对应已知长图降级
 - 中式 / 科技第一眼卖相会弱一些：预览不再画贴不进的纹路
+- 桌面安装包只出 macOS 和 Windows。Linux 请用网页版
 
 ## [2.2.4] - 2026-08-15
 

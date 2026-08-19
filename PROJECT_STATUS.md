@@ -35,7 +35,7 @@ patches                     pnpm 依赖补丁
 - Vitest：以当前完整测试输出为准；
 - TypeScript：网页端和桌面端类型检查；
 - ESLint：0 error，存在既有 warning；
-- CI：macOS、Windows、Linux 桌面构建；
+- CI：macOS、Windows 桌面构建；Linux 请用网页版；
 - v2.2.0：桌面应用内选择性更新、`api.mobieditor.cn` 官方代理默认值、公众号图片比例实体化与移动端预览尺寸校准；
 - v2.2.1：修复桌面主进程加载 `electron-updater` 时因 CommonJS 默认导入互操作错误导致的启动闪退；
 - v2.1.8 公开 Release：macOS、Windows、Linux 四个平台资产。

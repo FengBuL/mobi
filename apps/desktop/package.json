@@ -16,7 +16,6 @@
     "package": "pnpm run build && electron-builder --publish never",
     "package:mac": "pnpm run build && electron-builder --mac --publish never",
     "package:win": "pnpm run build && electron-builder --win --publish never",
-    "package:linux": "pnpm run build && electron-builder --linux --publish never",
     "start": "electron .",
     "type-check": "tsc --noEmit"
   },

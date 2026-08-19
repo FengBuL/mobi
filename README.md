@@ -23,7 +23,8 @@
 | macOS（Apple 芯片） | `mobi-*-arm64.dmg` |
 | macOS（Intel） | `mobi-*-x64.dmg` |
 | Windows | `mobi-*-x64.exe` |
-| Linux | `mobi-*-x64.AppImage` |
+
+桌面安装包只出 macOS 和 Windows。Linux 请用网页版。
 
 安装包没有花钱买证书做公证，所以第一次打开系统会拦一下，之后就不再提示：
 
@@ -134,8 +135,8 @@ v2.2.0 开始使用公开仓库 `FengBuL/mobi` 的 GitHub Release 执行应用�
 
 网页版：`pnpm deploy:web`，本地构建后把纯产物推到公开仓库的 `gh-pages` 分支。
 
-桌面版：打 `v*` 开头的 tag，本仓库的 CI 在三个平台各构建一次，汇总成一个草稿 Release；
+桌面版：打 `v*` 开头的 tag，本仓库的 CI 在 macOS、Windows 各构建一次，汇总成一个草稿 Release；
 下载这些安装包后在公开仓库发正式 Release（`gh release create vX.Y.Z --repo FengBuL/mobi 安装包...`）。
-打包只能在目标系统上做，本机 `pnpm package:desktop` 只出当前系统的包。
+打包只能在目标系统上做，本机 `pnpm package:desktop` 只出当前系统的包。桌面安装包不出 Linux，Linux 请用网页版。
 
 应用内更新还要求公开 Release 包含 `latest*.yml`、macOS ZIP 和对应的 blockmap。macOS 正式启用自动安装前需要 Developer ID 签名与公证，Windows 建议配置代码签名。
