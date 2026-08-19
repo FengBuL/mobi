@@ -13,7 +13,8 @@
 | macOS（Apple 芯片） | `mobi-*-arm64.dmg` |
 | macOS（Intel） | `mobi-*-x64.dmg` |
 | Windows | `mobi-*-x64.exe` |
-| Linux | `mobi-*-x86_64.AppImage` |
+
+桌面安装包只出 macOS 和 Windows。Linux 请用网页版。
 
 安装包没有花钱买证书做公证，所以第一次打开系统会拦一下，之后就不再提示：
 
