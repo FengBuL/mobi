@@ -69,15 +69,19 @@ export function buildThemeSampleCss(name: ThemeName) {
   ].join(`\n`)
 }
 
-export function buildMoreThemeSamples(hiddenThemes: readonly string[] = []) {
+export function buildMoreThemeSamples(
+  hiddenThemes: readonly string[] = [],
+  excludeIds: readonly string[] = [],
+) {
   const html = getThemeSampleHtml()
   const hidden = new Set(hiddenThemes)
+  const excluded = new Set(excludeIds)
 
   return themeCategoryOptions
     .map(category => ({
       category: category.category,
       themes: category.themes
-        .filter(option => !featuredIdSet.has(option.value) && !hidden.has(option.value))
+        .filter(option => !featuredIdSet.has(option.value) && !hidden.has(option.value) && !excluded.has(option.value))
         .map((option) => {
           const css = buildThemeSampleCss(option.value)
           return {

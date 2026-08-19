@@ -34,6 +34,9 @@ describe(`主题成稿小样`, () => {
     expect(ids).toHaveLength(18)
     expect(ids).not.toEqual(expect.arrayContaining([...featuredThemeIds]))
     expect(ids).toContain(`magazine`)
+    expect(buildMoreThemeSamples([], [`magazine`]).flatMap(group => group.themes.map(theme => theme.id)))
+      .not
+      .toContain(`magazine`)
     expect(groups[0].themes[0].scopeId).toBe(themeSampleScopeId(groups[0].themes[0].id))
     expect(groups[0].themes[0].css).toContain(`#${groups[0].themes[0].scopeId}`)
     expect(groups[0].themes[0].html).toContain(`写完的稿`)

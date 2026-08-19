@@ -38,6 +38,15 @@ describe(`板块库点选`, () => {
     expect(source).toContain(`插入新板块`)
   })
 
+  it(`图片组件库用界面字体，不跟正文主题字体`, () => {
+    const source = readSource(`apps/web/src/components/editor/ImageLayoutWorkspace.vue`)
+
+    expect(source).toContain(`class="media-layout-workspace"`)
+    expect(source).toContain(`<div class="media-layout-section">`)
+    expect(source).not.toContain(`<section class="media-layout-section">`)
+    expect(source).toContain(`font-family: inherit`)
+  })
+
   it(`已套预设的块显示单独处理说明`, () => {
     const workspace = readSource(`apps/web/src/components/editor/HeadingBlockWorkspace.vue`)
 

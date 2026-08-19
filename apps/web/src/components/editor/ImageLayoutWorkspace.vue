@@ -1143,7 +1143,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
         </div>
 
         <div class="media-layout-workspace__body">
-          <section class="media-layout-section">
+          <div class="media-layout-section">
             <div class="media-layout-section__header">
               <div>
                 <h3>1. 这一组放几张图</h3>
@@ -1269,9 +1269,9 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
             <div v-else class="media-layout-empty">
               当前筛选下没有匹配模板。换一个表达方式或视觉风格即可。
             </div>
-          </section>
+          </div>
 
-          <section class="media-layout-section">
+          <div class="media-layout-section">
             <div class="media-layout-section__header">
               <div>
                 <h3>2. 确认图片</h3>
@@ -1464,9 +1464,9 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
                 </Button>
               </div>
             </div>
-          </section>
+          </div>
 
-          <section v-if="shouldShowTextStage" class="media-layout-section">
+          <div v-if="shouldShowTextStage" class="media-layout-section">
             <div class="media-layout-section__header">
               <div>
                 <h3>3. 文字微调</h3>
@@ -1554,9 +1554,9 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
             <div v-else class="media-layout-empty">
               默认不补文案，直接写入正文即可。只有需要标题、摘要或说明时，再展开这一栏。
             </div>
-          </section>
+          </div>
 
-          <section v-if="detectedLayoutBlocks.length" class="media-layout-section">
+          <div v-if="detectedLayoutBlocks.length" class="media-layout-section">
             <div class="media-layout-section__header">
               <div>
                 <h3>4. 已生成模块</h3>
@@ -1610,7 +1610,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
                 </div>
               </div>
             </div>
-          </section>
+          </div>
         </div>
       </div>
 
@@ -1633,6 +1633,9 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   border-radius: 28px;
   background: hsl(var(--background));
   box-shadow: 0 22px 70px hsl(var(--foreground) / 0.07);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .block-library-shell__header {
@@ -1731,6 +1734,9 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   height: auto;
   flex-direction: column;
   overflow: hidden;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
   border: 1px solid hsl(var(--border) / 0.82);
   border-radius: 28px;
   background:
@@ -1844,6 +1850,10 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
   border-radius: 24px;
   background: hsl(var(--background) / 0.88);
   padding: 1rem;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
 }
 
 /* 栏窄时按钮不肯让位，标题会被压到一个字宽然后竖排，所以允许换行 */
@@ -1858,6 +1868,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
 
 .media-layout-section__header h3 {
   margin: 0;
+  font-family: inherit;
   font-size: 0.96rem;
   font-weight: 700;
   white-space: nowrap;
@@ -2012,6 +2023,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
 
 .media-layout-preset__title {
   overflow: hidden;
+  font-family: inherit;
   font-size: 0.76rem;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -2020,6 +2032,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
 }
 
 .media-layout-preset__meta {
+  font-family: inherit;
   font-size: 0.66rem;
   color: hsl(var(--muted-foreground));
 }

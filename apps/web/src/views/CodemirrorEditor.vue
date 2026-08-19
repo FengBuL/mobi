@@ -1106,18 +1106,11 @@ function handlePreviewContentClick(event: MouseEvent) {
     uiStore.dismissPreviewBlockPickHint()
   }
 
-  const styleTarget = resolveStyleTarget(target)
-  if (styleTarget) {
-    uiStore.focusStyleGroup(styleTarget.panel, styleTarget.groupId, styleTarget.headingLevel)
-  }
-
   const existingBlock = target.closest<HTMLElement>(`section.md-block`)
   const nativeBlock = target.closest<HTMLElement>(`[data-src-kind][data-src-ordinal]`)
-  const nextSelection = existingBlock
-    ? createExistingBlockSelection(existingBlock)
-    : nativeBlock
-      ? createNativeBlockSelection(nativeBlock)
-      : null
+  const nextSelection = (existingBlock && createExistingBlockSelection(existingBlock))
+    || (nativeBlock && createNativeBlockSelection(nativeBlock))
+    || null
 
   if (nextSelection) {
     const existingBlockIndex = existingBlock
@@ -1125,14 +1118,12 @@ function handlePreviewContentClick(event: MouseEvent) {
       : -1
     const nativeSourceKind = nativeBlock?.dataset.srcKind
     const nativeSourceOrdinal = Number(nativeBlock?.dataset.srcOrdinal)
-    if (isSameBlockSelection(blockSelection.value, nextSelection)) {
-      blockSelectionStore.clear()
-    }
-    else {
+    // 再点同一块是继续换样子，不要取消选中：取消之后检查器被卸掉，下一次点击就像失灵。
+    if (!isSameBlockSelection(blockSelection.value, nextSelection)) {
       blockSelectionStore.select(nextSelection)
-      // 再点一次是取消选中，那时候不该再把面板叫出来
-      uiStore.focusBlockLibrary()
     }
+    uiStore.focusBlockLibrary()
+    uiStore.openBlockInspector()
     flashEditorRange(nextSelection.from, nextSelection.to)
     focusEditorAtPos(nextSelection.from)
     nextTick(() => {
@@ -1159,9 +1150,16 @@ function handlePreviewContentClick(event: MouseEvent) {
     const blocks = [...(previewRef.value?.querySelectorAll<HTMLElement>(`.md-media-block`) ?? [])]
     const index = blocks.indexOf(mediaBlock)
     uiStore.focusBlockLibrary(`image`, index >= 0 ? index : undefined)
+    return
   }
-  else if (target.closest(`img, figure`)) {
+  if (target.closest(`img, figure`)) {
     uiStore.focusBlockLibrary(`image`)
+    return
+  }
+
+  const styleTarget = resolveStyleTarget(target)
+  if (styleTarget) {
+    uiStore.focusStyleGroup(styleTarget.panel, styleTarget.groupId, styleTarget.headingLevel)
   }
 
   const sourceElement = target.closest<HTMLElement>(`[data-src-kind][data-src-ordinal]`)

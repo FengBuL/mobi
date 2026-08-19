@@ -442,6 +442,9 @@ function writeBlock(preset: BlockPreset, message?: string) {
 .heading-block-workspace {
   display: grid;
   gap: 1rem;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .heading-block-section {
@@ -449,6 +452,10 @@ function writeBlock(preset: BlockPreset, message?: string) {
   border: 1px solid hsl(var(--border) / 0.78);
   border-radius: 24px;
   background: hsl(var(--background) / 0.9);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
 }
 
 .heading-block-inspector {

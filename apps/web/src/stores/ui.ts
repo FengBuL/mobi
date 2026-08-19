@@ -251,11 +251,7 @@ export const useUIStore = defineStore(`ui`, () => {
       return
     }
 
-    // 简洁模式下侧边只有一个抽屉位，样式面板开着就说明用户在调样式，别抢
-    if (isSimpleWorkspace.value && isOpenRightSlider.value) {
-      return
-    }
-
+    // 点预览换样子优先于样式抽屉。简洁模式共用一个抽屉位，这里打开板块库会把样式关掉。
     isOpenBlockWorkspace.value = true
 
     if (category) {

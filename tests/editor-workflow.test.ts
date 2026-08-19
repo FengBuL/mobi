@@ -163,6 +163,28 @@ describe(`编辑工作流`, () => {
     expect(styles).toContain(`mode="inspector"`)
     expect(uiStore).toContain(`function openBlockInspector()`)
     expect(uiStore).toContain(`isOpenRightSlider.value = true`)
+    expect(uiStore).not.toContain(`isSimpleWorkspace.value && isOpenRightSlider.value`)
+    expect(styles).toContain(`activeInspectorPanel.value = \`component\``)
+    expect(styles).toContain(`.block-inspector-slot`)
+    expect(workspace).toContain(`font-family: inherit`)
+    expect(readSource(`packages/shared/src/configs/theme-css/base.css`)).toContain(`#output section`)
+    expect(readSource(`packages/shared/src/configs/theme-css/base.css`)).not.toMatch(/^section,\s*$/m)
+  })
+
+  it(`点预览组件保持选中并打开检查器，不抢到全局样式`, () => {
+    const editor = readSource(`apps/web/src/views/CodemirrorEditor.vue`)
+
+    expect(editor).toContain(`uiStore.openBlockInspector()`)
+    expect(editor).toContain(`不要取消选中`)
+    expect(editor).toContain(`const styleTarget = resolveStyleTarget(target)`)
+    expect(editor.indexOf(`uiStore.openBlockInspector()`)).toBeLessThan(editor.indexOf(`const styleTarget = resolveStyleTarget(target)`))
+  })
+
+  it(`打开封面是为编辑而生`, () => {
+    const splash = readSource(`apps/web/index.html`)
+
+    expect(splash).toContain(`为编辑而生`)
+    expect(splash).not.toContain(`<p class="app-splash__tagline">写完就能贴进公众号</p>`)
   })
 
   it(`全局字体和主题色使用紧凑控件释放组件编辑空间`, () => {
@@ -290,6 +312,8 @@ describe(`编辑工作流`, () => {
     expect(quickBar).toContain(`applyCurrentTheme`)
     expect(quickBar).toContain(`全局样式`)
     expect(quickBar).toContain("focusStyleGroup(`text`, `base`)")
+    expect(quickBar).toContain(`countVisibleThemeCards`)
+    expect(quickBar).toContain(`visibleCards`)
     expect(quickBar).not.toContain(`<StyleQuickControls`)
   })
 

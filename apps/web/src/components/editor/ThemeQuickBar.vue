@@ -4,6 +4,7 @@ import {
   featuredThemeIds,
   featuredThemeOptions,
   getThemeDefaultPrimaryColor,
+  themeOptions,
 } from '@mobi/shared/configs'
 import { SlidersHorizontal } from 'lucide-vue-next'
 import {
@@ -22,6 +23,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useThemeDesignerStore } from '@/stores/themeDesigner'
 import { useUIStore } from '@/stores/ui'
 import { trackEvent } from '@/utils/telemetry'
+import { countVisibleThemeCards, FEATURED_THEME_COUNT } from '@/utils/theme-quick-bar'
 import { buildMoreThemeSamples } from '@/utils/theme-sample'
 import { getThemeSwatch } from '@/utils/theme-swatch'
 import AccountProfileMenu from './AccountProfileMenu.vue'
@@ -37,6 +39,8 @@ const { showSwitcher } = storeToRefs(profileStore)
 const { theme, hiddenThemes } = storeToRefs(themeStore)
 
 const featuredIdSet = new Set<ThemeName>(featuredThemeIds)
+const trackRef = ref<HTMLElement | null>(null)
+const { width: trackWidth } = useElementSize(trackRef)
 
 /** 第一层对外名：专栏、科技、教程、克制、中式 */
 const featuredCards = featuredThemeOptions.map(option => ({
@@ -44,9 +48,32 @@ const featuredCards = featuredThemeOptions.map(option => ({
   swatch: getThemeSwatch(option.value),
 }))
 
-const isFeaturedTheme = computed(() => featuredIdSet.has(theme.value as ThemeName))
+const overflowCandidates = computed(() => themeOptions
+  .filter(option => !featuredIdSet.has(option.value) && !hiddenThemes.value.includes(option.value))
+  .map(option => ({
+    ...option,
+    swatch: getThemeSwatch(option.value),
+  })))
 
-const moreThemeSamples = computed(() => buildMoreThemeSamples(hiddenThemes.value))
+const visibleCount = computed(() => countVisibleThemeCards(
+  trackWidth.value,
+  Number.parseFloat(typeof document === `undefined` ? `16` : getComputedStyle(document.documentElement).fontSize) || 16,
+  FEATURED_THEME_COUNT,
+  featuredCards.length + overflowCandidates.value.length,
+))
+
+const visibleCards = computed(() => [
+  ...featuredCards,
+  ...overflowCandidates.value.slice(0, Math.max(0, visibleCount.value - FEATURED_THEME_COUNT)),
+])
+
+const overflowVisibleIds = computed(() => visibleCards.value
+  .slice(FEATURED_THEME_COUNT)
+  .map(item => item.value))
+
+const isOverflowTheme = computed(() => !visibleCards.value.some(item => item.value === theme.value))
+
+const moreThemeSamples = computed(() => buildMoreThemeSamples(hiddenThemes.value, overflowVisibleIds.value))
 
 function editorRefresh() {
   themeStore.updateCodeTheme()
@@ -83,10 +110,10 @@ function openStylePanel() {
 
 <template>
   <div class="theme-quick-bar">
-    <div class="theme-quick-bar__track">
+    <div ref="trackRef" class="theme-quick-bar__track">
       <div class="theme-quick-bar__scroller">
         <button
-          v-for="item in featuredCards"
+          v-for="item in visibleCards"
           :key="item.value"
           type="button"
           class="theme-card"
@@ -112,12 +139,12 @@ function openStylePanel() {
           <span class="theme-card__label">{{ item.label }}</span>
         </button>
 
-        <DropdownMenu>
+        <DropdownMenu v-if="moreThemeSamples.length">
           <DropdownMenuTrigger as-child>
             <button
               type="button"
               class="theme-card theme-card--more"
-              :data-active="!isFeaturedTheme"
+              :data-active="isOverflowTheme"
             >
               <span class="theme-card__more-mark">⋯</span>
               <span class="theme-card__label">更多</span>

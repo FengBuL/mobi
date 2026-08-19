@@ -113,6 +113,12 @@ watch(blockInspectorRequest, (request) => {
   }
 }, { immediate: true })
 
+watch(blockSelection, (selection) => {
+  if (selection) {
+    activeInspectorPanel.value = `component`
+  }
+})
+
 onBeforeUnmount(() => clearTimeout(focusFlashTimer))
 const STYLE_PRESET_STORAGE_KEY = `mobi_savedStylePresets`
 const STYLE_PRESET_SESSION_KEY = `mobi_activeStylePresetSession`
@@ -1120,6 +1126,9 @@ watch(isOpen, () => {
 
 .block-inspector-slot {
   min-height: 12rem;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .block-inspector-empty {

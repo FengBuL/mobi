@@ -3,8 +3,8 @@
  * 负责所有主题共享的 Markdown 基础表现，具体视觉由各主题单独定义。
  */
 
-section,
-container {
+#output section,
+#output container {
   font-family: var(--md-font-family);
   font-size: var(--md-font-size);
   line-height: 1.8;
