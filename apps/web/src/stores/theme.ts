@@ -319,9 +319,14 @@ export const useThemeStore = defineStore(`theme`, () => {
 
   /**
    * 应用当前主题配置（新主题系统）
-   * 使用 CSS 注入而非内联样式
+   * 使用 CSS 注入而非内联样式。
+   * 进行中的应用未结束时只排队再跑一轮，避免连点方案 / 版式重叠注入。
    */
-  const applyCurrentTheme = async () => {
+  let applyThemeInFlight = false
+  let applyThemeQueued = false
+  let applyThemeWaiters: Array<() => void> = []
+
+  const flushCurrentTheme = async () => {
     try {
       await applyTheme({
         themeName: theme.value,
@@ -340,6 +345,41 @@ export const useThemeStore = defineStore(`theme`, () => {
       console.error(`[applyCurrentTheme] 主题应用失败:`, error)
     }
   }
+
+  const applyCurrentTheme = () => new Promise<void>((resolve) => {
+    applyThemeWaiters.push(resolve)
+    if (applyThemeInFlight) {
+      applyThemeQueued = true
+      return
+    }
+
+    const run = async () => {
+      applyThemeInFlight = true
+      try {
+        while (true) {
+          applyThemeQueued = false
+          await flushCurrentTheme()
+          if (applyThemeQueued)
+            continue
+
+          const waiters = applyThemeWaiters
+          applyThemeWaiters = []
+          waiters.forEach(waiter => waiter())
+
+          if (applyThemeQueued || applyThemeWaiters.length)
+            continue
+          break
+        }
+      }
+      finally {
+        applyThemeInFlight = false
+        if (applyThemeWaiters.length)
+          void run()
+      }
+    }
+
+    void run()
+  })
 
   // 可视化编辑器改一个值就立刻重绘预览区，不需要点保存
   watch(() => themeDesignerStore.overrideCSS, () => {

@@ -20,6 +20,126 @@ export interface SavedItemRemoval<T> {
   index: number
 }
 
+export interface StyleRendererFields {
+  legend: string
+  isShowCodeLanguage: boolean
+  isShowLineNumber: boolean
+  isCiteStatus: boolean
+}
+
+/**
+ * 深拷成纯对象。
+ * structuredClone 克隆不了 Proxy，而 toRaw 只解顶层一层，
+ * 嵌套的响应式对象会让快照直接抛 DataCloneError。
+ */
+export function toPlainSnapshot<T>(value: T): T {
+  if (Array.isArray(value))
+    return value.map(item => toPlainSnapshot(item)) as unknown as T
+
+  if (!value || typeof value !== `object`)
+    return value
+
+  const plain: Record<string, unknown> = {}
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof item === `function`)
+      continue
+    plain[key] = toPlainSnapshot(item)
+  }
+  return plain as T
+}
+
+/**
+ * 连点时先等一小段，进行中的任务未结束也只保留最后一次。
+ * 中间态不必各自注入主题、更不必整篇重渲。
+ */
+export function createLatestAsyncScheduler(
+  scheduleStart: (run: () => void) => void = (run) => {
+    if (typeof requestAnimationFrame === `function`)
+      requestAnimationFrame(run)
+    else
+      queueMicrotask(run)
+  },
+) {
+  let pending: (() => void | Promise<void>) | null = null
+  let running = false
+  let startScheduled = false
+
+  const pump = async () => {
+    running = true
+    startScheduled = false
+    try {
+      while (pending) {
+        const next = pending
+        pending = null
+        await next()
+      }
+    }
+    finally {
+      running = false
+      if (pending && !startScheduled) {
+        startScheduled = true
+        scheduleStart(() => {
+          void pump()
+        })
+      }
+    }
+  }
+
+  return (task: () => void | Promise<void>) => {
+    pending = task
+    if (running || startScheduled)
+      return
+
+    startScheduled = true
+    scheduleStart(() => {
+      void pump()
+    })
+  }
+}
+
+/** @deprecated 使用 createLatestAsyncScheduler */
+export function createLatestTaskScheduler(
+  scheduleFlush: (run: () => void) => void = (run) => {
+    if (typeof requestAnimationFrame === `function`)
+      requestAnimationFrame(run)
+    else
+      queueMicrotask(run)
+  },
+) {
+  return createLatestAsyncScheduler(scheduleFlush)
+}
+
+export function shouldRefreshAfterStyleApply(
+  previous: StyleRendererFields,
+  next: StyleRendererFields,
+): boolean {
+  return previous.legend !== next.legend
+    || previous.isShowCodeLanguage !== next.isShowCodeLanguage
+    || previous.isShowLineNumber !== next.isShowLineNumber
+    || previous.isCiteStatus !== next.isCiteStatus
+}
+
+export function shouldIgnorePresetSelectValue(
+  value: string,
+  customValue: string,
+  options: {
+    isApplying: boolean
+    pendingType?: string | null
+    hasPresetSession: boolean
+    currentValue?: string
+  },
+): boolean {
+  // 应用过程中下拉会把当前值回写一遍来同步状态，这种自反馈必须挡掉，
+  // 否则会和乐观更新互相触发；值跟当前显示不一样，才是用户又点了一个。
+  if (options.isApplying && (options.currentValue === undefined || value === options.currentValue))
+    return true
+  if (value !== customValue)
+    return false
+  if (options.pendingType === `layout`)
+    return true
+  return !options.hasPresetSession
+}
+
 export function buildThemeSelectOptions(
   categories: IThemeCategory[],
   customThemes: SavedVisualThemeOption[] = [],

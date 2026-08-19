@@ -20,6 +20,8 @@ export class ThemeInjector {
       this.styleElement.id = this.styleId
       document.head.appendChild(this.styleElement)
     }
+    if (this.styleElement.textContent === cssContent)
+      return
     this.styleElement.textContent = cssContent
   }
 

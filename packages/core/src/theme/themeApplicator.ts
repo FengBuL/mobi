@@ -17,6 +17,19 @@ export interface ThemeConfig {
   variables: CSSVariableConfig
 }
 
+const THEME_SCOPE = `#output`
+const scopedCssCache = new Map<string, string>()
+
+function getScopedCss(source: string, cacheKey: string): string {
+  const cached = scopedCssCache.get(cacheKey)
+  if (cached)
+    return cached
+
+  const scoped = wrapCSSWithScope(source, THEME_SCOPE)
+  scopedCssCache.set(cacheKey, scoped)
+  return scoped
+}
+
 /**
  * 应用主题
  * @param config - 主题配置
@@ -30,8 +43,9 @@ export async function applyTheme(config: ThemeConfig): Promise<void> {
 
   // 3. 给骨架层和主题 CSS 添加作用域（只影响 #output 预览区域）
   //    骨架层排在主题之前，两者特异性相同，主题里写了什么就盖掉什么
-  const scopedSkeletonCSS = wrapCSSWithScope(skeletonCSSContent, `#output`)
-  const scopedThemeCSS = wrapCSSWithScope(themeCSS, `#output`)
+  //    主题原文运行时不变，作用域结果按主题名缓存，避免连点版式时反复扫整份 CSS
+  const scopedSkeletonCSS = getScopedCss(skeletonCSSContent, `skeleton`)
+  const scopedThemeCSS = getScopedCss(themeCSS, `theme:${config.themeName}`)
 
   // 4. 生成标题样式 CSS（在主题 CSS 之后应用，确保覆盖主题默认样式）
   const headingStylesCSS = generateHeadingStyles(config.variables)

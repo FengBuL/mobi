@@ -27,6 +27,7 @@ import { useUIStore } from '@/stores/ui'
 import {
   buildThemeSelectOptions,
   clearStylePresetSession,
+  createLatestAsyncScheduler,
   createStylePresetSession,
   loadStylePresets,
   loadStylePresetSession,
@@ -35,7 +36,9 @@ import {
   removeSavedItem,
   restoreSavedItem,
   shouldClearStylePreset,
+  shouldIgnorePresetSelectValue,
   stepSelectValue,
+  toPlainSnapshot,
   validateStylePresetName,
 } from '@/utils/style-panel'
 import { trackEvent } from '@/utils/telemetry'
@@ -113,12 +116,6 @@ watch(blockInspectorRequest, (request) => {
   }
 }, { immediate: true })
 
-watch(blockSelection, (selection) => {
-  if (selection) {
-    activeInspectorPanel.value = `component`
-  }
-})
-
 onBeforeUnmount(() => clearTimeout(focusFlashTimer))
 const STYLE_PRESET_STORAGE_KEY = `mobi_savedStylePresets`
 const STYLE_PRESET_SESSION_KEY = `mobi_activeStylePresetSession`
@@ -153,7 +150,18 @@ const appliedPresetSignature = ref<string | null>(null)
 const savePresetName = ref(``)
 const savePresetError = ref(``)
 const savePresetFeedback = ref(``)
+const pendingThemeSelectValue = ref<string | null>(null)
 const activeCustomStylePreset = computed(() => customStylePresets.value.find(preset => preset.value === activeStylePresetValue.value) || null)
+
+type PendingStyleAction
+  = | { type: `preset`, preset: IStylePreset }
+    | { type: `cancel` }
+    | { type: `layout`, value: string }
+    | { type: `history`, context: StyleHistoryContext }
+
+let pendingStyleAction: PendingStyleAction | null = null
+let isApplyingStyleLifecycle = false
+const scheduleStyleApply = createLatestAsyncScheduler()
 
 function headingStylesSignature(styles: HeadingStyles = {}) {
   return JSON.stringify(
@@ -166,6 +174,15 @@ const allStylePresets = computed(() => [...stylePresetOptions, ...customStylePre
 const presetSelectValue = computed({
   get: () => activeStylePresetValue.value,
   set: (value: string) => {
+    if (shouldIgnorePresetSelectValue(value, CUSTOM_STYLE_PRESET_PLACEHOLDER, {
+      isApplying: isApplyingStyleLifecycle,
+      pendingType: pendingStyleAction?.type,
+      hasPresetSession: Boolean(presetSession.value),
+      currentValue: activeStylePresetValue.value,
+    })) {
+      return
+    }
+
     if (value === CUSTOM_STYLE_PRESET_PLACEHOLDER) {
       cancelActiveStylePreset()
       return
@@ -183,9 +200,7 @@ const visibleThemeCategories = computed(() => themeCategoryOptions.map(category 
 })))
 const themeSelectOptions = computed(() => buildThemeSelectOptions(visibleThemeCategories.value, customVisualThemes.value))
 const themeSelectValue = computed({
-  get: () => visualThemeDraft.value.sourceId
-    ? `custom:${visualThemeDraft.value.sourceId}`
-    : `theme:${theme.value}`,
+  get: () => pendingThemeSelectValue.value ?? currentThemeSelectValue(),
   set: (value: string) => applyThemeSelectValue(value),
 })
 const activeCustomVisualTheme = computed(() => customVisualThemes.value.find(item => item.id === visualThemeDraft.value.sourceId) || null)
@@ -202,6 +217,12 @@ function editorRefresh() {
 
   const raw = editorStore.getContent()
   renderStore.render(renderStore.resolvePreviewContent(raw))
+}
+
+function currentThemeSelectValue() {
+  return visualThemeDraft.value.sourceId
+    ? `custom:${visualThemeDraft.value.sourceId}`
+    : `theme:${theme.value}`
 }
 
 function getThemeLabel(value: string) {
@@ -263,7 +284,7 @@ function captureStyleSnapshot(): StyleSnapshot {
       sourceId: visualThemeDraft.value.sourceId,
       name: visualThemeDraft.value.name,
       baseTheme: visualThemeDraft.value.baseTheme,
-      tokens: structuredClone(toRaw(visualThemeDraft.value.tokens)),
+      tokens: toPlainSnapshot(visualThemeDraft.value.tokens),
     },
   }
 }
@@ -299,42 +320,123 @@ function leaveActiveStylePreset() {
   syncPresetSessionStorage()
 }
 
-let isApplyingStyleLifecycle = false
+/** 撤销点记不下来是小事，方案和版式必须照样换过去 */
+function checkpointStyleHistory() {
+  try {
+    themeDesignerStore.checkpoint()
+  }
+  catch (error) {
+    console.error(`[style] 记录撤销点失败，继续应用当前选择：`, error)
+  }
+}
 
-function applyStylePreset(preset: IStylePreset) {
+function queueStyleAction(action: PendingStyleAction) {
+  pendingStyleAction = action
+  if (action.type === `preset`) {
+    activeStylePresetValue.value = action.preset.value
+  }
+  else if (action.type === `cancel`) {
+    activeStylePresetValue.value = CUSTOM_STYLE_PRESET_PLACEHOLDER
+  }
+  else if (action.type === `layout`) {
+    pendingThemeSelectValue.value = action.value
+    if (activeStylePresetValue.value !== CUSTOM_STYLE_PRESET_PLACEHOLDER)
+      leaveActiveStylePreset()
+  }
+  scheduleStyleApply(runPendingStyleAction)
+}
+
+async function finishStyleApply(refresh: boolean) {
+  try {
+    await themeStore.applyCurrentTheme()
+    if (refresh)
+      editorRefresh()
+    else
+      themeStore.updateCodeTheme()
+  }
+  finally {
+    await nextTick()
+    isApplyingStyleLifecycle = false
+  }
+}
+
+async function runPendingStyleAction() {
+  const action = pendingStyleAction
+  pendingStyleAction = null
+  if (!action)
+    return
+
+  try {
+    if (action.type === `preset`)
+      await commitStylePreset(action.preset)
+    else if (action.type === `cancel`)
+      await commitCancelStylePreset()
+    else if (action.type === `layout`)
+      await commitLayoutSelect(action.value)
+    else
+      await commitRestoreHistory(action.context)
+  }
+  catch (error) {
+    // 一次失败不能把调度器带崩，后面排队的选择还要继续
+    console.error(`[style] 应用样式失败：`, error)
+  }
+  finally {
+    isApplyingStyleLifecycle = false
+  }
+}
+
+async function commitStylePreset(preset: IStylePreset) {
   const snapshot = captureStyleSnapshot()
-  themeDesignerStore.checkpoint()
+  checkpointStyleHistory()
   isApplyingStyleLifecycle = true
   presetSession.value = createStylePresetSession(presetSession.value, preset.value, snapshot)
+  themeDesignerStore.setBaseTheme(preset.theme)
+  themeDesignerStore.detachSource()
   applyPresetValues(preset)
   activeStylePresetValue.value = preset.value
   appliedPresetSignature.value = currentStylePresetSignature()
   syncPresetSessionStorage()
-  themeStore.applyCurrentTheme()
-  editorRefresh()
-  nextTick(() => {
-    isApplyingStyleLifecycle = false
-  })
+  pendingThemeSelectValue.value = null
+  // 主色进得了图表 SVG，方案改了主色就得整篇重渲，不能只换 CSS
+  await finishStyleApply(true)
   trackEvent(`style_preset_apply`, { preset: preset.value })
 }
 
-function cancelActiveStylePreset() {
+function applyStylePreset(preset: IStylePreset) {
+  if (
+    pendingStyleAction?.type !== `preset`
+    && preset.value === activeStylePresetValue.value
+    && appliedPresetSignature.value === currentStylePresetSignature()
+  ) {
+    return
+  }
+
+  queueStyleAction({ type: `preset`, preset })
+}
+
+async function commitCancelStylePreset() {
   const snapshot = presetSession.value?.snapshot
   if (!snapshot) {
     leaveActiveStylePreset()
     return
   }
 
-  themeDesignerStore.checkpoint()
+  checkpointStyleHistory()
   isApplyingStyleLifecycle = true
   applyPresetValues(snapshot.preset, snapshot.primaryColorSource)
   themeDesignerStore.replaceDraft(snapshot.visualDraft, false)
   leaveActiveStylePreset()
-  themeStore.applyCurrentTheme()
-  editorRefresh()
-  nextTick(() => {
-    isApplyingStyleLifecycle = false
-  })
+  pendingThemeSelectValue.value = null
+  await finishStyleApply(true)
+}
+
+function cancelActiveStylePreset() {
+  if (!presetSession.value?.snapshot) {
+    leaveActiveStylePreset()
+    return
+  }
+
+  queueStyleAction({ type: `cancel` })
 }
 
 function saveCurrentStylePreset() {
@@ -429,36 +531,43 @@ function getDesignerGroup(groupId: string) {
   return themeDesignerGroupMap[groupId]
 }
 
-function applyLayoutBaseline(baseTheme: ThemeName, draft: ThemeDraft) {
-  themeDesignerStore.checkpoint()
+async function applyLayoutBaseline(baseTheme: ThemeName, draft: ThemeDraft) {
+  checkpointStyleHistory()
+  isApplyingStyleLifecycle = true
   themeDesignerStore.replaceDraft(draft, false)
   themeStore.theme = baseTheme
   themeStore.restorePrimaryColorState(getThemeDefaultPrimaryColor(baseTheme), `theme`)
   headingStyles.value = {}
   if (activeStylePresetValue.value !== CUSTOM_STYLE_PRESET_PLACEHOLDER)
     leaveActiveStylePreset()
-  themeStore.applyCurrentTheme()
-  editorRefresh()
+  // 版式只改注入的主题 CSS，不必整篇重渲 Markdown
+  await finishStyleApply(false)
 }
 
-function applyThemeSelectValue(value: string) {
-  if (value.startsWith(`custom:`)) {
-    const target = customVisualThemes.value.find(item => item.id === value.slice(`custom:`.length))
-    if (!target)
-      return
-
-    applyLayoutBaseline(target.baseTheme as ThemeName, {
-      sourceId: target.id,
-      name: target.name,
-      baseTheme: target.baseTheme,
-      tokens: structuredClone(toRaw(target.tokens)),
-    })
+async function commitLayoutSelect(value: string) {
+  if (value === currentThemeSelectValue()) {
+    if (pendingThemeSelectValue.value === value)
+      pendingThemeSelectValue.value = null
     return
   }
 
-  if (value.startsWith(`theme:`)) {
+  if (value.startsWith(`custom:`)) {
+    const target = customVisualThemes.value.find(item => item.id === value.slice(`custom:`.length))
+    if (!target) {
+      pendingThemeSelectValue.value = null
+      return
+    }
+
+    await applyLayoutBaseline(target.baseTheme as ThemeName, {
+      sourceId: target.id,
+      name: target.name,
+      baseTheme: target.baseTheme,
+      tokens: toPlainSnapshot(target.tokens),
+    })
+  }
+  else if (value.startsWith(`theme:`)) {
     const baseTheme = value.slice(`theme:`.length) as ThemeName
-    applyLayoutBaseline(baseTheme, {
+    await applyLayoutBaseline(baseTheme, {
       sourceId: null,
       name: ``,
       baseTheme,
@@ -466,6 +575,19 @@ function applyThemeSelectValue(value: string) {
     })
     trackEvent(`theme_change`, { theme: baseTheme })
   }
+
+  if (pendingThemeSelectValue.value === value)
+    pendingThemeSelectValue.value = null
+}
+
+function applyThemeSelectValue(value: string) {
+  if (pendingStyleAction && pendingStyleAction.type !== `layout`)
+    return
+  // 与当前显示相同就是应用过程中的回写，不必再排一轮
+  if (value === (pendingThemeSelectValue.value ?? currentThemeSelectValue()))
+    return
+
+  queueStyleAction({ type: `layout`, value })
 }
 
 function restoreCurrentLayout() {
@@ -475,7 +597,7 @@ function restoreCurrentLayout() {
       sourceId: source.id,
       name: source.name,
       baseTheme: source.baseTheme,
-      tokens: structuredClone(toRaw(source.tokens)),
+      tokens: toPlainSnapshot(source.tokens),
     })
   }
   else {
@@ -518,8 +640,19 @@ function captureStyleHistoryContext(): StyleHistoryContext {
     style: captureStyleSnapshot(),
     activeStylePresetValue: activeStylePresetValue.value,
     appliedPresetSignature: appliedPresetSignature.value,
-    presetSession: presetSession.value ? structuredClone(toRaw(presetSession.value)) : null,
+    presetSession: presetSession.value ? toPlainSnapshot(presetSession.value) : null,
   }
+}
+
+async function commitRestoreHistory(snapshot: StyleHistoryContext) {
+  isApplyingStyleLifecycle = true
+  applyPresetValues(snapshot.style.preset, snapshot.style.primaryColorSource)
+  activeStylePresetValue.value = snapshot.activeStylePresetValue
+  appliedPresetSignature.value = snapshot.appliedPresetSignature
+  presetSession.value = snapshot.presetSession
+  syncPresetSessionStorage()
+  pendingThemeSelectValue.value = null
+  await finishStyleApply(true)
 }
 
 function restoreStyleHistoryContext(context: unknown) {
@@ -527,17 +660,7 @@ function restoreStyleHistoryContext(context: unknown) {
   if (!snapshot?.style?.preset)
     return
 
-  isApplyingStyleLifecycle = true
-  applyPresetValues(snapshot.style.preset, snapshot.style.primaryColorSource)
-  activeStylePresetValue.value = snapshot.activeStylePresetValue
-  appliedPresetSignature.value = snapshot.appliedPresetSignature
-  presetSession.value = snapshot.presetSession
-  syncPresetSessionStorage()
-  themeStore.applyCurrentTheme()
-  editorRefresh()
-  nextTick(() => {
-    isApplyingStyleLifecycle = false
-  })
+  queueStyleAction({ type: `history`, context: snapshot })
 }
 
 onMounted(() => {
@@ -803,7 +926,7 @@ watch(isOpen, () => {
                   取消方案
                 </Button>
               </div>
-              <Select v-model="presetSelectValue">
+              <Select v-model="presetSelectValue" :modal="false">
                 <SelectTrigger class="h-9 w-full">
                   <SelectValue placeholder="当前自定义" />
                 </SelectTrigger>
@@ -863,7 +986,7 @@ watch(isOpen, () => {
                   恢复当前版式
                 </Button>
               </div>
-              <Select v-model="themeSelectValue">
+              <Select v-model="themeSelectValue" :modal="false">
                 <SelectTrigger
                   data-theme-select-trigger
                   class="h-9 w-full"

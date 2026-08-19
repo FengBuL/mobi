@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest'
 import {
   buildThemeSelectOptions,
   clearStylePresetSession,
+  createLatestAsyncScheduler,
+  createLatestTaskScheduler,
   createStylePresetSession,
   loadStylePresets,
   loadStylePresetSession,
@@ -13,7 +15,10 @@ import {
   removeSavedItem,
   restoreSavedItem,
   shouldClearStylePreset,
+  shouldIgnorePresetSelectValue,
+  shouldRefreshAfterStyleApply,
   stepSelectValue,
+  toPlainSnapshot,
   validateStylePresetName,
 } from '../apps/web/src/utils/style-panel'
 
@@ -28,6 +33,134 @@ describe(`全局样式面板交互`, () => {
       themes: [{ label: `行业洞察`, value: `insight`, desc: ``, defaultPrimaryColor: `#123` }],
     },
   ] as const
+
+  it(`嵌套响应式对象也能拍出可克隆的纯快照`, () => {
+    // Vue 的响应式对象读嵌套属性会再套一层 Proxy，
+    // 而 structuredClone 克隆不了 Proxy，toRaw 又只解顶层
+    const wrap = <T extends object>(target: T): T => new Proxy(target, {
+      get(object, key, receiver) {
+        const value = Reflect.get(object, key, receiver)
+        return value && typeof value === `object` ? wrap(value as object) : value
+      },
+    })
+
+    const raw = {
+      activeValue: `preset-a`,
+      snapshot: {
+        preset: { label: `内置 · 观点专栏`, headingStyles: { h2: `underline` } },
+        visualDraft: { tokens: { paragraph: { fontSize: `16px` } } },
+      },
+    }
+    const reactiveLike = wrap(raw)
+
+    expect(() => structuredClone(reactiveLike)).toThrow()
+
+    const plain = toPlainSnapshot(reactiveLike)
+    expect(() => structuredClone(plain)).not.toThrow()
+    expect(plain).toEqual(raw)
+  })
+
+  it(`同一轮提交只保留最后一次任务`, () => {
+    const runs: string[] = []
+    const queued: Array<() => void> = []
+    const schedule = createLatestTaskScheduler((flush) => {
+      queued.push(flush)
+    })
+
+    schedule(() => runs.push(`a`))
+    schedule(() => runs.push(`b`))
+    schedule(() => runs.push(`c`))
+
+    expect(runs).toEqual([])
+    expect(queued).toHaveLength(1)
+    queued[0]()
+    expect(runs).toEqual([`c`])
+  })
+
+  it(`进行中的任务未结束时只保留最后一次，不并行开跑`, async () => {
+    const runs: string[] = []
+    const queued: Array<() => void> = []
+    let releaseFirst!: () => void
+    const schedule = createLatestAsyncScheduler((flush) => {
+      queued.push(flush)
+    })
+
+    schedule(() => {
+      runs.push(`first`)
+      return new Promise<void>((resolve) => {
+        releaseFirst = resolve
+      })
+    })
+    queued[0]()
+    expect(runs).toEqual([`first`])
+    expect(queued).toHaveLength(1)
+
+    schedule(() => {
+      runs.push(`mid`)
+    })
+    schedule(() => {
+      runs.push(`last`)
+    })
+    expect(queued).toHaveLength(1)
+
+    releaseFirst()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(runs).toEqual([`first`, `last`])
+  })
+
+  it(`只有图注、引用、代码标注等渲染器字段变了才需要整篇重渲`, () => {
+    const cssOnly = {
+      legend: `alt`,
+      isShowCodeLanguage: true,
+      isShowLineNumber: false,
+      isCiteStatus: false,
+    }
+
+    expect(shouldRefreshAfterStyleApply(cssOnly, { ...cssOnly })).toBe(false)
+    expect(shouldRefreshAfterStyleApply(cssOnly, { ...cssOnly, isCiteStatus: true })).toBe(true)
+    expect(shouldRefreshAfterStyleApply(cssOnly, { ...cssOnly, legend: `title` })).toBe(true)
+    expect(shouldRefreshAfterStyleApply(cssOnly, { ...cssOnly, isShowLineNumber: true })).toBe(true)
+  })
+
+  it(`换版式退出方案后，下拉回传当前自定义不能当成取消`, () => {
+    expect(shouldIgnorePresetSelectValue(`__custom__`, `__custom__`, {
+      isApplying: false,
+      pendingType: `layout`,
+      hasPresetSession: true,
+    })).toBe(true)
+    expect(shouldIgnorePresetSelectValue(`__custom__`, `__custom__`, {
+      isApplying: false,
+      pendingType: null,
+      hasPresetSession: false,
+    })).toBe(true)
+    expect(shouldIgnorePresetSelectValue(`__custom__`, `__custom__`, {
+      isApplying: false,
+      pendingType: null,
+      hasPresetSession: true,
+    })).toBe(false)
+    expect(shouldIgnorePresetSelectValue(`tutorial`, `__custom__`, {
+      isApplying: false,
+      pendingType: null,
+      hasPresetSession: true,
+    })).toBe(false)
+  })
+
+  it(`正在应用时只挡下拉的自我回写，用户又点一个仍要排队`, () => {
+    expect(shouldIgnorePresetSelectValue(`insight`, `__custom__`, {
+      isApplying: true,
+      pendingType: `preset`,
+      hasPresetSession: true,
+      currentValue: `insight`,
+    })).toBe(true)
+    expect(shouldIgnorePresetSelectValue(`brand`, `__custom__`, {
+      isApplying: true,
+      pendingType: `preset`,
+      hasPresetSession: true,
+      currentValue: `insight`,
+    })).toBe(false)
+  })
 
   it(`把内置与自定义版式展平成分类加名称的选项`, () => {
     expect(buildThemeSelectOptions([...categories], [{ id: `mine`, name: `夜读` }])).toEqual([
@@ -134,6 +267,20 @@ describe(`全局样式面板交互`, () => {
     expect(styles).toContain(`ThemeDraftControls`)
     expect(styles).toContain(`ThemeDesignerGroupCard`)
     expect(styles).toContain(`data-theme-select-trigger`)
+  })
+
+  it(`连点方案和版式时只应用最后一次、版式不整篇重渲、退出方案回传不当取消`, () => {
+    const styles = readFileSync(resolve(process.cwd(), `apps/web/src/components/editor/RightSlider.vue`), `utf8`)
+    const layoutFn = styles.match(/async function applyLayoutBaseline[\s\S]*?\nasync function commitLayoutSelect/)?.[0]
+
+    expect(styles).toContain(`:modal="false"`)
+    expect(styles).toContain(`createLatestAsyncScheduler`)
+    expect(styles).toContain(`shouldIgnorePresetSelectValue`)
+    expect(styles).toContain(`scheduleStyleApply`)
+    expect(styles).not.toContain(`suppressSelectFeedback`)
+    expect(styles).not.toMatch(/watch\(blockSelection,\s*\(selection\)\s*=>\s*\{[\s\S]*activeInspectorPanel\.value = `component`/)
+    expect(layoutFn).toContain(`finishStyleApply(false)`)
+    expect(layoutFn).not.toContain(`editorRefresh`)
   })
 
   it(`第一层五套映射现有主题且 23 套与别名仍在`, () => {
