@@ -1,6 +1,7 @@
 name: Build Desktop App
 
-# macOS、Windows 各跑一次完整打包，产物挂成 artifact。
+# macOS、Windows 各跑一次完整打包，产物直接挂到 Release。
+# 不走 Actions artifact：账号配额满了就传不上去，而且要 6–12 小时才重算。
 # 不挂在每次 push 上：一次要下两份 Electron 运行时，太贵，需要时手动触发或者打 tag。
 # 桌面安装包不出 Linux，Linux 请用网页版。
 on:
@@ -8,6 +9,12 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      upload_tag:
+        description: '把安装包挂到这个 Release tag'
+        required: true
+        type: string
+        default: 'v2.3.1'
 
 permissions:
   contents: read
@@ -17,7 +24,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.upload_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Ensure draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists"
+          else
+            gh release create "$TAG" --draft --title "墨笔 $TAG" --repo "$GITHUB_REPOSITORY" --notes "下载对应系统的安装包即可，不想装的话可以直接用[网页版](https://fengbul.github.io/mobi/)。
+
+            | 系统 | 下载 |
+            | --- | --- |
+            | macOS（Apple 芯片） | \`mobi-*-arm64.dmg\` |
+            | macOS（Intel） | \`mobi-*-x64.dmg\` |
+            | Windows | \`mobi-*-x64.exe\` |
+
+            安装包还没有签名：macOS 首次打开要右键选「打开」，Windows 会弹一次 SmartScreen 警告。
+
+            本版本包含应用内更新元数据。正式启用 macOS 自动安装前仍需 Developer ID 签名与公证。"
+          fi
+
   build:
+    needs: prepare
+    permissions:
+      contents: write
     strategy:
       # 一个平台挂了，另一个的产物照样要拿到，好判断是平台相关还是代码本身的问题
       fail-fast: false
@@ -25,10 +70,8 @@ jobs:
         include:
           - os: macos-latest
             target: mac
-            artifact: mobi-macos
           - os: windows-latest
             target: win
-            artifact: mobi-windows
 
     runs-on: ${{ matrix.os }}
 
@@ -67,48 +110,23 @@ jobs:
             codesign --verify --deep --strict --verbose=2 "$app"
           done
 
-      - name: Upload installers
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact }}
-          if-no-files-found: error
-          retention-days: 14
-          path: |
+      - name: Upload installers to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.prepare.outputs.tag }}"
+          shopt -s nullglob
+          files=(
             apps/desktop/release/*.dmg
             apps/desktop/release/*.zip
             apps/desktop/release/*.exe
             apps/desktop/release/*.yml
             apps/desktop/release/*.blockmap
-
-  # 两个平台各自建 release 会打架，所以等全部构建完再统一发一个
-  release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Download all installers
-        uses: actions/download-artifact@v4
-        with:
-          path: installers
-          merge-multiple: true
-
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
-        with:
-          draft: true
-          files: installers/*
-          body: |
-            下载对应系统的安装包即可，不想装的话可以直接用[网页版](https://fengbul.github.io/mobi/)。
-
-            | 系统 | 下载 |
-            | --- | --- |
-            | macOS（Apple 芯片） | `mobi-*-arm64.dmg` |
-            | macOS（Intel） | `mobi-*-x64.dmg` |
-            | Windows | `mobi-*-x64.exe` |
-
-            安装包还没有签名：macOS 首次打开要右键选「打开」，Windows 会弹一次 SmartScreen 警告。
-
-            本版本包含应用内更新元数据。正式启用 macOS 自动安装前仍需 Developer ID 签名与公证。
+          )
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "没有找到安装包" >&2
+            ls -la apps/desktop/release || true
+            exit 1
+          fi
+          gh release upload "$TAG" "${files[@]}" --clobber --repo "$GITHUB_REPOSITORY"
