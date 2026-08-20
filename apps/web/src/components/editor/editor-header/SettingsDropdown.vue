@@ -4,7 +4,6 @@ import { Check, CloudCog, Download, Plus, Upload } from 'lucide-vue-next'
 import AccountProfileImportDialog from '@/components/editor/AccountProfileImportDialog.vue'
 import { useAccountProfileStore } from '@/stores/accountProfile'
 import { useUIStore } from '@/stores/ui'
-import { getTelemetryConsent, isTelemetryConfigured, setTelemetryConsent } from '@/utils/telemetry'
 
 const props = withDefaults(defineProps<{
   asSub?: boolean
@@ -16,8 +15,6 @@ const { asSub } = toRefs(props)
 const uiStore = useUIStore()
 const profileStore = useAccountProfileStore()
 const { profiles, currentProfile, showSwitcher } = storeToRefs(profileStore)
-const telemetryConfigured = isTelemetryConfigured()
-const telemetryConsent = ref(getTelemetryConsent())
 const importer = ref<{ openImport: () => void } | null>(null)
 
 function openImageHostSettings() {
@@ -40,11 +37,6 @@ function openImport() {
 
 function switchProfile(id: string) {
   profileStore.switchProfile(id)
-}
-
-function onTelemetryChange(val: boolean) {
-  telemetryConsent.value = val
-  setTelemetryConsent(val)
 }
 </script>
 
@@ -85,14 +77,6 @@ function onTelemetryChange(val: boolean) {
         <Upload class="mr-2 size-4" />
         导入号配置
       </MenubarItem>
-      <MenubarSeparator />
-      <MenubarCheckboxItem
-        :checked="telemetryConsent"
-        :disabled="!telemetryConfigured"
-        @update:checked="onTelemetryChange"
-      >
-        匿名使用统计
-      </MenubarCheckboxItem>
     </MenubarSubContent>
   </MenubarSub>
 
@@ -131,14 +115,6 @@ function onTelemetryChange(val: boolean) {
         <Upload class="mr-2 size-4" />
         导入号配置
       </MenubarItem>
-      <MenubarSeparator />
-      <MenubarCheckboxItem
-        :checked="telemetryConsent"
-        :disabled="!telemetryConfigured"
-        @update:checked="onTelemetryChange"
-      >
-        匿名使用统计
-      </MenubarCheckboxItem>
     </MenubarContent>
   </MenubarMenu>
 </template>

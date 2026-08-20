@@ -16,7 +16,7 @@
 
 ### 下载桌面版
 
-到 [Releases](https://github.com/FengBuL/mobi/releases/latest) 下载对应系统的安装包：
+到 <https://app.mobieditor.cn> 下载对应系统的安装包，或看 [GitHub Releases](https://github.com/FengBuL/mobi/releases/latest)：
 
 | 系统 | 文件 |
 | --- | --- |
@@ -35,7 +35,7 @@
 
 ### 或者直接用网页版
 
-<https://fengbul.github.io/mobi/>
+<https://mobieditor.cn/>
 
 打开就能写，不用装东西。
 
@@ -133,7 +133,7 @@ v2.2.0 开始使用公开仓库 `FengBuL/mobi` 的 GitHub Release 执行应用�
 代码在私有仓库 `mobi-src`，对外分发走公开仓库 [`mobi`](https://github.com/FengBuL/mobi)——
 那边只有下载说明、Release 安装包和网页版构建产物，没有源码。
 
-网页版：`pnpm deploy:web`，本地构建后把纯产物推到公开仓库的 `gh-pages` 分支。
+网页版：`pnpm deploy:web`。官方入口是 Cloudflare Pages 的 <https://mobieditor.cn/>；桌面下载页是 <https://app.mobieditor.cn/>；旧地址 <https://fengbul.github.io/mobi/> 仍会同步一份 `/mobi/` 产物。
 
 桌面版：打 `v*` 开头的 tag，本仓库的 CI 在 macOS、Windows 各构建一次，汇总成一个草稿 Release；
 下载这些安装包后在公开仓库发正式 Release（`gh release create vX.Y.Z --repo FengBuL/mobi 安装包...`）。

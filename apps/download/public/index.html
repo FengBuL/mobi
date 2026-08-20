@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="下载墨笔桌面端。macOS 与 Windows 可装；Linux 请用网页版。">
+  <title>下载墨笔桌面端</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23B93A26'/%3E%3Cpath d='M46 11C46 30.5 37 44 17.5 52.5L13.5 44.5C28 37 34.5 26.5 34.5 11Z' fill='%23FBF7F0'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --paper: #faf8f5;
+      --ink: #211f1d;
+      --muted: #6f6862;
+      --line: #e4ddd4;
+      --accent: #b93a26;
+      --surface: #fffdf9;
+      --serif: "Iowan Old Style", "Songti SC", STSong, serif;
+      --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.6;
+    }
+    a { color: inherit; }
+    .shell { width: min(760px, calc(100% - 40px)); margin: 0 auto; }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font: 700 18px var(--serif);
+      letter-spacing: .08em;
+      text-decoration: none;
+    }
+    .brand svg { display: block; }
+    .ghost {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+    .ghost:hover { color: var(--ink); }
+    h1 {
+      margin: 48px 0 14px;
+      font: 700 clamp(36px, 6vw, 56px)/1.15 var(--serif);
+      letter-spacing: -.04em;
+    }
+    .lead { margin: 0 0 36px; color: var(--muted); font-size: 17px; }
+    .cards { display: grid; gap: 14px; }
+    .card {
+      padding: 22px 22px 20px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card h2 { margin: 0 0 6px; font-size: 20px; }
+    .card p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .button {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 16px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      font: 650 14px var(--sans);
+      text-decoration: none;
+    }
+    .button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fffdf9;
+    }
+    .button.disabled {
+      pointer-events: none;
+      opacity: .55;
+    }
+    .note {
+      margin: 28px 0 0;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      font-size: 13.5px;
+    }
+    footer {
+      margin: 48px 0 32px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    footer a { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <a class="brand" href="https://mobieditor.cn">
+        <svg width="29" height="29" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="64" height="64" rx="15" fill="#B93A26" />
+          <path d="M46 11C46 30.5 37 44 17.5 52.5L13.5 44.5C28 37 34.5 26.5 34.5 11Z" fill="#FBF7F0" />
+        </svg>
+        墨笔
+      </a>
+      <a class="ghost" href="https://mobieditor.cn">打开网页版</a>
+    </header>
+
+    <h1>下载桌面端</h1>
+    <p class="lead">网页版打开即用。想装到电脑上，从这里下安装包。当前桌面包是 v2.3.1。</p>
+
+    <div class="cards">
+      <article class="card">
+        <h2>macOS</h2>
+        <p>Apple 芯片选 arm64，Intel 选 x64。第一次打开会被拦，到「隐私与安全性」里点「仍要打开」。</p>
+        <div class="actions">
+          <a class="button primary" href="https://github.com/FengBuL/mobi/releases/download/v2.3.1/mobi-2.3.1-arm64.dmg">Apple 芯片</a>
+          <a class="button" href="https://github.com/FengBuL/mobi/releases/download/v2.3.1/mobi-2.3.1-x64.dmg">Intel</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Windows</h2>
+        <p>64 位安装包。若弹出 SmartScreen，选「更多信息 → 仍要运行」。</p>
+        <div class="actions">
+          <a class="button primary" href="https://github.com/FengBuL/mobi/releases/download/v2.3.1/mobi-2.3.1-x64.exe">下载 Windows</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Linux</h2>
+        <p>不出 Linux 安装包，请直接用网页版。</p>
+        <div class="actions">
+          <a class="button primary" href="https://mobieditor.cn">打开网页版</a>
+        </div>
+      </article>
+    </div>
+
+    <p class="note">安装包没有买证书做公证。macOS 15 及以上被拦后，打开「系统设置 → 隐私与安全性」，往下翻点「仍要打开」。Windows 若弹出 SmartScreen，选「更多信息 → 仍要运行」。</p>
+
+    <footer>© 2026 墨笔 · <a href="https://mobieditor.cn">网页版</a> · <a href="https://github.com/FengBuL/mobi">GitHub</a></footer>
+  </div>
+</body>
+</html>

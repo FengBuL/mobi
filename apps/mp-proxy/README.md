@@ -46,7 +46,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://192.168.101.1
 ## 公网部署检查
 
 - 使用固定公网出口 IP，并在需要时加入公众号后台 IP 白名单；
-- 将 `ALLOWED_ORIGINS` 设置为 `https://fengbul.github.io`，Origin 不包含 `/mobi` 路径；
+- 将 `ALLOWED_ORIGINS` 设置为 `https://mobieditor.cn`，Origin 不包含路径；旧地址若仍开放再补 `https://fengbul.github.io`；
 - 在反向代理层配置 HTTPS、限流、请求超时和最大请求体；
 - 禁止访问内网、回环地址和云平台元数据地址，避免 `/fetch-image` 被滥用；
 - 禁止在访问日志中记录请求体、AppSecret、access token；

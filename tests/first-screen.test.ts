@@ -48,6 +48,21 @@ describe(`第一屏与默认稿`, () => {
     expect(source).toContain(`Markdown 语法课`)
   })
 
+  it(`网页版只在帮助右侧露出桌面下载，帮助和关于里不再放`, () => {
+    const download = readSource(`apps/web/src/utils/desktop-download.ts`)
+    const header = readSource(`apps/web/src/components/editor/editor-header/index.vue`)
+    const help = readSource(`apps/web/src/components/editor/editor-header/HelpDropdown.vue`)
+    const about = readSource(`apps/web/src/components/editor/editor-header/AboutDialog.vue`)
+
+    expect(download).toContain(`https://app.mobieditor.cn`)
+    expect(header).toContain(`下载桌面版`)
+    expect(header).toContain(`download-entry`)
+    expect(header).toContain(`v-if="!isDesktopApp"`)
+    expect(help).not.toContain(`下载桌面版`)
+    expect(about).not.toContain(`下载桌面版`)
+    expect(about).toContain(`项目主页`)
+  })
+
   it(`存稿写入失败会用 toast 告诉用户`, () => {
     const source = readSource(`apps/web/src/utils/storage.ts`)
 

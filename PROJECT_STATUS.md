@@ -1,6 +1,6 @@
 # 墨笔项目状态
 
-核对日期：2026-08-14
+核对日期：2026-08-20
 
 ## 当前基线
 
@@ -10,8 +10,9 @@
 - 当前发布基线：`v2.2.1`
 - 私有源码：<https://github.com/FengBuL/mobi-src>
 - 公开分发：<https://github.com/FengBuL/mobi>
-- 网页版：<https://fengbul.github.io/mobi/>
-- 当前公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.2.1>
+- 网页版：<https://mobieditor.cn/>
+- 桌面下载：<https://app.mobieditor.cn/>
+- 当前公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.3.1>
 - 数据观测台：<https://mobi-telemetry.shovy-mobi.workers.dev/dashboard>
 
 ## 项目组成

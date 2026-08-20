@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { WorkspaceMode } from '@/stores/ui'
-import { ChevronDown, Copy, Menu, Palette } from 'lucide-vue-next'
+import { ChevronDown, Copy, Menu, MonitorDown, Palette } from 'lucide-vue-next'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,9 +10,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useEditorCopyActions } from '@/composables/useEditorCopyActions'
+import { isDesktopRuntime } from '@/services/desktop/bridge'
 import { useRenderStore } from '@/stores/render'
 import { useUIStore } from '@/stores/ui'
 import { countUnsafeClipboardImagesFromHtml, formatLostWechatImageHint } from '@/utils/clipboard-image-status'
+import { openDesktopDownload } from '@/utils/desktop-download'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
 import HelpDropdown from './HelpDropdown.vue'
@@ -59,6 +61,7 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
 })
 
 const renderStore = useRenderStore()
+const isDesktopApp = isDesktopRuntime()
 const { output } = storeToRefs(renderStore)
 const lostImageCount = computed(() => countUnsafeClipboardImagesFromHtml(output.value))
 const lostImageHint = computed(() => formatLostWechatImageHint(lostImageCount.value))
@@ -69,13 +72,21 @@ const lostImageHint = computed(() => formatLostWechatImageHint(lostImageCount.va
     class="header-container h-15 flex flex-wrap items-center justify-between px-5 relative"
   >
     <!-- 桌面端左侧菜单 -->
-    <div class="space-x-1 hidden md:flex">
+    <div class="hidden items-center md:flex">
       <Menubar class="menubar border-0">
         <FileDropdown />
         <EditDropdown />
         <SettingsDropdown />
         <HelpDropdown @open-about="handleOpenAbout" @open-markdown-guide="handleOpenMarkdownGuide" />
       </Menubar>
+      <button
+        v-if="!isDesktopApp"
+        type="button"
+        class="download-entry"
+        @click="openDesktopDownload()"
+      >
+        下载桌面版
+      </button>
     </div>
 
     <!-- 移动端汉堡菜单按钮 -->
@@ -92,6 +103,10 @@ const lostImageHint = computed(() => formatLostWechatImageHint(lostImageCount.va
             <EditDropdown :as-sub="true" />
             <SettingsDropdown :as-sub="true" />
             <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-markdown-guide="handleOpenMarkdownGuide" />
+            <MenubarItem v-if="!isDesktopApp" @click="openDesktopDownload()">
+              <MonitorDown class="mr-2 h-4 w-4" />
+              下载桌面版
+            </MenubarItem>
           </MenubarContent>
         </MenubarMenu>
       </Menubar>
@@ -99,6 +114,13 @@ const lostImageHint = computed(() => formatLostWechatImageHint(lostImageCount.va
 
     <!-- 右侧操作区 -->
     <div class="flex flex-wrap items-center gap-2">
+      <span
+        v-if="lostImageHint"
+        class="max-w-40 text-xs leading-4 text-muted-foreground"
+      >
+        {{ lostImageHint }}
+      </span>
+
       <!-- 工作区模式：选中的一项直接上墨，不做胶囊 -->
       <div class="mode-switch hidden items-center md:flex">
         <button
@@ -138,12 +160,6 @@ const lostImageHint = computed(() => formatLostWechatImageHint(lostImageCount.va
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <span
-          v-if="lostImageHint"
-          class="max-w-40 text-xs leading-4 text-muted-foreground"
-        >
-          {{ lostImageHint }}
-        </span>
       </div>
 
       <!-- 简洁模式只留预览主题条上的「全局样式」，避免顶栏再开一扇门 -->
@@ -231,6 +247,22 @@ const lostImageHint = computed(() => formatLostWechatImageHint(lostImageCount.va
     &:hover {
       background: hsl(var(--foreground) / 0.06);
     }
+  }
+}
+
+.download-entry {
+  position: relative;
+  padding: 0.5rem 0.625rem;
+  border: 0;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--primary));
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: hsl(var(--primary) / 0.82);
   }
 }
 

@@ -15,11 +15,7 @@ function onUpdate(val: boolean) {
 }
 
 const appVersion = typeof __APP_VERSION__ !== `undefined` ? __APP_VERSION__ : `dev`
-
-const links = [
-  { label: `项目主页`, url: `https://github.com/FengBuL/mobi` },
-  { label: `下载桌面版`, url: `https://github.com/FengBuL/mobi/releases/latest` },
-]
+const homepageUrl = `https://github.com/FengBuL/mobi`
 
 function onRedirect(url: string) {
   window.open(url, `_blank`)
@@ -46,19 +42,11 @@ function onRedirect(url: string) {
         <p class="text-xs text-muted-foreground">
           v{{ appVersion }}
         </p>
-        <p class="text-xs text-muted-foreground">
-          匿名使用统计默认关闭，开关在「设置」。
-        </p>
       </div>
 
-      <DialogFooter class="sm:justify-evenly flex flex-wrap gap-2">
-        <Button
-          v-for="link in links"
-          :key="link.url"
-          variant="outline"
-          @click="onRedirect(link.url)"
-        >
-          {{ link.label }}
+      <DialogFooter class="sm:justify-center">
+        <Button variant="outline" @click="onRedirect(homepageUrl)">
+          项目主页
         </Button>
       </DialogFooter>
     </DialogContent>

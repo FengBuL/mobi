@@ -14,14 +14,15 @@ describe(`匿名统计默认关闭`, () => {
     expect(telemetry).not.toContain(`!== \`false\``)
   })
 
-  it(`开关在设置里，不在关于里`, () => {
+  it(`界面不再提供匿名统计开关`, () => {
     const settings = readSource(`apps/web/src/components/editor/editor-header/SettingsDropdown.vue`)
     const about = readSource(`apps/web/src/components/editor/editor-header/AboutDialog.vue`)
 
-    expect(settings).toContain(`匿名使用统计`)
-    expect(settings).toContain(`setTelemetryConsent`)
+    expect(settings).not.toContain(`匿名使用统计`)
+    expect(settings).not.toContain(`setTelemetryConsent`)
     expect(about).not.toContain(`setTelemetryConsent`)
-    expect(about).toContain(`开关在「设置」`)
+    expect(about).not.toContain(`匿名使用统计`)
+    expect(about).not.toContain(`开关在「设置」`)
   })
 
   it(`三类 Issue 模板都要求主题、两张截图、是否配图床`, () => {

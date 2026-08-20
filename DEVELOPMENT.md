@@ -84,6 +84,7 @@ pnpm build:desktop
 | 测试监听 | `pnpm test:watch` |
 | 类型检查 | `pnpm type-check` |
 | 代码检查 | `pnpm lint` |
+| 发布网页版与下载页 | `pnpm deploy:web` |
 
 ## 5. 可选服务与凭据
 
@@ -124,6 +125,8 @@ pnpm proxy
 | --- | --- | --- |
 | `origin` | `FengBuL/mobi-src` | 私有完整源码 |
 | `dist` | `FengBuL/mobi` | 公开 README、网页产物和安装包 |
+
+官方网页入口是 <https://mobieditor.cn/>，桌面下载是 <https://app.mobieditor.cn/>。`pnpm deploy:web` 会把编辑器推到 Cloudflare Pages「mobieditor」，把下载页推到 Worker「mobi-download」，并再同步一份 `/mobi/` 产物到公开仓 `gh-pages`。
 
 禁止向 `dist` 推送源码分支。日常开发从 `main` 建立功能分支，提交到 `origin`，通过 Pull Request 合并。
 

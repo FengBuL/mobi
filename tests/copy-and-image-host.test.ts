@@ -41,6 +41,7 @@ describe(`复制未转存图`, () => {
     const header = readSource(`apps/web/src/components/editor/editor-header/index.vue`)
     expect(header).toContain(`formatLostWechatImageHint`)
     expect(header).toContain(`lostImageHint`)
+    expect(header.indexOf(`v-if="lostImageHint"`)).toBeLessThan(header.indexOf(`mode-switch`))
     expect(header).toContain(`MarkdownGuideDialog`)
     expect(header).toContain(`HelpDropdown`)
   })
