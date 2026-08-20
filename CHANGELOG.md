@@ -9,6 +9,7 @@
 ### 变更
 
 - 源码按 GNU AGPL-3.0-or-later 全面开源；源码、Issue 和桌面 Release 都在 [`FengBuL/mobi`](https://github.com/FengBuL/mobi)
+- 仓库不再写死观测台域名、Cloudflare 账号 ID 和 D1 database_id
 
 ## [2.3.1] - 2026-08-20
 

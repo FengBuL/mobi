@@ -11,8 +11,13 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 DIST_REPO=${MOBI_DIST_REPO:-https://github.com/FengBuL/mobi.git}
-CF_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID:-9964fe05e9a80fd34ad887f1c7da58c7}
 CF_EDITOR_PROJECT=${MOBI_CF_EDITOR_PROJECT:-mobieditor}
+
+if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+  echo "请先设置 CLOUDFLARE_ACCOUNT_ID，不要把账号 ID 写进仓库。" >&2
+  exit 1
+fi
+CF_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID
 
 deploy_pages() {
   local directory=$1

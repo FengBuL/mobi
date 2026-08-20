@@ -13,7 +13,7 @@
 - 网页版：<https://mobieditor.cn/>
 - 桌面下载：<https://app.mobieditor.cn/>
 - 当前公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.3.1>
-- 数据观测台：<https://mobi-telemetry.shovy-mobi.workers.dev/dashboard>
+- 数据观测台：不在仓库里写死地址；自建见 `infra/telemetry-worker`
 
 ## 项目组成
 

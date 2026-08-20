@@ -117,7 +117,7 @@ pnpm proxy
 
 管理密钥禁止写入仓库、URL、截图或聊天记录。
 
-当前客户端配置了生产 telemetry endpoint。匿名统计默认关闭；当前界面不再提供开关。
+客户端默认不写观测台地址，匿名统计整条链路是空操作。要自建时把 Worker 地址填进 `apps/web/src/config/telemetry.ts`，不要把个人域名或账号 ID 提交进 Git。
 
 ## 6. Git 与仓库
 

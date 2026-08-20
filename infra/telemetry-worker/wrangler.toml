@@ -6,4 +6,4 @@ compatibility_date = "2026-08-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "mobi-telemetry"
-database_id = "1146e82b-8573-4d14-9f02-6912a63f0b3b"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"

@@ -14,6 +14,27 @@ describe(`匿名统计默认关闭`, () => {
     expect(telemetry).not.toContain(`!== \`false\``)
   })
 
+  it(`源码不写死个人观测台和 Cloudflare 标识`, () => {
+    const files = [
+      `apps/web/src/config/telemetry.ts`,
+      `PROJECT_STATUS.md`,
+      `scripts/deploy-web.sh`,
+      `infra/telemetry-worker/wrangler.toml`,
+    ]
+    const banned = [
+      `shovy-mobi`,
+      `9964fe05e9a80fd34ad887f1c7da58c7`,
+      `1146e82b-8573-4d14-9f02-6912a63f0b3b`,
+    ]
+
+    for (const path of files) {
+      const text = readSource(path)
+      for (const needle of banned) {
+        expect(text, path).not.toContain(needle)
+      }
+    }
+  })
+
   it(`界面不再提供匿名统计开关`, () => {
     const settings = readSource(`apps/web/src/components/editor/editor-header/SettingsDropdown.vue`)
     const about = readSource(`apps/web/src/components/editor/editor-header/AboutDialog.vue`)
