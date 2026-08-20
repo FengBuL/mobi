@@ -2,6 +2,7 @@
   "name": "@mobi/config",
   "type": "module",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "exports": {
     "./tsconfig.base.json": "./tsconfig.base.json",
     "./tsconfig.node.json": "./tsconfig.node.json"

@@ -4,12 +4,12 @@
 
 ## 当前基线
 
-- 产品版本：`2.2.1`
-- 当前公开版本：`2.2.1`
-- Git 分支：`main`
-- 当前发布基线：`v2.2.1`
-- 私有源码：<https://github.com/FengBuL/mobi-src>
-- 公开分发：<https://github.com/FengBuL/mobi>
+- 产品版本：`2.3.1`
+- 当前公开版本：`2.3.1`
+- Git 分支：`product/next`
+- 当前发布基线：`v2.3.1`
+- 源码与分发：<https://github.com/FengBuL/mobi>
+- 许可证：[GNU AGPL-3.0-or-later](./LICENSE)
 - 网页版：<https://mobieditor.cn/>
 - 桌面下载：<https://app.mobieditor.cn/>
 - 当前公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.3.1>
@@ -39,14 +39,14 @@ patches                     pnpm 依赖补丁
 - CI：macOS、Windows 桌面构建；Linux 请用网页版；
 - v2.2.0：桌面应用内选择性更新、`api.mobieditor.cn` 官方代理默认值、公众号图片比例实体化与移动端预览尺寸校准；
 - v2.2.1：修复桌面主进程加载 `electron-updater` 时因 CommonJS 默认导入互操作错误导致的启动闪退；
-- v2.1.8 公开 Release：macOS、Windows、Linux 四个平台资产。
+- v2.3.1：官方域名入口；连续换方案时样式生效。
 
 每次交接或发布前都要重新运行验证命令，本文记录不能代替当前测试结果。
 
 ## 仓库原则
 
-- 完整源码只进入私有 `mobi-src`；
-- 公共 `mobi` 只承载分发内容；
+- 源码、Issue 和桌面 Release 都在公开仓 `FengBuL/mobi`；
+- 项目许可证是 GNU AGPL-3.0-or-later；
 - 生产凭据不进入 Git；
 - `node_modules`、构建目录和安装包均可重建，不纳入源码交接；
-- 历史上游与许可证信息见 `THIRD_PARTY_NOTICES.md`。
+- 历史上游与第三方许可证见 `THIRD_PARTY_NOTICES.md`。

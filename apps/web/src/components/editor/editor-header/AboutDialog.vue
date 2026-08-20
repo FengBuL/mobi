@@ -40,7 +40,7 @@ function onRedirect(url: string) {
           写完就能贴进公众号的 Markdown 排版编辑器
         </p>
         <p class="text-xs text-muted-foreground">
-          v{{ appVersion }}
+          v{{ appVersion }} · GNU AGPL-3.0
         </p>
       </div>
 

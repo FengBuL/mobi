@@ -6,6 +6,10 @@
 
 ## [未发布]
 
+### 变更
+
+- 源码按 GNU AGPL-3.0-or-later 全面开源；源码、Issue 和桌面 Release 都在 [`FengBuL/mobi`](https://github.com/FengBuL/mobi)
+
 ## [2.3.1] - 2026-08-20
 
 连续更换方案时样式不生效已修好，并做了若干界面调整。官方入口改到独立域名。

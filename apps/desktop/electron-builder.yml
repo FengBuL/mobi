@@ -1,6 +1,6 @@
 appId: com.fengbul.mobi
 productName: 墨笔
-copyright: Copyright © 2026 墨笔
+copyright: Copyright © 2026 墨笔. Licensed under AGPL-3.0-or-later
 
 directories:
   output: release

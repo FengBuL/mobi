@@ -117,18 +117,19 @@ pnpm proxy
 
 管理密钥禁止写入仓库、URL、截图或聊天记录。
 
-当前客户端配置了生产 telemetry endpoint。匿名统计默认关闭；只有在「设置」里打开后才会上报。
+当前客户端配置了生产 telemetry endpoint。匿名统计默认关闭；当前界面不再提供开关。
 
-## 6. Git 与双仓库边界
+## 6. Git 与仓库
+
+源码、Issue 和桌面 Release 都在公开仓库 [`FengBuL/mobi`](https://github.com/FengBuL/mobi)，许可证是 [GNU AGPL-3.0-or-later](./LICENSE)。
 
 | 远端 | 仓库 | 用途 |
 | --- | --- | --- |
-| `origin` | `FengBuL/mobi-src` | 私有完整源码 |
-| `dist` | `FengBuL/mobi` | 公开 README、网页产物和安装包 |
+| `origin` | `FengBuL/mobi` | 源码与 Release |
 
-官方网页入口是 <https://mobieditor.cn/>，桌面下载是 <https://app.mobieditor.cn/>。`pnpm deploy:web` 会把编辑器推到 Cloudflare Pages「mobieditor」，把下载页推到 Worker「mobi-download」，并再同步一份 `/mobi/` 产物到公开仓 `gh-pages`。
+官方网页入口是 <https://mobieditor.cn/>，桌面下载是 <https://app.mobieditor.cn/>。`pnpm deploy:web` 会把编辑器推到 Cloudflare Pages「mobieditor」，把下载页推到 Worker「mobi-download」，并再同步一份 `/mobi/` 产物到本仓 `gh-pages`。`gh-pages` 只推构建产物，不要把源码分支推上去。
 
-禁止向 `dist` 推送源码分支。日常开发从 `main` 建立功能分支，提交到 `origin`，通过 Pull Request 合并。
+日常开发从默认分支建立功能分支，提交到 `origin`，通过 Pull Request 合并。
 
 建议流程：
 
@@ -150,6 +151,7 @@ git push -u origin feature/short-description
 - `pnpm-lock.yaml`；
 - `patches/`；
 - `.nvmrc`、`.npmrc`；
+- `LICENSE`、`CONTRIBUTING.md`、`SECURITY.md`；
 - `DEVELOPMENT.md`、`PROJECT_STATUS.md`、`THIRD_PARTY_NOTICES.md`。
 
 交接时无需携带：

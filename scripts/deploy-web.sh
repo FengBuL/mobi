@@ -6,7 +6,7 @@ set -euo pipefail
 #   2. 公开仓 gh-pages → https://fengbul.github.io/mobi/（旧地址，子路径 /mobi/）
 #   3. Cloudflare Worker「mobi-download」→ https://app.mobieditor.cn/（桌面下载页）
 #
-# 开发仓是私有的。Cloudflare 只收纯产物；GitHub Pages 同样只推产物，源码不出私有仓。
+# 源码仓即公开仓 FengBuL/mobi。Cloudflare 只收纯产物；GitHub Pages 同样只推产物，不要把源码分支推到 gh-pages。
 
 cd "$(dirname "$0")/.."
 

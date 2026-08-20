@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "private": true,
   "description": "Stable WeChat Official Account image proxy for the Markdown editor",
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "start": "node server.mjs"
   }

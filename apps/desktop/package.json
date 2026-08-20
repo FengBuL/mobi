@@ -4,6 +4,7 @@
   "version": "2.3.1",
   "private": true,
   "description": "墨笔桌面版：Electron 外壳，复用 apps/web 的渲染进程",
+  "license": "AGPL-3.0-or-later",
   "main": "dist/main/index.cjs",
   "engines": {
     "node": ">=22.16.0"

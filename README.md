@@ -2,11 +2,14 @@
 
 写完就能贴进公众号的 Markdown 排版编辑器。
 
+本项目以 [GNU AGPL-3.0-or-later](./LICENSE) 开源。源码、Issue 和桌面安装包都在 [FengBuL/mobi](https://github.com/FengBuL/mobi)。参与开发见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+
 开发者第一次接手项目时，请先阅读：
 
 - [开发环境与交接](./DEVELOPMENT.md)
 - [当前项目状态](./PROJECT_STATUS.md)
 - [第三方来源与许可证](./THIRD_PARTY_NOTICES.md)
+- [安全说明](./SECURITY.md)
 
 左边写 Markdown，右边按贴进公众号之后的结果预览。微信保不住的构图（长图会变成公众号长图、固定裁剪会按原图比例铺满、压在图上的角标会落到图下）当场打标；主题 SVG / 纸纹预览里不画。不要按「贴进去 100% 一样」来理解。依据见 [docs/wechat-paste-regression](./docs/wechat-paste-regression/README.md) 与 TASK-06 记录表。
 
@@ -130,13 +133,11 @@ v2.2.0 开始使用公开仓库 `FengBuL/mobi` 的 GitHub Release 执行应用�
 
 ### 发布
 
-代码在私有仓库 `mobi-src`，对外分发走公开仓库 [`mobi`](https://github.com/FengBuL/mobi)——
-那边只有下载说明、Release 安装包和网页版构建产物，没有源码。
+源码和桌面 Release 都在本仓库 [`FengBuL/mobi`](https://github.com/FengBuL/mobi)。
 
 网页版：`pnpm deploy:web`。官方入口是 Cloudflare Pages 的 <https://mobieditor.cn/>；桌面下载页是 <https://app.mobieditor.cn/>；旧地址 <https://fengbul.github.io/mobi/> 仍会同步一份 `/mobi/` 产物。
 
-桌面版：打 `v*` 开头的 tag，本仓库的 CI 在 macOS、Windows 各构建一次，汇总成一个草稿 Release；
-下载这些安装包后在公开仓库发正式 Release（`gh release create vX.Y.Z --repo FengBuL/mobi 安装包...`）。
+桌面版：打 `v*` 开头的 tag，CI 在 macOS、Windows 各构建一次，把安装包挂到本仓库的草稿 Release。核对后把草稿改成正式发布即可。
 打包只能在目标系统上做，本机 `pnpm package:desktop` 只出当前系统的包。桌面安装包不出 Linux，Linux 请用网页版。
 
-应用内更新还要求公开 Release 包含 `latest*.yml`、macOS ZIP 和对应的 blockmap。macOS 正式启用自动安装前需要 Developer ID 签名与公证，Windows 建议配置代码签名。
+应用内更新还要求 Release 包含 `latest*.yml`、macOS ZIP 和对应的 blockmap。macOS 正式启用自动安装前需要 Developer ID 签名与公证，Windows 建议配置代码签名。
