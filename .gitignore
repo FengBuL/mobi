@@ -62,3 +62,6 @@ apps/utools/release
 
 # 桌面版安装包
 apps/desktop/release
+
+# 本地 Obsidian 任务笔记，不进公开仓
+notes/
