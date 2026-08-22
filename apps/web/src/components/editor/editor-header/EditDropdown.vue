@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { altSign, ctrlSign, shiftSign } from '@mobi/shared/configs'
-import { redoAction, undoAction } from '@mobi/shared/editor'
 import {
   Images,
   Redo2,
@@ -59,13 +58,11 @@ function openBlockLibrary() {
 }
 
 function undoEdit() {
-  if (editor.value)
-    undoAction(editor.value)
+  editorStore.undoEdit()
 }
 
 function redoEdit() {
-  if (editor.value)
-    redoAction(editor.value)
+  editorStore.redoEdit()
 }
 </script>
 

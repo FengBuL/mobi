@@ -111,7 +111,7 @@ const { toggleShowUploadImgDialog } = uiStore
 function editorRefresh() {
   themeStore.updateCodeTheme()
 
-  const raw = editorStore.getContent()
+  const raw = editorStore.getContent() || currentPost.value?.content || ``
   renderStore.render(renderStore.resolvePreviewContent(raw))
 }
 
@@ -278,7 +278,7 @@ const previewRef = useTemplateRef<HTMLDivElement>(`previewRef`)
 const mainSectionRef = useTemplateRef<HTMLDivElement>(`mainSectionRef`)
 const editorRef = useTemplateRef<HTMLDivElement>(`editorRef`)
 
-const codeMirrorView = ref<EditorView | null>(null)
+const codeMirrorView = shallowRef<EditorView | null>(null)
 const themeCompartment = new Compartment()
 const cursorSyncTimer = ref<NodeJS.Timeout>()
 const skipCursorDrivenPreviewSync = ref(false)
@@ -1679,10 +1679,10 @@ function createFormTextArea(dom: HTMLDivElement) {
   })
 
   // 创建编辑器视图
-  const view = new EditorView({
+  const view = markRaw(new EditorView({
     state,
     parent: dom,
-  })
+  }))
 
   codeMirrorView.value = view
 
@@ -1690,14 +1690,74 @@ function createFormTextArea(dom: HTMLDivElement) {
   return view
 }
 
+function getEditorView() {
+  return codeMirrorView.value
+}
+
+function flushEditorToPost() {
+  const view = getEditorView()
+  const post = currentPost.value
+  if (!view || !post)
+    return
+
+  const value = view.state.doc.toString()
+  if (value === post.content)
+    return
+
+  post.updateDatetime = new Date()
+  post.content = value
+}
+
+function destroyEditorView() {
+  const view = getEditorView()
+  if (!view)
+    return
+
+  flushEditorToPost()
+  view.destroy()
+  codeMirrorView.value = null
+  editor.value = null
+}
+
+function resolveEditorHost() {
+  const host = editorRef.value
+  if (host instanceof HTMLElement)
+    return host
+  return document.getElementById(`editor`)
+}
+
+function attachEditorToHost() {
+  const host = resolveEditorHost()
+  if (!host)
+    return
+
+  destroyEditorView()
+
+  const editorView = createFormTextArea(host)
+  editor.value = editorView
+  normalizeCurrentPostMediaLayouts()
+  syncEditorPreviewPanelLayout()
+  // 文档刚按当前内容建好，强制整篇替换只会多压一条撤销记录，
+  // 再顺带引一次 300ms 之后的重复渲染。重绘交给 ensureEditorPaint。
+  syncEditorDocument()
+  ensureEditorPaint()
+  editorRefresh()
+}
+
+function ensureEditorAttached() {
+  const host = resolveEditorHost()
+  if (!host)
+    return
+
+  const view = getEditorView()
+  if (view?.dom && host.contains(view.dom))
+    return
+
+  attachEditorToHost()
+}
+
 // 初始化编辑器
 onMounted(() => {
-  const editorDom = editorRef.value
-
-  if (editorDom == null) {
-    return
-  }
-
   // 初始化渲染器（新主题系统）
   renderStore.initRendererInstance({
     isShowCodeLanguage: themeStore.isShowCodeLanguage,
@@ -1708,19 +1768,15 @@ onMounted(() => {
   themeStore.applyCurrentTheme()
 
   nextTick(() => {
-    const editorView = createFormTextArea(editorDom)
-    editor.value = editorView
-    normalizeCurrentPostMediaLayouts()
-    syncEditorPreviewPanelLayout()
-    // 文档刚按当前内容建好，强制整篇替换只会多压一条撤销记录，
-    // 再顺带引一次 300ms 之后的重复渲染。重绘交给 ensureEditorPaint。
-    syncEditorDocument()
-    ensureEditorPaint()
-
-    // AI 工具箱已移到侧边栏，不再需要初始化编辑器事件
-    editorRefresh()
+    ensureEditorAttached()
     mdLocalToRemote()
   })
+})
+
+// 关栏会重建分栏节点；纯预览时宿主也可能晚出现。
+// CodeMirror 只挂在当时的 DOM 上，不跟着走编辑区就空了。
+watch([editorRef, viewMode, showStyleRail, showPostRail, showFolderRail], () => {
+  nextTick(ensureEditorAttached)
 })
 
 // 监听暗色模式变化并更新编辑器主题
@@ -1820,6 +1876,8 @@ onUnmounted(() => {
   // 清理全局事件监听器 - 防止全局事件触发已销毁的组件
   document.removeEventListener(`keydown`, handleGlobalKeydown)
   window.removeEventListener(`scroll`, handlePreviewScroll, { capture: true })
+
+  destroyEditorView()
 })
 </script>
 

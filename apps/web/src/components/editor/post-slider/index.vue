@@ -22,7 +22,6 @@ function belongsToCurrentProfile(post: { profileId?: string | null }) {
 const draftFileSync = inject(draftFileSyncKey)
 
 const editorStore = useEditorStore()
-const { editor } = storeToRefs(editorStore)
 
 // 控制是否启用动画
 const enableAnimation = ref(false)

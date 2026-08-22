@@ -1,6 +1,6 @@
 import type { EditorView } from '@codemirror/view'
 import { Annotation } from '@codemirror/state'
-import { blockFieldEditSession, isolateHistory } from '@mobi/shared/editor'
+import { blockFieldEditSession, isolateHistory, redoAction, undoAction } from '@mobi/shared/editor'
 import { formatDoc } from '@/utils'
 
 export const blockSelectionTransaction = Annotation.define<boolean>()
@@ -131,9 +131,9 @@ export const useEditorStore = defineStore(`editor`, () => {
       return
 
     const annotations = [
-      options.preserveBlockSelection ? blockSelectionTransaction.of(true) : undefined,
+      ...(options.preserveBlockSelection ? [blockSelectionTransaction.of(true)] : []),
       options.composeHistory ? blockFieldEditSession.of(true) : isolateHistory.of(`before`),
-    ].filter(Boolean)
+    ]
 
     editor.value.dispatch({
       changes: { from, to, insert: text },
@@ -153,6 +153,18 @@ export const useEditorStore = defineStore(`editor`, () => {
     return insertBlockAtCursor(markup, options)
   }
 
+  const undoEdit = () => {
+    const view = toRaw(editor.value) as EditorView | null
+    if (view)
+      undoAction(view)
+  }
+
+  const redoEdit = () => {
+    const view = toRaw(editor.value) as EditorView | null
+    if (view)
+      redoAction(view)
+  }
+
   return {
     editor,
     formatContent,
@@ -165,5 +177,7 @@ export const useEditorStore = defineStore(`editor`, () => {
     insertBlockAtCursor,
     insertBlockAtEnd,
     replaceRange,
+    undoEdit,
+    redoEdit,
   }
 })
