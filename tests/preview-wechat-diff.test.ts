@@ -60,6 +60,7 @@ describe(`预览微信差异打标`, () => {
   it(`源码含三类标记文案`, () => {
     const source = [
       readSource(`apps/web/src/utils/image-layouts.ts`),
+      readSource(`apps/web/src/utils/preview-text.ts`),
       readSource(`apps/web/src/views/CodemirrorEditor.vue`),
       readSource(`apps/web/src/utils/index.ts`),
       readSource(`apps/web/src/stores/ui.ts`),
@@ -77,6 +78,8 @@ describe(`预览微信差异打标`, () => {
     expect(source).toContain(`切成多张`)
     expect(source).toContain(`点这里换样子`)
     expect(source).toContain(`preview_block_pick_hint_seen`)
+    expect(source).toContain(`readPreviewElementText`)
+    expect(source).toContain(`block-pick-hint`)
     expect(source).toContain(`stripEditorOnlyWechatDiffMarkers`)
     expect(source).toContain(`applyWechatPreviewDiffHints`)
   })

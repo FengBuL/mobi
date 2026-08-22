@@ -101,12 +101,16 @@ async function formatContent() {
 
 // 导入默认内容
 function importDefaultContent() {
+  if (editorStore.getContent().trim() && !window.confirm(`重置文档会换成默认稿，当前正文会丢掉。继续？`))
+    return
   editorStore.importContent(DEFAULT_CONTENT)
   toast.success(`文档已重置`)
 }
 
 // 清空内容
 function clearContent() {
+  if (editorStore.getContent().trim() && !window.confirm(`清空后这篇只剩空白。继续？`))
+    return
   editorStore.clearContent()
 }
 

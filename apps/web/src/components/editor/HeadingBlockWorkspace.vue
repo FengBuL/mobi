@@ -3,6 +3,7 @@ import type { BlockPreset, BlockState, ParsedBlock } from '@/utils/blocks/types'
 import { Check, Minus, Plus, RotateCcw, Trash2, Type } from 'lucide-vue-next'
 import { useAccountProfileStore } from '@/stores/accountProfile'
 import { useBlockSelectionStore } from '@/stores/blockSelection'
+import { armBlockFieldEditJoin, resetBlockFieldEditJoin } from '@mobi/shared/editor'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
@@ -116,6 +117,11 @@ watch([category, blockSelection], ([nextCategory, selection]) => {
 }, { immediate: true })
 
 function selectPreset(preset: BlockPreset) {
+  clearTimeout(persistTimer)
+  if (editingRange.value && preset.id === selectedPresetId.value) {
+    return
+  }
+
   const previous = selectedPreset.value
   selectedPresetId.value = preset.id
   uiStore.openBlockInspector()
@@ -128,6 +134,7 @@ function selectPreset(preset: BlockPreset) {
   })
 
   if (editingRange.value) {
+    beginFieldEditSession()
     writeBlock(preset, `${category.value.name}板块已换成「${preset.name}」`)
     return
   }
@@ -156,14 +163,44 @@ function setFontScale(value: number) {
   persistEditingBlock()
 }
 
+let persistTimer: ReturnType<typeof setTimeout> | undefined
+let fieldEditSessionActive = false
+
+function beginFieldEditSession() {
+  fieldEditSessionActive = false
+  resetBlockFieldEditJoin()
+}
+
+function schedulePersist() {
+  clearTimeout(persistTimer)
+  persistTimer = setTimeout(() => persistEditingBlock(), 320)
+}
+
+onUnmounted(() => {
+  clearTimeout(persistTimer)
+  beginFieldEditSession()
+})
+
+watch(() => blockSelection.value?.from, (from, previous) => {
+  if (from !== previous)
+    beginFieldEditSession()
+})
+
+watch(() => uiStore.isOpenRightSlider, (open) => {
+  if (!open)
+    beginFieldEditSession()
+})
+
 function updateField(key: string, value: string | number) {
   state[key] = String(value ?? ``)
-  persistEditingBlock()
+  schedulePersist()
 }
 
 function persistEditingBlock() {
   if (editingRange.value) {
-    writeBlock(selectedPreset.value)
+    writeBlock(selectedPreset.value, undefined, { composeHistory: fieldEditSessionActive })
+    fieldEditSessionActive = true
+    armBlockFieldEditJoin()
   }
 }
 
@@ -254,18 +291,25 @@ function syncBlockSelection(preset: BlockPreset, range: { from: number, to: numb
   })
 }
 
-function writeBlock(preset: BlockPreset, message?: string) {
+function writeBlock(preset: BlockPreset, message?: string, options: { composeHistory?: boolean } = {}) {
   profileStore.rememberBlockPreset(preset.id)
   const markup = buildBlockMarkup(preset, state)
-  const current = editorStore.getContent()
   if (message) {
     trackEvent(`block_apply`, { category: preset.category, preset: preset.id })
   }
 
   if (editingRange.value) {
     const { from, to } = editingRange.value
-    persistContent(`${current.slice(0, from)}${markup}${current.slice(to)}`, { preserveBlockSelection: true })
-    editingRange.value = { from, to: from + markup.length }
+    const nextRange = editorStore.replaceRange(from, to, markup, {
+      preserveBlockSelection: true,
+      composeHistory: Boolean(options.composeHistory && !message),
+    })
+    editingRange.value = nextRange ?? { from, to: from + markup.length }
+    const nextContent = editorStore.getContent()
+    if (postStore.currentPost) {
+      postStore.updatePostContent(postStore.currentPost.id, nextContent)
+    }
+    renderStore.render(nextContent)
     syncBlockSelection(preset, editingRange.value)
     if (message) {
       toast.success(message)
@@ -273,7 +317,7 @@ function writeBlock(preset: BlockPreset, message?: string) {
     return
   }
 
-  const insertedRange = editorStore.insertBlockAtCursor(markup, { preserveBlockSelection: true })
+  const insertedRange = editorStore.insertBlockAtEnd(markup, { preserveBlockSelection: true })
   const nextContent = editorStore.getContent()
   if (postStore.currentPost) {
     postStore.updatePostContent(postStore.currentPost.id, nextContent)
@@ -296,7 +340,7 @@ function writeBlock(preset: BlockPreset, message?: string) {
       <div class="heading-block-section__head">
         <div>
           <h3>选择{{ category.name }}样式</h3>
-          <p>{{ editingRange ? '点任意样式，原地替换当前板块。' : '点任意样式，直接生成到光标位置。' }}</p>
+          <p>{{ editingRange ? '点任意样式，原地替换当前板块。' : '点任意样式，插到文末。' }}</p>
           <p v-if="showCustomBlockThemeNote">
             这一块是单独处理的，所以还是它自己的颜色。
             <button type="button" class="heading-block-restore" @click="restoreToPlainMarkdown">
@@ -644,10 +688,9 @@ function writeBlock(preset: BlockPreset, message?: string) {
 }
 
 .heading-block-preset__meta strong {
-  overflow: hidden;
+  overflow: visible;
   font-size: 0.78rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .heading-block-preset__meta span {

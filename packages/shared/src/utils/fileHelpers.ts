@@ -92,11 +92,62 @@ export function createTable({ data, rows, cols }: {
  * @param type - 内容类型，决定使用的解析器，默认为 'markdown'
  * @returns 格式化后的内容
  */
+function findBalancedSectionEnd(content: string, start: number) {
+  const lower = content.toLowerCase()
+  if (!lower.startsWith(`<section`, start) && lower.indexOf(`<section`, start) !== start) {
+    return -1
+  }
+  let depth = 1
+  let pos = start + 8
+  while (depth > 0 && pos < content.length) {
+    const nextOpen = lower.indexOf(`<section`, pos)
+    const nextClose = lower.indexOf(`</section>`, pos)
+    if (nextClose === -1)
+      return -1
+    if (nextOpen !== -1 && nextOpen < nextClose) {
+      depth += 1
+      pos = nextOpen + 8
+    }
+    else {
+      depth -= 1
+      pos = nextClose + 10
+    }
+  }
+  return depth === 0 ? pos : -1
+}
+
+export function maskHtmlSections(content: string) {
+  const blocks: string[] = []
+  let result = ``
+  let index = 0
+  while (index < content.length) {
+    const start = content.toLowerCase().indexOf(`<section`, index)
+    if (start === -1) {
+      result += content.slice(index)
+      break
+    }
+    const end = findBalancedSectionEnd(content, start)
+    if (end === -1) {
+      result += content.slice(index)
+      break
+    }
+    result += `${content.slice(index, start)}<!-- mobi-html-block:${blocks.length} -->`
+    blocks.push(content.slice(start, end))
+    index = end
+  }
+  return { masked: result, blocks }
+}
+
+export function restoreHtmlSections(content: string, blocks: string[]) {
+  return blocks.reduce((next, html, index) => next.replace(`<!-- mobi-html-block:${index} -->`, html), content)
+}
+
 export async function formatDoc(content: string, type: `markdown` | `css` | `javascript` = `markdown`): Promise<string> {
   const parser = type === `css` ? `css` : type === `javascript` ? `babel` : `markdown`
   const plugins = type === `css` ? [parserPostcss] : type === `javascript` ? [parserBabel] : [parserMarkdown, parserBabel]
+  const protectedDoc = type === `markdown` ? maskHtmlSections(content) : { masked: content, blocks: [] as string[] }
 
-  return await prettier.format(content, {
+  const formatted = await prettier.format(protectedDoc.masked, {
     parser,
     plugins,
     // prettier v2.8.8 配置选项
@@ -114,4 +165,5 @@ export async function formatDoc(content: string, type: `markdown` | `css` | `jav
     htmlWhitespaceSensitivity: `css`,
     endOfLine: `lf`,
   })
+  return restoreHtmlSections(formatted, protectedDoc.blocks)
 }

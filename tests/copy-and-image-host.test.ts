@@ -24,6 +24,7 @@ describe(`复制未转存图`, () => {
     expect(copy).toContain(`getUnsafeClipboardImages`)
     expect(copy).toContain(`toast.warning`)
     expect(copy).toContain(`不配图床也可以直接贴`)
+    expect(copy).toContain(`还没选图床`)
     expect(copy).not.toContain(`会在公众号里丢`)
     expect(copy).not.toMatch(/if \(localImages\.length > 0\) \{[\s\S]*toast\.error[\s\S]*return/)
     expect(copy).not.toContain(`已停止复制`)
@@ -39,7 +40,7 @@ describe(`复制未转存图`, () => {
     expect(formatLostWechatImageHint(2)).toBe(`还有 2 张不是公众号地址，微信可能留下或丢掉`)
 
     const header = readSource(`apps/web/src/components/editor/editor-header/index.vue`)
-    expect(header).toContain(`formatLostWechatImageHint`)
+    expect(header).toContain(`resolveLostImageHint`)
     expect(header).toContain(`lostImageHint`)
     expect(header.indexOf(`v-if="lostImageHint"`)).toBeLessThan(header.indexOf(`mode-switch`))
     expect(header).toContain(`MarkdownGuideDialog`)
@@ -62,6 +63,73 @@ describe(`插图入口收敛`, () => {
     expect(context).not.toContain(`按链接插入图片`)
     expect(context).not.toContain(`最近使用的图片`)
     expect(context).toContain(`markdown.md`)
+  })
+})
+
+describe(`图床入口和上传回执`, () => {
+  it(`没选图床时指路设置，而不是已经撤掉的插入菜单`, () => {
+    const file = readSource(`apps/web/src/utils/file.ts`)
+    const editor = readSource(`apps/web/src/views/CodemirrorEditor.vue`)
+    expect(file).toContain(`IMAGE_HOST_SETUP_HINT`)
+    expect(file).toContain(`设置 → 图床配置`)
+    expect(file).not.toContain(`插入 → 插入图片`)
+    expect(editor).toContain(`IMAGE_HOST_SETUP_HINT`)
+    expect(editor).not.toContain(`插入 → 插入图片`)
+  })
+
+  it(`R2 / MinIO 预签名上传用 body，失败不假装成功`, () => {
+    const file = readSource(`apps/web/src/utils/file.ts`)
+    expect(file).toContain(`await putPresignedFile(presignedUrl, file)`)
+    expect(file).toContain(`await putPresignedFile(signedUrl, file)`)
+    expect(file).not.toMatch(/data:\s*file/)
+    const helper = readSource(`apps/web/src/utils/put-presigned-file.ts`)
+    expect(helper).toContain(`body: file`)
+    expect(helper).not.toMatch(/data:\s*file/)
+  })
+
+  it(`保存 GitHub / OSS / R2 / 自定义图床会切到当前图床`, () => {
+    const dialog = readSource(`apps/web/src/components/editor/UploadImgDialog.vue`)
+    expect(dialog).toContain(`saveOtherImageHost`)
+    expect(dialog).toContain(`saveOtherImageHost(\`github\``)
+    expect(dialog).toContain(`saveOtherImageHost(\`aliOSS\``)
+    expect(dialog).toContain(`saveOtherImageHost(\`r2\``)
+    expect(dialog).toContain(`saveOtherImageHost(\`minio\``)
+    expect(dialog).toContain(`已用作当前图床`)
+
+    const custom = readSource(`apps/web/src/components/editor/CustomUploadForm.vue`)
+    expect(custom).toContain(`imgHost.value = \`formCustom\``)
+    expect(custom).toContain(`已用作当前图床`)
+    expect(custom).not.toMatch(/toast\.success\(`保存成功`\)/)
+  })
+
+  it(`编辑器拖放不再留未处理的事件覆盖 todo`, () => {
+    const editor = readSource(`apps/web/src/views/CodemirrorEditor.vue`)
+    expect(editor).toContain(`listDroppedFiles`)
+    expect(editor).not.toContain(`todo 处理事件覆盖`)
+  })
+
+  it(`插图对话框没选图床时不说会上传，也不能转存`, () => {
+    const dialog = readSource(`apps/web/src/components/editor/ImageQuickInsertDialog.vue`)
+    expect(dialog).toContain(`还没选图床`)
+    expect(dialog).toContain(`设置 → 图床配置`)
+    expect(dialog).toContain(`:disabled="!hasImageHost"`)
+    expect(dialog).toContain(`不能转存`)
+    expect(dialog).toContain(`if (migrateLinks.value && !hasImageHost.value)`)
+  })
+
+  it(`导入文案不再假装能收任意网页`, () => {
+    const dialog = readSource(`apps/web/src/components/editor/ImportMarkdownDialog.vue`)
+    expect(dialog).toContain(`只收 .md / .markdown / .txt`)
+    expect(dialog).not.toContain(`任意网页链接`)
+  })
+
+  it(`本地 /mobi 缺斜杠会跳到 /mobi/`, () => {
+    const vite = readSource(`apps/web/vite.config.ts`)
+    const redirects = readSource(`apps/web/public/_redirects`)
+    expect(vite).toContain(`redirectBareBase`)
+    expect(vite).toContain(`pathname === withoutSlash`)
+    expect(vite).toContain(`Location`)
+    expect(redirects).toContain(`/mobi         /mobi/        302`)
   })
 })
 

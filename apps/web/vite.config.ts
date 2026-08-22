@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 
 import { hljsLocalPlugin } from './plugins/vite-plugin-hljs-local'
 import { mathjaxLocalPlugin } from './plugins/vite-plugin-mathjax-local'
@@ -12,6 +12,31 @@ import { mathjaxLocalPlugin } from './plugins/vite-plugin-mathjax-local'
 const PKG_NAME_SPECIAL_CHARS = /[^\w-]/g
 const LOCAL_BASE = `/mobi/`
 const DEFAULT_REPO_NAME = `mobi`
+
+function redirectBareBase(basePath: string): Plugin {
+  const withSlash = normalizeBase(basePath)
+  const withoutSlash = withSlash.replace(/\/+$/, ``)
+  const redirect = (req: { url?: string }, res: { statusCode: number, setHeader: (name: string, value: string) => void, end: () => void }, next: () => void) => {
+    const pathname = req.url?.split(`?`)[0] ?? ``
+    if (withoutSlash && pathname === withoutSlash) {
+      const query = req.url?.includes(`?`) ? req.url.slice(req.url.indexOf(`?`)) : ``
+      res.statusCode = 302
+      res.setHeader(`Location`, `${withSlash}${query}`)
+      res.end()
+      return
+    }
+    next()
+  }
+  return {
+    name: `redirect-bare-base`,
+    configureServer(server) {
+      server.middlewares.use(redirect)
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(redirect)
+    },
+  }
+}
 
 const rootPackage = JSON.parse(
   readFileSync(path.resolve(__dirname, `../../package.json`), `utf-8`),
@@ -45,6 +70,7 @@ export default defineConfig(({ command, mode }) => {
       __APP_VERSION__: JSON.stringify(rootPackage.version ?? `0.0.0`),
     },
     plugins: [
+      redirectBareBase(base),
       vue(),
       tailwindcss(),
       AutoImport({

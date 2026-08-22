@@ -7,7 +7,7 @@ import type {
   MediaLayoutPreset,
   MediaLayoutTextMode,
 } from '@/utils/image-layouts'
-import { Check, ImagePlus, LayoutTemplate, RotateCcw, Sparkles } from 'lucide-vue-next'
+import { Check, ImagePlus, RotateCcw, Sparkles } from 'lucide-vue-next'
 import { useImageQuickInsert } from '@/composables/useImageQuickInsert'
 import { useBlockSelectionStore } from '@/stores/blockSelection'
 import { useEditorStore } from '@/stores/editor'
@@ -73,7 +73,6 @@ const renderStore = useRenderStore()
 const uiStore = useUIStore()
 const { currentPost } = storeToRefs(postStore)
 const { selection: blockSelection } = storeToRefs(blockSelectionStore)
-const { isSimpleWorkspace } = storeToRefs(uiStore)
 
 const selectedPresetId = ref(``)
 const selectedImageIds = ref<string[]>([])
@@ -98,16 +97,10 @@ const PRIMARY_LIBRARY_CATEGORY_IDS: BlockCategoryId[] = [`heading`, `quote`, `li
 const SECONDARY_LIBRARY_CATEGORY_IDS: BlockCategoryId[] = [`card`, `data`, `interactive`]
 const isImagePreviewTarget = ref(false)
 const isInsertingNewBlock = ref(false)
-const showMoreLibraryCategories = ref(false)
 
 const hasReplaceTarget = computed(() => Boolean(blockSelection.value) || isImagePreviewTarget.value)
-const showEmptyHint = computed(() => !hasReplaceTarget.value && !isInsertingNewBlock.value)
-const showLibraryNav = computed(() => isInsertingNewBlock.value && !hasReplaceTarget.value)
 const visibleLibraryCategoryIds = computed<BlockCategoryId[]>(() => {
-  if (!isSimpleWorkspace.value || showMoreLibraryCategories.value) {
-    return [...PRIMARY_LIBRARY_CATEGORY_IDS, ...SECONDARY_LIBRARY_CATEGORY_IDS]
-  }
-  return PRIMARY_LIBRARY_CATEGORY_IDS
+  return [...PRIMARY_LIBRARY_CATEGORY_IDS, ...SECONDARY_LIBRARY_CATEGORY_IDS]
 })
 
 // immediate：面板常常是被这次点击顺带打开的，组件挂载时信号已经发过了，
@@ -121,15 +114,16 @@ watch(blockSelection, (selection) => {
 }, { immediate: true })
 
 function selectLibraryCategory(category: BlockCategoryId) {
-  if (blockSelection.value?.category !== category) {
+  if (blockSelection.value && blockSelection.value.category !== category) {
     blockSelectionStore.clear()
+    isInsertingNewBlock.value = true
   }
   activeLibraryCategory.value = category
 }
 
 function enterInsertLibrary() {
+  blockSelectionStore.clear()
   isInsertingNewBlock.value = true
-  showMoreLibraryCategories.value = false
   if (!visibleLibraryCategoryIds.value.includes(activeLibraryCategory.value)) {
     activeLibraryCategory.value = `heading`
   }
@@ -137,7 +131,6 @@ function enterInsertLibrary() {
 
 function exitInsertLibrary() {
   isInsertingNewBlock.value = false
-  showMoreLibraryCategories.value = false
 }
 
 const registeredBlockCategoryIds = computed(() => new Set(blockCategories.map(category => category.id)))
@@ -1067,9 +1060,14 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
 <template>
   <div class="block-library-shell">
     <header class="block-library-shell__header">
-      <h2>换样子</h2>
+      <p v-if="hasReplaceTarget" class="block-library-shell__hint">
+        正在换当前选中的一块。也可以插入新板块。
+      </p>
+      <p v-else class="block-library-shell__hint">
+        点预览里的标题、引用或列表可换样子。点下面样式会插到文末。
+      </p>
       <Button
-        v-if="showEmptyHint"
+        v-if="hasReplaceTarget"
         variant="ghost"
         size="sm"
         class="h-8 px-3 text-xs"
@@ -1078,7 +1076,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
         插入新板块
       </Button>
       <Button
-        v-else-if="isInsertingNewBlock"
+        v-else-if="isInsertingNewBlock && blockSelection"
         variant="ghost"
         size="sm"
         class="h-8 px-3 text-xs"
@@ -1088,7 +1086,7 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
       </Button>
     </header>
 
-    <nav v-if="showLibraryNav" class="block-library-nav" aria-label="板块类别">
+    <nav class="block-library-nav" aria-label="板块类别">
       <button
         v-for="category in blockLibraryCategories"
         :key="category.id"
@@ -1100,36 +1098,19 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
         <strong>{{ category.name }}</strong>
         <small>{{ category.count }}</small>
       </button>
-      <button
-        v-if="isSimpleWorkspace && !showMoreLibraryCategories"
-        type="button"
-        class="block-library-nav__item"
-        @click="showMoreLibraryCategories = true"
-      >
-        <strong>更多</strong>
-        <small>卡片等</small>
-      </button>
     </nav>
 
     <div class="block-library-shell__body">
-      <div v-if="showEmptyHint" class="block-library-empty">
-        点右边稿子里的标题、引用或列表，再来换样子。
-      </div>
-
       <HeadingBlockWorkspace
-        v-else-if="activeLibraryCategory !== 'image' && registeredBlockCategoryIds.has(activeLibraryCategory)"
+        v-if="activeLibraryCategory !== 'image' && registeredBlockCategoryIds.has(activeLibraryCategory)"
         :category-id="activeLibraryCategory"
       />
 
       <div v-else-if="activeLibraryCategory === 'image'" class="media-layout-workspace">
         <div class="media-layout-workspace__header">
-          <div class="media-layout-workspace__eyebrow">
-            <LayoutTemplate class="size-3.5" />
-            Image Layout Studio
-          </div>
           <div class="media-layout-workspace__headline">
             <div>
-              <h2>图片排版工作台</h2>
+              <h2>图片排版</h2>
               <p>面向公众号粘贴重做：先用推荐模板快速成组，只有需要时才展开换图、微调和补文案。</p>
             </div>
             <div class="media-layout-workspace__chips">
@@ -1640,35 +1621,36 @@ function getImageLabel(image: MarkdownImageEntry | null, index: number) {
 
 .block-library-shell__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1.1rem 1.2rem 0.9rem;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem 0.55rem;
   border-bottom: 1px solid hsl(var(--border) / 0.72);
 }
 
-.block-library-shell__header h2 {
-  margin: 0.18rem 0 0;
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+.block-library-shell__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: hsl(var(--muted-foreground));
 }
 
 .block-library-nav {
   display: flex;
-  gap: 0.4rem;
-  padding: 0.7rem 0.85rem;
-  overflow-x: auto;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  padding: 0.45rem 0.75rem;
   border-bottom: 1px solid hsl(var(--border) / 0.72);
 }
 
 .block-library-nav__item {
-  display: grid;
-  min-width: 4.5rem;
-  gap: 0.12rem;
-  padding: 0.5rem 0.58rem;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.28rem;
+  flex: 0 0 auto;
+  padding: 0.28rem 0.5rem;
   border: 1px solid hsl(var(--border));
-  border-radius: 12px;
+  border-radius: 999px;
   background: transparent;
   text-align: left;
   transition:

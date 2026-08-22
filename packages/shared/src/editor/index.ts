@@ -1,5 +1,7 @@
 export * from './basicSetup'
+export * from './blockquote-enter'
 export * from './format'
+export * from './history-join'
 export * from './javascript'
 export * from './markdown'
 export * from './themes'

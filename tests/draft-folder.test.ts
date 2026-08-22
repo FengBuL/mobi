@@ -8,6 +8,7 @@ import {
   canDeleteDraftDirectory,
   canMoveDraftEntry,
   collectVisibleFilePaths,
+  describeFolderActionDisabledReason,
   describeFolderPickerBlocker,
   displayDraftPath,
   isArchivedDraftPath,
@@ -28,19 +29,24 @@ import { releaseFolderNodeHandles } from '../apps/web/src/utils/folder-handle'
 const day = 24 * 60 * 60 * 1000
 
 describe(`选本机文件夹`, () => {
-  it(`局域网 http 地址会挡住选择器，并指出该用 localhost`, () => {
-    expect(describeFolderPickerBlocker({
+  it(`局域网 http 地址会挡住选择器，并写明原因`, () => {
+    const blocker = describeFolderPickerBlocker({
       hasDesktopFolders: false,
       isSecureContext: false,
       hasDirectoryPicker: false,
       origin: `http://192.168.1.8:5173`,
-    })).toContain(`localhost:5173/mobi/`)
+    })
+    expect(blocker).toContain(`不是安全上下文`)
+    expect(blocker).toContain(`桌面版`)
+    expect(blocker).not.toContain(`localhost:5173/mobi/`)
     expect(describeFolderPickerBlocker({
       hasDesktopFolders: false,
       isSecureContext: true,
       hasDirectoryPicker: true,
       origin: `http://localhost:5173`,
     })).toBe(``)
+    expect(describeFolderActionDisabledReason(false)).toBe(`先打开一个本地文件夹`)
+    expect(describeFolderActionDisabledReason(true)).toBe(``)
   })
 })
 
@@ -202,6 +208,7 @@ describe(`稿件子目录与归档`, () => {
     expect(store).toContain(`removeDirectory`)
     expect(store).toContain(`moveEntry`)
     expect(files).toContain(`打开文件夹`)
+    expect(files).toContain(`folderActionReason`)
     expect(files).toContain(`归档这篇`)
     expect(files).toContain(`新建子文件夹`)
     expect(files).toContain(`移动到…`)

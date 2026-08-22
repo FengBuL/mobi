@@ -1,4 +1,6 @@
 import { useEditorStore } from '@/stores/editor'
+import { usePostStore } from '@/stores/post'
+import { titleFromImportedMarkdown } from '@/utils/imported-markdown'
 
 const MARKDOWN_FILE_PATTERN = /\.(md|markdown|txt)$/i
 
@@ -17,6 +19,20 @@ function readFileAsText(file: File): Promise<string> {
 
 export function useMarkdownImportActions() {
   const editorStore = useEditorStore()
+  const postStore = usePostStore()
+
+  function applyImportedMarkdown(content: string, fallbackTitle = `未命名`) {
+    const current = editorStore.getContent().trim()
+    if (current && !window.confirm(`导入会替换当前正文，标题卡和列表名也会按文稿改。继续？`))
+      return false
+    editorStore.importContent(content)
+    const post = postStore.currentPost
+    if (post) {
+      postStore.updatePostContent(post.id, content)
+      postStore.renamePost(post.id, titleFromImportedMarkdown(content, fallbackTitle))
+    }
+    return true
+  }
 
   async function importMarkdownFiles(files: File[]) {
     const validFiles = files.filter(isSupportedMarkdownFile)
@@ -32,13 +48,16 @@ export function useMarkdownImportActions() {
       return false
     }
 
-    editorStore.importContent(merged)
+    const fallback = validFiles[0]?.name.replace(/\.(md|markdown|txt)$/i, ``) || `未命名`
+    if (!applyImportedMarkdown(merged, fallback))
+      return false
     toast.success(validFiles.length > 1 ? `已导入 ${validFiles.length} 个 Markdown 文件` : `Markdown 已导入`)
     return true
   }
 
   return {
     importMarkdownFiles,
+    applyImportedMarkdown,
     isSupportedMarkdownFile,
   }
 }

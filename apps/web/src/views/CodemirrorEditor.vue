@@ -24,6 +24,7 @@ import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 import { checkImage, toBase64 } from '@/utils'
+import { copyPlain } from '@/utils/clipboard'
 import { blockCategories, parseBlockEntries } from '@/utils/blocks/registry'
 import {
   resolveMarkdownSourceAtPosition,
@@ -38,7 +39,8 @@ import {
   stripEmbeddedContent,
 } from '@/utils/editor-content-visibility'
 import { shouldSyncPreviewFromEditorUpdate } from '@/utils/editor-preview-sync'
-import { fileUpload, getMpUploadConfig, hasMpUploadConfig, uploadFileToMp } from '@/utils/file'
+import { getDroppedFileSystemHandle, isImageFile, listDataTransferItems, listDroppedFiles } from '@/utils/dropped-files'
+import { fileUpload, getMpUploadConfig, hasMpUploadConfig, IMAGE_HOST_SETUP_HINT, uploadFileToMp } from '@/utils/file'
 import {
   applyWechatPreviewDiffHints,
   expandScrollWindowToFullImage,
@@ -49,6 +51,7 @@ import {
   WECHAT_PREVIEW_DIFF_EXPAND_SCROLL_ACTION,
   WECHAT_PREVIEW_DIFF_SLICE_SCROLL_ACTION,
 } from '@/utils/image-layouts'
+import { cloneWithoutEditorChrome, PREVIEW_BLOCK_PICK_HINT, readPreviewElementText } from '@/utils/preview-text'
 import { store } from '@/utils/storage'
 import { applyWechatPreviewTextureDowngrade, resolveWechatPreviewFrame } from '@/utils/wechat-preview'
 
@@ -402,7 +405,7 @@ function findHeadingElementInPreview(title: string, level?: number) {
   for (const heading of headings) {
     if (level && Number(heading.tagName.slice(1)) !== level)
       continue
-    if (normalizeText(heading.textContent || ``) === normalizedTitle) {
+    if (readPreviewElementText(heading) === normalizedTitle) {
       return heading
     }
   }
@@ -410,7 +413,7 @@ function findHeadingElementInPreview(title: string, level?: number) {
   for (const heading of headings) {
     if (level && Number(heading.tagName.slice(1)) !== level)
       continue
-    if (normalizeText(heading.textContent || ``).includes(normalizedTitle)) {
+    if (readPreviewElementText(heading).includes(normalizedTitle)) {
       return heading
     }
   }
@@ -612,7 +615,7 @@ function syncEditorToPreviewElement(el: HTMLElement) {
   }
   else if (/^h[1-6]$/.test(tag)) {
     const level = Number(tag.slice(1))
-    const title = normalizeText(el.textContent || ``)
+    const title = readPreviewElementText(el)
     pos = findHeadingPosInEditor(title, level)
   }
   else if (tag === `img`) {
@@ -624,7 +627,7 @@ function syncEditorToPreviewElement(el: HTMLElement) {
     }
   }
   else {
-    const text = normalizeText(el.textContent || ``)
+    const text = readPreviewElementText(el)
     pos = findTextPosInEditor(text)
   }
 
@@ -634,7 +637,7 @@ function syncEditorToPreviewElement(el: HTMLElement) {
 }
 
 function extractBlockText(element: HTMLElement) {
-  const clone = element.cloneNode(true) as HTMLElement
+  const clone = cloneWithoutEditorChrome(element)
   clone.querySelectorAll(`br`).forEach(node => node.replaceWith(`\n`))
   return (clone.textContent || ``)
     .split(`\n`)
@@ -678,7 +681,7 @@ function createNativeBlockSelection(element: HTMLElement) {
     }
   })
 
-  let title = normalizeText(element.textContent || ``)
+  let title = readPreviewElementText(element)
   if (category.id === `heading`) {
     state.title = title
   }
@@ -694,7 +697,7 @@ function createNativeBlockSelection(element: HTMLElement) {
     const items = Array.from(element.querySelectorAll<HTMLElement>(`li`))
       .map((item) => {
         const clone = item.cloneNode(true) as HTMLElement
-        clone.querySelectorAll(`ul, ol, .listitem-marker`).forEach(node => node.remove())
+        clone.querySelectorAll(`ul, ol, .listitem-marker, [${WECHAT_EDITOR_ONLY_ATTR}]`).forEach(node => node.remove())
         return normalizeText(clone.textContent || ``)
       })
       .filter(Boolean)
@@ -797,7 +800,7 @@ function applyPreviewBlockPickHint() {
         const label = document.createElement(`span`)
         label.className = `preview-block-pick-hint-label`
         label.setAttribute(WECHAT_EDITOR_ONLY_ATTR, `block-pick-hint`)
-        label.textContent = `点这里换样子`
+        label.textContent = PREVIEW_BLOCK_PICK_HINT
         element.appendChild(label)
       }
     })
@@ -1081,6 +1084,20 @@ function resolveStyleTarget(target: HTMLElement) {
   return null
 }
 
+async function handlePreviewContextMenu(event: MouseEvent) {
+  const selected = window.getSelection()?.toString() ?? ``
+  if (!selected.trim())
+    return
+  event.preventDefault()
+  try {
+    await copyPlain(selected)
+    toast.success(`已复制选中文字`)
+  }
+  catch {
+    toast.error(`复制失败`)
+  }
+}
+
 function handlePreviewContentClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null
   if (!target)
@@ -1103,6 +1120,7 @@ function handlePreviewContentClick(event: MouseEvent) {
   }
 
   if (showPreviewBlockPickHint.value) {
+    document.querySelectorAll(`[${WECHAT_EDITOR_ONLY_ATTR}="block-pick-hint"]`).forEach(node => node.remove())
     uiStore.dismissPreviewBlockPickHint()
   }
 
@@ -1278,7 +1296,7 @@ async function beforeImageUpload(file: File) {
   const imgHost = (await store.get(`imgHost`)) || `default`
 
   if (imgHost === `default`) {
-    toast.error(`还没有选择图床。请在「插入 → 插入图片」里选一个（推荐阿里云 OSS 或 Cloudflare R2），填好配置后再上传。`)
+    toast.error(IMAGE_HOST_SETUP_HINT)
     return false
   }
 
@@ -1434,7 +1452,6 @@ async function uploadMdImg({
 const codeMirrorWrapper = useTemplateRef<ComponentPublicInstance<HTMLDivElement>>(`codeMirrorWrapper`)
 
 // 转换 markdown 中的本地图片为线上图片
-// todo 处理事件覆盖
 function mdLocalToRemote() {
   const dom = codeMirrorWrapper.value
   if (!dom) {
@@ -1444,30 +1461,37 @@ function mdLocalToRemote() {
   dom.ondragover = evt => evt.preventDefault()
   dom.ondrop = async (evt) => {
     evt.preventDefault()
-    if (evt.dataTransfer == null || !Array.isArray(evt.dataTransfer.items)) {
+    const items = listDataTransferItems(evt.dataTransfer)
+    const files = listDroppedFiles(evt.dataTransfer)
+    if (!items.length && !files.length) {
       return
     }
 
-    for (const item of evt.dataTransfer.items.filter(item => item.kind === `file`)) {
-      item
-        .getAsFileSystemHandle()
-        .then(async (handle: { kind: string, getFile: () => any }) => {
-          if (handle.kind === `directory`) {
-            const list = (await showFileStructure(handle)) as {
-              path: string
-              file: File
-            }[]
-            const md = await getMd({ list })
-            uploadMdImg({ md, list })
-          }
-          else {
-            const file = await handle.getFile()
-            console.log(`file`, file)
-            if (await beforeImageUpload(file)) {
-              uploadImage(file)
-            }
-          }
-        })
+    for (const item of items.filter(entry => entry.kind === `file`)) {
+      const handle = await getDroppedFileSystemHandle(item)
+      if (handle && `kind` in handle && handle.kind === `directory`) {
+        const list = (await showFileStructure(handle)) as {
+          path: string
+          file: File
+        }[]
+        const md = await getMd({ list })
+        uploadMdImg({ md, list })
+        continue
+      }
+      const file = handle && `getFile` in handle
+        ? await (handle as FileSystemFileHandle).getFile()
+        : item.getAsFile()
+      if (file && isImageFile(file) && await beforeImageUpload(file)) {
+        uploadImage(file)
+      }
+    }
+
+    if (!items.length) {
+      for (const file of files) {
+        if (isImageFile(file) && await beforeImageUpload(file)) {
+          uploadImage(file)
+        }
+      }
     }
   }
 }
@@ -1809,7 +1833,7 @@ onUnmounted(() => {
 
     <main class="container-main flex flex-1 flex-col">
       <div ref="mainSectionRef" class="container-main-section border-radius-10 relative flex flex-1 overflow-hidden border-x border-b">
-        <ResizablePanelGroup direction="horizontal">
+        <ResizablePanelGroup :key="`outer-${showPostRail}-${showFolderRail}`" direction="horizontal">
           <ResizablePanel
             v-if="showPostRail"
             id="post-rail"
@@ -1835,7 +1859,7 @@ onUnmounted(() => {
           <ResizableHandle v-if="showFolderRail" class="hidden md:block" />
 
           <ResizablePanel id="workspace-main" :order="3" :min-size="40">
-            <ResizablePanelGroup direction="horizontal">
+            <ResizablePanelGroup :key="`inner-${showStyleRail}`" direction="horizontal">
               <ResizablePanel
                 id="editor-panel"
                 ref="editorPanelRef"
@@ -1855,7 +1879,9 @@ onUnmounted(() => {
                     <div class="workspace-panel__header" :class="{ 'workspace-panel__header--compact': isSimpleWorkspace }">
                       <div class="workspace-panel__headline">
                         <div class="workspace-panel__copy">
-                          <h2>{{ currentPostTitle }}</h2>
+                          <h2 :title="currentPostTitle">
+                            {{ currentPostTitle }}
+                          </h2>
                         </div>
                         <div class="workspace-panel__chips">
                           <span class="workspace-chip">{{ editorLineCount }} 行</span>
@@ -1916,7 +1942,6 @@ onUnmounted(() => {
                         </div>
                         <div class="workspace-panel__chips">
                           <button
-                            v-if="!isMobile"
                             type="button"
                             class="workspace-chip"
                             :class="{ 'workspace-chip--accent': isOpenBlockWorkspace }"
@@ -1950,13 +1975,14 @@ onUnmounted(() => {
                             @pointermove="handlePreviewPointerMove"
                             @pointerleave="clearHoveredBlock"
                           >
-                            <section id="output" class="w-full" @click="handlePreviewContentClick" v-html="output" />
+                            <section id="output" class="w-full" @click="handlePreviewContentClick" @contextmenu="handlePreviewContextMenu" v-html="output" />
                             <button
                               v-if="hoveredBlockAnchor"
                               type="button"
                               class="preview-block-remove"
                               :style="{ top: `${hoveredBlockAnchor.top}px`, left: `${hoveredBlockAnchor.left}px` }"
                               :title="hoveredRemoveTitle"
+                              aria-label="删除整块，不是取消选中"
                               @click.stop="deleteHoveredBlock"
                             >
                               <X class="size-3.5" />
@@ -1998,7 +2024,7 @@ onUnmounted(() => {
 
       <!-- 移动端这几个面板自带全屏抽屉，不参与分栏 -->
       <template v-if="isMobile">
-        <PostSlider />
+        <PostSlider v-if="isOpenPostSlider" />
         <RightSlider v-if="isOpenRightSlider" />
       </template>
 
@@ -2177,11 +2203,14 @@ onUnmounted(() => {
 
 .workspace-panel__copy h2 {
   margin: 0;
+  overflow: hidden;
   font-size: clamp(1.1rem, 1rem + 0.45vw, 1.45rem);
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.03em;
   color: hsl(var(--foreground));
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .workspace-panel__copy p {

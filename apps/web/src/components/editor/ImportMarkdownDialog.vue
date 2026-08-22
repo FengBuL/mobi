@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { FileText, Globe, Loader2, Upload } from 'lucide-vue-next'
 import { useMarkdownImportActions } from '@/composables/useMarkdownImportActions'
-import { useEditorStore } from '@/stores/editor'
 import { useUIStore } from '@/stores/ui'
 
-const editorStore = useEditorStore()
 const uiStore = useUIStore()
-const { importMarkdownFiles } = useMarkdownImportActions()
+const { importMarkdownFiles, applyImportedMarkdown } = useMarkdownImportActions()
 
 const { isShowImportMdDialog } = storeToRefs(uiStore)
 
@@ -69,7 +67,8 @@ async function importFromUrl() {
   try {
     const content = await fetchMarkdownFile(rawUrl, signal)
 
-    editorStore.importContent(content)
+    if (!applyImportedMarkdown(content, `未命名`))
+      return
     closeDialog()
   }
   catch (err) {
@@ -151,7 +150,7 @@ watch(isShowImportMdDialog, (visible) => {
       <DialogHeader>
         <DialogTitle>导入 Markdown</DialogTitle>
         <DialogDescription>
-          从网络链接或本地文件导入内容，支持公众号文章、博客等任意网页链接
+          从本地文件或 Markdown 直链导入。只收 .md / .markdown / .txt，公众号文章请先转成 Markdown 再导入。
         </DialogDescription>
       </DialogHeader>
 

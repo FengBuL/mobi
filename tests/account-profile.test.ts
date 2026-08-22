@@ -81,7 +81,7 @@ describe(`我的号：迁移`, () => {
 })
 
 describe(`我的号：切换与新建`, () => {
-  it(`新建号克隆当前配置，不改已有号`, () => {
+  it(`新建号克隆主题，不把图床密钥拷过去`, () => {
     const first = migrateAccountProfiles({
       profiles: [],
       currentProfileId: ``,
@@ -93,7 +93,9 @@ describe(`我的号：切换与新建`, () => {
     expect(created.profiles).toHaveLength(2)
     expect(created.profiles[0].config).toEqual(legacyA)
     expect(created.created.name).toBe(`第二个号`)
-    expect(created.created.config).toEqual(legacyB)
+    expect(created.created.config.theme).toBe(`ink`)
+    expect(created.created.config.imgHost).toBe(`default`)
+    expect(created.created.config.mpConfig).toEqual({ proxyOrigin: ``, appID: ``, appsecret: `` })
     expect(created.created.id).not.toBe(DEFAULT_PROFILE_ID)
     expect(created.created.isDefault).toBe(false)
   })
@@ -110,7 +112,8 @@ describe(`我的号：切换与新建`, () => {
     const other = two.profiles.find(profile => profile.id !== DEFAULT_PROFILE_ID)!
 
     expect(snapshotEquals(back.config, legacyA)).toBe(true)
-    expect(snapshotEquals(other.config, legacyB)).toBe(true)
+    expect(other.config.theme).toBe(`ink`)
+    expect(other.config.imgHost).toBe(`default`)
     expect(snapshotEquals(back.config, other.config)).toBe(false)
   })
 

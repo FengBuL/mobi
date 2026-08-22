@@ -63,7 +63,7 @@ export const useExportStore = defineStore(`export`, () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 100))
       const dataUrl = await toPng(el, {
-        backgroundColor: uiStore.isDark ? `` : `#fff`,
+        backgroundColor: uiStore.isDark ? `#111111` : `#fff`,
         skipFonts: true,
         pixelRatio: Math.max(window.devicePixelRatio || 1, 2),
         style: { margin: `0` },
@@ -87,6 +87,7 @@ export const useExportStore = defineStore(`export`, () => {
     trackEvent(`export`, { format: `html` })
     await exportHTML(currentPost.title)
     document.querySelector(`#output`)!.innerHTML = renderStore.output
+    toast.success(`已下载 HTML`)
   }
 
   // 导出编辑器内容为无样式 HTML
@@ -97,16 +98,20 @@ export const useExportStore = defineStore(`export`, () => {
 
     trackEvent(`export`, { format: `pure-html` })
     exportPureHTML(content, currentPost.title)
+    toast.success(`已下载 HTML`)
   }
 
   // 下载卡片图片
   const downloadAsCardImage = async () => {
     const result = await renderCardImageDataUrl()
-    if (!result)
+    if (!result) {
+      toast.error(`导出失败，预览还没出来`)
       return
+    }
 
     trackEvent(`export`, { format: `png` })
     downloadFile(result.dataUrl, result.fileName, `image/png`)
+    toast.success(`已下载 PNG`)
   }
 
   // 导出编辑器内容为 PDF
@@ -116,6 +121,7 @@ export const useExportStore = defineStore(`export`, () => {
       return
 
     trackEvent(`export`, { format: `pdf` })
+    toast.success(`已打开打印框，关掉后会收回预览页`)
     await exportPDF(currentPost.title)
     document.querySelector(`#output`)!.innerHTML = renderStore.output
   }
@@ -128,6 +134,7 @@ export const useExportStore = defineStore(`export`, () => {
 
     trackEvent(`export`, { format: `md` })
     downloadMD(content, currentPost.title)
+    toast.success(`已下载 Markdown`)
   }
 
   return {

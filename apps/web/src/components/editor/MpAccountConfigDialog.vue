@@ -46,7 +46,7 @@ const initialValues = computed(() => {
 const schema = toTypedSchema(yup.object({
   mpId: yup.string().required(`公众号 ID 不能为空`),
   name: yup.string().required(`公众号名称不能为空`),
-  logo: yup.string().optional().url(`公众号 Logo 必须是一个有效的 URL`),
+  logo: yup.string().transform(value => value?.trim() ? value.trim() : undefined).optional().url(`公众号 Logo 必须是一个有效的 URL`),
   desc: yup.string().optional(),
   serviceType: yup.string().required(),
   verify: yup.string().required(),

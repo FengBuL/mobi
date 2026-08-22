@@ -3,6 +3,7 @@ import type { DecorationSet } from '@codemirror/view'
 import { StateEffect, StateField } from '@codemirror/state'
 import { Decoration, EditorView } from '@codemirror/view'
 import { CaseSensitive, ChevronDown, ChevronRight, ChevronUp, Regex, Replace, ReplaceAll, WholeWord, X } from 'lucide-vue-next'
+import { findPlainMatches, regexFlags } from '@/utils/search-matches'
 
 const props = defineProps<{
   editorView: EditorView
@@ -53,11 +54,21 @@ const searchHighlightField = StateField.define<DecorationSet>({
 
 // 在组件挂载时动态添加 searchHighlightField
 onMounted(() => {
-  // 检查编辑器是否已经有这个 field
+  const extras = [
+    searchHighlightField,
+    EditorView.updateListener.of((update) => {
+      if (update.docChanged && showSearchTab.value && searchWord.value)
+        runSearch()
+    }),
+  ]
   if (!props.editorView.state.field(searchHighlightField, false)) {
-    // 动态添加 extension
     props.editorView.dispatch({
-      effects: StateEffect.appendConfig.of(searchHighlightField),
+      effects: StateEffect.appendConfig.of(extras),
+    })
+  }
+  else {
+    props.editorView.dispatch({
+      effects: StateEffect.appendConfig.of(extras[1]),
     })
   }
 })
@@ -72,20 +83,19 @@ function focusSearchInput() {
   searchInputRef.value?.select()
 }
 
+const runSearch = useDebounceFn(() => {
+  matchPositions.value = []
+
+  if (!searchWord.value) {
+    clearAllMarks()
+    return
+  }
+  indexOfMatch.value = 0
+  findAllMatches()
+}, 300)
+
 watch([searchWord, isRegex, isCaseSensitive, findInSelection], () => {
-  const debouncedSearch = useDebounceFn(() => {
-    matchPositions.value = []
-
-    if (searchWord.value === ``) {
-      clearAllMarks()
-    }
-    else {
-      indexOfMatch.value = 0
-      findAllMatches()
-    }
-  }, 300)
-
-  debouncedSearch()
+  runSearch()
 })
 
 watch([indexOfMatch, matchPositions], () => {
@@ -180,8 +190,7 @@ function findAllMatches() {
   if (searchTerm) {
     if (isRegex.value) {
       try {
-        const flags = `gm${isCaseSensitive.value ? `` : `i`}`
-        const regex = new RegExp(searchTerm, flags)
+        const regex = new RegExp(searchTerm, regexFlags(isCaseSensitive.value))
         let match
         // eslint-disable-next-line no-cond-assign
         while ((match = regex.exec(content)) !== null) {
@@ -206,26 +215,14 @@ function findAllMatches() {
       }
     }
     else {
-      const lines = content.split(`\n`)
-      const searchTermForCompare = isCaseSensitive.value ? searchTerm : searchTerm.toLowerCase()
-
-      lines.forEach((line, lineIndex) => {
-        const lineForCompare = isCaseSensitive.value ? line : line.toLowerCase()
-        let startIndex = 0
-        let index = lineForCompare.indexOf(searchTermForCompare, startIndex)
-
-        while (index !== -1) {
-          const actualLineObj = props.editorView.state.doc.lineAt(searchFrom)
-          const actualLineNumber = actualLineObj.number - 1 + lineIndex
-
-          _matchPositions.push([
-            { line: actualLineNumber, ch: index },
-            { line: actualLineNumber, ch: index + searchTerm.length },
-          ])
-          startIndex = index + 1
-          index = lineForCompare.indexOf(searchTermForCompare, startIndex)
-        }
-      })
+      for (const match of findPlainMatches(content, searchTerm, isCaseSensitive.value, searchFrom)) {
+        const startLineObj = props.editorView.state.doc.lineAt(match.from)
+        const endLineObj = props.editorView.state.doc.lineAt(match.to)
+        _matchPositions.push([
+          { line: startLineObj.number - 1, ch: match.from - startLineObj.from },
+          { line: endLineObj.number - 1, ch: match.to - endLineObj.from },
+        ])
+      }
     }
   }
 
@@ -314,7 +311,7 @@ function handleReplace() {
   if (isRegex.value) {
     try {
       const matchedText = props.editorView.state.sliceDoc(fromPos, toPos)
-      insertText = matchedText.replace(new RegExp(searchWord.value, `gm`), replaceWord.value)
+      insertText = matchedText.replace(new RegExp(searchWord.value, regexFlags(isCaseSensitive.value)), replaceWord.value)
     }
     catch (e) {
       console.warn(`Invalid Regex Replacement`, e)
@@ -354,7 +351,7 @@ function handleReplaceAll() {
     if (isRegex.value) {
       try {
         const matchedText = props.editorView.state.sliceDoc(fromPos, toPos)
-        insertText = matchedText.replace(new RegExp(searchWord.value, `gm`), replaceWord.value)
+        insertText = matchedText.replace(new RegExp(searchWord.value, regexFlags(isCaseSensitive.value)), replaceWord.value)
       }
       catch (e) {
         console.warn(`Invalid Regex Replacement`, e)

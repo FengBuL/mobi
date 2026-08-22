@@ -37,11 +37,12 @@ onMounted(() => {
 html,
 body,
 #app {
-  width: 100vw;
+  width: 100%;
   height: 100%;
   min-height: 100%;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }
 
 @supports (height: 100dvh) {

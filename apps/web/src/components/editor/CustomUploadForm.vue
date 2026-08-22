@@ -2,6 +2,7 @@
 import { Compartment } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { javascriptSetup, theme } from '@mobi/shared'
+import { useAccountProfileStore } from '@/stores/accountProfile'
 import { useUIStore } from '@/stores/ui'
 import { removeLeft } from '@/utils'
 import { store } from '@/utils/storage'
@@ -22,7 +23,9 @@ const code = store.reactive(`formCustomConfig`, removeLeft(`
 const formCustomTextarea = useTemplateRef<HTMLDivElement>(`formCustomTextarea`)
 
 const uiStore = useUIStore()
+const profileStore = useAccountProfileStore()
 const { isDark } = storeToRefs(uiStore)
+const { imgHost } = storeToRefs(profileStore)
 
 const editor = ref<EditorView | null>(null)
 
@@ -53,7 +56,8 @@ onUnmounted(() => {
 function formCustomSave() {
   const str = editor.value!.state.doc.toString()
   code.value = str
-  toast.success(`保存成功`)
+  imgHost.value = `formCustom`
+  toast.success(`保存成功，已用作当前图床`)
 }
 </script>
 

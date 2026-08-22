@@ -5,7 +5,9 @@ import { useImageQuickInsert } from '@/composables/useImageQuickInsert'
 import { useImageUploader } from '@/composables/useImageUploader'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
+import { useUIStore } from '@/stores/ui'
 import { checkImage } from '@/utils'
+import { isConfiguredImageHost } from '@/utils/clipboard-image-status'
 import {
   buildMediaLayoutMarkup,
   createMediaLayoutStateFromImages,
@@ -20,6 +22,7 @@ import {
   rememberRecentImages,
   removeRecentImage,
 } from '@/utils/image-library'
+import { store } from '@/utils/storage'
 
 interface PendingImage {
   id: string
@@ -38,6 +41,9 @@ const insertModes: Array<{ id: typeof activeTab.value, label: string }> = [
 const { upload } = useImageUploader()
 const editorStore = useEditorStore()
 const postStore = usePostStore()
+const uiStore = useUIStore()
+const imgHost = store.reactive(`imgHost`, `default`)
+const hasImageHost = computed(() => isConfiguredImageHost(imgHost.value))
 
 const pendingImages = ref<PendingImage[]>([])
 const recentImages = ref<RecentImageEntry[]>([])
@@ -48,24 +54,38 @@ const isDropActive = ref(false)
 const busyLabel = ref(``)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
-const dialogCopy = computed(() => ({
-  single: {
-    title: `上传单张图片`,
-    description: `选择一张本地图片上传到当前图床，再插入正文。`,
-  },
-  batch: {
-    title: `批量上传图片`,
-    description: `一次选择多张本地图片上传，并按顺序插入正文。`,
-  },
-  link: {
-    title: `按链接插入图片`,
-    description: `粘贴图片地址，可选择直接使用或转存到当前图床。`,
-  },
-  recent: {
-    title: `最近使用的图片`,
-    description: `从最近插入过的图片中重新选择。`,
-  },
-})[activeTab.value])
+const dialogCopy = computed(() => {
+  const hostReady = hasImageHost.value
+  return {
+    single: {
+      title: hostReady ? `上传单张图片` : `插入图片`,
+      description: hostReady
+        ? `选择一张本地图片上传到当前图床，再插入正文。`
+        : `还没选图床。本地图要先去「设置 → 图床配置」；也可以切到「链接」，以外链插入。`,
+    },
+    batch: {
+      title: hostReady ? `批量上传图片` : `插入图片`,
+      description: hostReady
+        ? `一次选择多张本地图片上传，并按顺序插入正文。`
+        : `还没选图床。本地图要先去「设置 → 图床配置」；也可以切到「链接」，以外链插入。`,
+    },
+    link: {
+      title: `按链接插入图片`,
+      description: hostReady
+        ? `粘贴图片地址，可选择直接使用或转存到当前图床。`
+        : `粘贴图片地址，以外链插入。还没选图床，不能转存。`,
+    },
+    recent: {
+      title: `最近使用的图片`,
+      description: `从最近插入过的图片中重新选择。`,
+    },
+  }[activeTab.value]
+})
+
+watch(hasImageHost, (ready) => {
+  if (!ready)
+    migrateLinks.value = false
+})
 
 const insertModeOptions = computed(() => {
   const layoutOptions = mediaLayoutPresets
@@ -226,6 +246,12 @@ async function parseLinkInput() {
     return
   }
 
+  if (!hasImageHost.value)
+    migrateLinks.value = false
+
+  if (migrateLinks.value && !hasImageHost.value)
+    migrateLinks.value = false
+
   if (!migrateLinks.value) {
     const added = addPendingImages(parsed)
     linkInput.value = ``
@@ -371,7 +397,22 @@ function insertImages() {
 
       <div class="flex-1 space-y-5 overflow-auto px-6 py-5">
         <div
-          v-if="activeTab === 'single' || activeTab === 'batch'"
+          v-if="(activeTab === 'single' || activeTab === 'batch') && !hasImageHost"
+          class="quick-insert-dropzone rounded-2xl border border-dashed p-8 text-center"
+        >
+          <UploadCloud class="mx-auto size-8 text-muted-foreground" />
+          <p class="mt-3 text-sm font-semibold">
+            还没选图床
+          </p>
+          <p class="mt-1 text-xs text-muted-foreground">
+            本地图片要先选一个图床才能上传。也可以切到「链接」，以外链插进稿里。
+          </p>
+          <Button class="mt-4 h-9" @click="uiStore.toggleShowUploadImgDialog(true)">
+            去设置图床
+          </Button>
+        </div>
+        <div
+          v-else-if="activeTab === 'single' || activeTab === 'batch'"
           class="quick-insert-dropzone rounded-2xl border border-dashed p-8 text-center"
           :class="{ 'quick-insert-dropzone--active': isDropActive }"
           @dragover.prevent="isDropActive = true"
@@ -406,8 +447,8 @@ function insertImages() {
           />
           <div class="flex flex-wrap items-center justify-between gap-3">
             <label class="flex items-center gap-2 text-xs text-muted-foreground">
-              <Switch v-model:checked="migrateLinks" />
-              同时转存到当前图床（可绕开外链防盗链）
+              <Switch v-model:checked="migrateLinks" :disabled="!hasImageHost" />
+              {{ hasImageHost ? `同时转存到当前图床（可绕开外链防盗链）` : `还没选图床，不能转存，只会以外链插入` }}
             </label>
             <Button size="sm" class="h-8 px-3 text-xs" :disabled="Boolean(busyLabel)" @click="parseLinkInput">
               解析并加入

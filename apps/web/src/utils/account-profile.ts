@@ -337,7 +337,11 @@ export function createAccountProfile(
     id: `profile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     name: name.trim() || `未命名号`,
     isDefault: false,
-    config: cloneConfig(config),
+    config: {
+      ...cloneConfig(config),
+      imgHost: `default`,
+      mpConfig: { proxyOrigin: ``, appID: ``, appsecret: `` },
+    },
   }
 
   return {

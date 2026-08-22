@@ -5,6 +5,7 @@ import {
   formatLostWechatImageHint,
   isBlockingClipboardImageFailure,
   isUnsafeClipboardImage,
+  resolveLostImageHint,
 } from '../apps/web/src/utils/clipboard-image-status'
 
 describe('clipboard image safety', () => {
@@ -28,5 +29,23 @@ describe('clipboard image safety', () => {
     const html = '<img src="data:image/png;base64,x"><img src="https://example.com/a.png"><img src="https://mmbiz.qpic.cn/a">'
     expect(countUnsafeClipboardImagesFromHtml(html)).toBe(2)
     expect(formatLostWechatImageHint(2)).toBe('还有 2 张不是公众号地址，微信可能留下或丢掉')
+  })
+
+  it('clears the hint while the next draft is still rendering', () => {
+    expect(resolveLostImageHint({
+      outputMatchesCurrentPost: false,
+      count: 1,
+      imgHost: 'default',
+    })).toBe('')
+    expect(resolveLostImageHint({
+      outputMatchesCurrentPost: true,
+      count: 1,
+      imgHost: 'default',
+    })).toBe('还没选图床。这 1 张会以外链贴出去，微信可能留下或丢掉')
+    expect(resolveLostImageHint({
+      outputMatchesCurrentPost: true,
+      count: 2,
+      imgHost: 'aliOSS',
+    })).toBe('还有 2 张不是公众号地址，微信可能留下或丢掉')
   })
 })

@@ -208,17 +208,33 @@ export async function exportPDF(title: string = `untitled`) {
 </html>`
   const iframe = document.createElement(`iframe`)
   iframe.style.cssText = `position:fixed;width:0;height:0;top:-9999px;left:-9999px;border:none;`
-  iframe.srcdoc = printHtml
-  document.body.appendChild(iframe)
 
-  iframe.onload = () => {
-    iframe.contentWindow?.focus()
-    iframe.contentWindow?.print()
-    // 延迟移除，确保打印完成
-    setTimeout(() => {
-      document.body.removeChild(iframe)
-    }, 500)
-  }
+  return new Promise<void>((resolve) => {
+    const cleanup = () => {
+      iframe.removeEventListener(`load`, onLoad)
+      iframe.contentWindow?.removeEventListener(`afterprint`, finish)
+      iframe.remove()
+      resolve()
+    }
+    const finish = () => {
+      window.clearTimeout(safetyTimer)
+      cleanup()
+    }
+    const safetyTimer = window.setTimeout(finish, 60_000)
+    const onLoad = () => {
+      const win = iframe.contentWindow
+      if (!win) {
+        finish()
+        return
+      }
+      win.addEventListener(`afterprint`, finish)
+      win.focus()
+      win.print()
+    }
+    iframe.addEventListener(`load`, onLoad)
+    iframe.srcdoc = printHtml
+    document.body.appendChild(iframe)
+  })
 }
 
 const CLIPBOARD_SIZE_ATTRIBUTE_PATTERN = /^\d+(?:\.\d+)?(?:px|%)?$/i

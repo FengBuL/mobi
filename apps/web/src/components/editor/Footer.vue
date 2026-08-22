@@ -13,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { useAccountProfileStore } from '@/stores/accountProfile'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
@@ -21,7 +22,9 @@ import { useUIStore } from '@/stores/ui'
 const renderStore = useRenderStore()
 const editorStore = useEditorStore()
 const postStore = usePostStore()
+const profileStore = useAccountProfileStore()
 const uiStore = useUIStore()
+const { currentProfileId } = storeToRefs(profileStore)
 const { readingTime } = storeToRefs(renderStore)
 const { editor } = storeToRefs(editorStore)
 const { currentPost } = storeToRefs(postStore)
@@ -97,7 +100,7 @@ function flattenTree(nodes: TreeNode[], depth = 0): Array<{ id: string, title: s
   return result
 }
 
-const flatPosts = computed(() => flattenTree(buildTree(postStore.posts)))
+const flatPosts = computed(() => flattenTree(buildTree(postStore.posts.filter(post => post.profileId === currentProfileId.value))))
 
 const filteredPosts = computed(() => {
   const q = switcherQuery.value.toLowerCase().trim()
@@ -583,9 +586,10 @@ const showDeviceToggle = computed(() => viewMode.value !== `edit` && !isMobile.v
         <Tooltip>
           <TooltipTrigger as-child>
             <button
+              type="button"
               class="flex cursor-pointer items-center rounded p-0.5 transition-colors hover:bg-accent hover:text-foreground"
               :class="isDark ? 'text-foreground' : ''"
-              @click="uiStore.toggleDark()"
+              @click.stop="uiStore.toggleDark()"
             >
               <Moon v-if="isDark" class="size-3" />
               <Sun v-else class="size-3" />

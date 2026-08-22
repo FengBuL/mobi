@@ -106,6 +106,9 @@ function cancelForm() {
 
 // 应用模板到当前文章
 function applyTemplate(template: Template) {
+  const current = editorStore.getContent().trim()
+  if (current && !window.confirm(`应用模板会替换当前正文。继续？`))
+    return
   const currentPost = postStore.currentPost
   if (currentPost) {
     postStore.updatePostContent(currentPost.id, template.content)

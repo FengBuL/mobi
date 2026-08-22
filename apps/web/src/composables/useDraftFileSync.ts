@@ -1,7 +1,9 @@
 import type { InjectionKey } from 'vue'
+import { useAccountProfileStore } from '@/stores/accountProfile'
 import { useEditorStore } from '@/stores/editor'
 import { useFolderSourceStore } from '@/stores/folderSource'
 import { usePostStore } from '@/stores/post'
+import { titleFromImportedMarkdown } from '@/utils/imported-markdown'
 import { allocateMarkdownFileName } from '@/utils/draft-file'
 import {
   ARCHIVE_FOLDER_NAME,
@@ -27,6 +29,7 @@ export function useDraftFileSync() {
   const postStore = usePostStore()
   const folderStore = useFolderSourceStore()
   const editorStore = useEditorStore()
+  const profileStore = useAccountProfileStore()
   const writing = ref(false)
   const conflictPaths = ref<string[]>([])
 
@@ -94,7 +97,8 @@ export function useDraftFileSync() {
 
   async function openFileAsDraft(node: { name: string, path: string }) {
     const content = await folderStore.readFile(node.path)
-    const title = node.name.replace(/\.md$/i, ``)
+    const fallback = node.name.replace(/\.(md|markdown|txt)$/i, ``) || `未命名`
+    const title = titleFromImportedMarkdown(content, fallback)
     const existing = postStore.posts.find(post => post.importedFrom === node.path || post.filePath === node.path)
     if (existing) {
       postStore.currentPostId = existing.id
@@ -104,7 +108,7 @@ export function useDraftFileSync() {
       return
     }
 
-    postStore.addPost(title)
+    postStore.addPost(title, null, profileStore.currentProfileId)
     postStore.updatePostContent(postStore.currentPostId, content)
     rememberImport(postStore.currentPostId, node.path)
     editorStore.importContent(content)

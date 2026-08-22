@@ -40,7 +40,10 @@ const showBackdrop = computed(() => {
 })
 
 function close() {
-  uiStore.closeAuxPanels()
+  if (panel.value)
+    uiStore.closeAuxPanel(panel.value)
+  else
+    uiStore.closeAuxPanels()
 }
 
 function handleKeydown(event: KeyboardEvent) {

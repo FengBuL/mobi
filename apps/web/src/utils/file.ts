@@ -9,7 +9,12 @@ import CryptoJS from 'crypto-js'
 import * as qiniu from 'qiniu-js'
 import { v4 as uuidv4 } from 'uuid'
 import { DEFAULT_MP_PROXY_ORIGIN, getWechatTransport, selectMpProxyOrigin } from '@/services/wechat'
+import { putPresignedFile } from './put-presigned-file'
 import { store } from './storage'
+
+export { putPresignedFile } from './put-presigned-file'
+
+export const IMAGE_HOST_SETUP_HINT = `还没有选择图床。请在「设置 → 图床配置」里选一个（推荐阿里云 OSS 或 Cloudflare R2），填好配置后再上传。`
 
 async function getConfig(platform: string) {
   // load configuration from storage
@@ -95,7 +100,7 @@ async function ghFileUpload(content: string, filename: string) {
     // axios 那句「Request failed with status code 401」对用户没有任何指导意义
     const status = (error as { response?: { status?: number } })?.response?.status
     if (status === 401 || status === 403) {
-      throw new Error(`GitHub 拒绝了这次上传（${status}）。请检查「插入 → 插入图片 → GitHub」里的 Token 是否有效、是否有该仓库的写权限。`)
+      throw new Error(`GitHub 拒绝了这次上传（${status}）。请检查「设置 → 图床配置 → GitHub」里的 Token 是否有效、是否有该仓库的写权限。`)
     }
     throw error
   }
@@ -334,13 +339,7 @@ async function minioFileUpload(file: File) {
     ContentType: file.type,
   })
   const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 })
-  await fetch(presignedUrl, {
-    method: `PUT`,
-    headers: {
-      'Content-Type': file.type,
-    },
-    data: file,
-  }).catch((err) => { console.log(err) })
+  await putPresignedFile(presignedUrl, file)
   return `${useSSL ? `https` : `http`}://${endpoint}${port ? `:${port}` : ``}/${bucket}/${dateFilename}`
 }
 
@@ -559,13 +558,7 @@ async function r2Upload(file: File) {
     new PutObjectCommand({ Bucket: bucket, Key: filename, ContentType: file.type }),
     { expiresIn: 300 },
   )
-  await fetch(signedUrl, {
-    method: `PUT`,
-    headers: {
-      'Content-Type': file.type,
-    },
-    data: file,
-  }).catch((err) => { console.log(err) })
+  await putPresignedFile(signedUrl, file)
   return `${domain}/${filename}`
 }
 
@@ -820,6 +813,6 @@ export async function fileUpload(content: string, file: File) {
       // 曾经这里有一个「默认图床」，走的是内置在仓库里的公共 GitHub 令牌。
       // 公开仓库里的令牌会被 GitHub 的密钥扫描吊销，那批令牌已经全部 401，
       // 与其让用户撞一个看不懂的错误码，不如直接要求先选一个图床。
-      throw new Error(`还没有选择图床。请在「插入 → 插入图片」里选一个（推荐阿里云 OSS 或 Cloudflare R2），填好配置后再上传。`)
+      throw new Error(IMAGE_HOST_SETUP_HINT)
   }
 }

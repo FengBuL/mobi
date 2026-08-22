@@ -194,10 +194,10 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
             }
             else {
               toast.warning(
-                `${lostHint}不配图床也可以直接贴。微信会留下能打开的外链，防盗链或插入失败的会丢。要稳再配「公众号图床」。${longHint}`,
+                `还没选图床。${lostHint}这 ${unsafeImages.length} 张会以外链贴出去，微信可能留下或丢掉。不配图床也可以直接贴，要稳再去设置图床。${longHint}`,
                 {
                   duration: 12000,
-                  action: { label: `去配置图床`, onClick: () => uiStore.openUploadImgDialog(`mp`) },
+                  action: { label: `去配置图床`, onClick: () => uiStore.toggleShowUploadImgDialog(true) },
                 },
               )
             }

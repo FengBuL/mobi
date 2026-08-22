@@ -34,7 +34,10 @@ export function countVisibleThemeCards(
     return totalCount
   }
 
-  let visible = safeFeatured
+  let visible = Math.min(safeFeatured, totalCount)
+  while (visible > 1 && widthForCards(visible, rem, true) > trackWidth) {
+    visible -= 1
+  }
   while (visible < totalCount - 1 && widthForCards(visible + 1, rem, true) <= trackWidth) {
     visible += 1
   }

@@ -187,6 +187,8 @@ function openStylePanel() {
 
 <style lang="less" scoped>
 .theme-quick-bar {
+  position: relative;
+  z-index: 2;
   display: flex;
   min-width: 0;
   align-items: center;

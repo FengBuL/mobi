@@ -16,13 +16,21 @@ const uiStore = useUIStore()
 const profileStore = useAccountProfileStore()
 const { profiles, currentProfile, showSwitcher } = storeToRefs(profileStore)
 const importer = ref<{ openImport: () => void } | null>(null)
+const isCreateOpen = ref(false)
+const nameDraft = ref(``)
 
 function openImageHostSettings() {
   uiStore.openUploadImgDialog()
 }
 
 function createProfile() {
-  profileStore.createProfile()
+  nameDraft.value = `号 ${profiles.value.length + 1}`
+  isCreateOpen.value = true
+}
+
+function confirmCreate() {
+  profileStore.createProfile(nameDraft.value)
+  isCreateOpen.value = false
 }
 
 function exportProfiles() {
@@ -42,6 +50,25 @@ function switchProfile(id: string) {
 
 <template>
   <AccountProfileImportDialog ref="importer" />
+  <Dialog :open="isCreateOpen" @update:open="isCreateOpen = $event">
+    <DialogContent class="max-w-sm">
+      <DialogHeader>
+        <DialogTitle>新建号</DialogTitle>
+        <DialogDescription>
+          会切到新号并新建一篇「未命名」。当前这篇还在原来的号里。
+        </DialogDescription>
+      </DialogHeader>
+      <Input v-model="nameDraft" maxlength="20" placeholder="号的名字" @keyup.enter="confirmCreate" />
+      <DialogFooter>
+        <Button variant="outline" @click="isCreateOpen = false">
+          取消
+        </Button>
+        <Button @click="confirmCreate">
+          确定
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
   <MenubarSub v-if="asSub">
     <MenubarSubTrigger>
       设置

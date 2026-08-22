@@ -191,41 +191,31 @@ function insertMpCard() {
   background:
     linear-gradient(90deg, hsl(var(--secondary) / 0.52), transparent 24%),
     hsl(var(--background) / 0.88);
+  container-type: inline-size;
 }
 
 .markdown-toolbar__rail {
   display: flex;
+  flex-wrap: wrap;
   width: 100%;
   min-width: 0;
   align-items: center;
   gap: 0.45rem;
   padding-bottom: 0.28rem;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
-}
-
-.markdown-toolbar__rail::-webkit-scrollbar {
-  height: 5px;
-}
-
-.markdown-toolbar__rail::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.markdown-toolbar__rail::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: hsl(var(--muted-foreground) / 0.35);
 }
 
 .markdown-toolbar__group {
   display: inline-flex;
-  flex: 0 0 auto;
-  overflow: hidden;
+  flex: 0 1 auto;
   border: 1px solid hsl(var(--border));
   border-radius: 9px;
   background: hsl(var(--background));
-  box-shadow: 0 2px 8px hsl(var(--foreground) / 0.04);
+}
+
+@container (max-width: 36rem) {
+  .markdown-toolbar__button span {
+    display: none;
+  }
 }
 
 .markdown-toolbar__button {

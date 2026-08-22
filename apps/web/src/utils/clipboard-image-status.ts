@@ -60,3 +60,28 @@ export function formatLostWechatImageHint(count: number) {
   }
   return `还有 ${count} 张不是公众号地址，微信可能留下或丢掉`
 }
+
+export function isConfiguredImageHost(imgHost: unknown) {
+  return typeof imgHost === `string` && imgHost.trim() !== `` && imgHost !== `default`
+}
+
+export function formatMissingImageHostHint(count: number) {
+  if (count <= 0) {
+    return ``
+  }
+  return `还没选图床。这 ${count} 张会以外链贴出去，微信可能留下或丢掉`
+}
+
+export function resolveLostImageHint(input: {
+  outputMatchesCurrentPost: boolean
+  count: number
+  imgHost?: unknown
+}) {
+  if (!input.outputMatchesCurrentPost) {
+    return ``
+  }
+  if (!isConfiguredImageHost(input.imgHost)) {
+    return formatMissingImageHostHint(input.count)
+  }
+  return formatLostWechatImageHint(input.count)
+}

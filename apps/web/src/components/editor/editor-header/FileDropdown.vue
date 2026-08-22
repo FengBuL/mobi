@@ -2,11 +2,12 @@
 import { Archive, Download, FileCode, FileText, FolderInput, FolderKanban, FolderOpen, FolderPlus, Trash2, Upload } from 'lucide-vue-next'
 import { useBrowserDraftExportReminder } from '@/composables/useBrowserDraftExportReminder'
 import { draftFileSyncKey } from '@/composables/useDraftFileSync'
+import { getDesktopBridge } from '@/services/desktop/bridge'
 import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
 import { useFolderSourceStore } from '@/stores/folderSource'
 import { useUIStore } from '@/stores/ui'
-import { canDeleteDraftDirectory } from '@/utils/draft-folder'
+import { canDeleteDraftDirectory, describeFolderActionDisabledReason, describeFolderPickerBlocker } from '@/utils/draft-folder'
 
 const props = withDefaults(defineProps<{
   asSub?: boolean
@@ -23,6 +24,17 @@ const folderStore = useFolderSourceStore()
 const draftFileSync = inject(draftFileSyncKey)
 const { maybeRemind, markExported } = useBrowserDraftExportReminder()
 const { currentFolderHandle } = storeToRefs(folderStore)
+
+const folderBlocker = computed(() => describeFolderPickerBlocker({
+  hasDesktopFolders: Boolean(getDesktopBridge()?.folders),
+  isSecureContext: typeof window !== `undefined` && window.isSecureContext,
+  hasDirectoryPicker: typeof window !== `undefined` && `showDirectoryPicker` in window,
+  origin: typeof location !== `undefined` ? location.origin : ``,
+}))
+const hasOpenFolder = computed(() => Boolean(currentFolderHandle.value))
+const folderActionReason = computed(() => folderBlocker.value || describeFolderActionDisabledReason(hasOpenFolder.value))
+const folderActionsDisabled = computed(() => Boolean(folderActionReason.value))
+const openFolderDisabled = computed(() => Boolean(folderBlocker.value))
 
 onMounted(() => {
   maybeRemind()
@@ -51,10 +63,6 @@ function downloadAsCardImage() {
 
 function exportEditorContent2PDF() {
   exportStore.exportEditorContent2PDF()
-}
-
-function openFolderPanel() {
-  isOpenFolderPanel.value = true
 }
 
 function openFolder() {
@@ -121,36 +129,37 @@ async function moveSelected() {
       文件
     </MenubarSubTrigger>
     <MenubarSubContent class="w-56">
-      <!-- 本地文件夹 -->
-      <MenubarItem @click="openFolder">
+      <MenubarItem :disabled="openFolderDisabled" :title="folderBlocker || undefined" @click="openFolder">
         <FolderOpen class="mr-2 size-4" />
         打开文件夹
       </MenubarItem>
-      <MenubarItem @click="openFolderPanel">
-        <FolderOpen class="mr-2 size-4" />
-        本地文件夹
+      <MenubarItem
+        v-if="folderActionReason"
+        disabled
+        class="text-xs text-muted-foreground whitespace-normal"
+      >
+        {{ folderActionReason }}
       </MenubarItem>
-      <MenubarItem @click="createSubfolder">
+      <MenubarItem :disabled="folderActionsDisabled" :title="folderActionReason || undefined" @click="createSubfolder">
         <FolderPlus class="mr-2 size-4" />
         新建子文件夹
       </MenubarItem>
-      <MenubarItem @click="moveSelected">
+      <MenubarItem :disabled="folderActionsDisabled" :title="folderActionReason || undefined" @click="moveSelected">
         <FolderInput class="mr-2 size-4" />
         移动到…
       </MenubarItem>
-      <MenubarItem @click="deleteSelectedSubfolder">
+      <MenubarItem :disabled="folderActionsDisabled" :title="folderActionReason || undefined" @click="deleteSelectedSubfolder">
         <Trash2 class="mr-2 size-4" />
         删除子文件夹
       </MenubarItem>
-      <MenubarItem @click="archiveDraft">
+      <MenubarItem :disabled="folderActionsDisabled" :title="folderActionReason || undefined" @click="archiveDraft">
         <Archive class="mr-2 size-4" />
         归档这篇
       </MenubarItem>
 
       <MenubarSeparator />
 
-      <!-- 导入 -->
-      <MenubarItem @click="toggleShowImportMdDialog(true)">
+      <MenubarItem class="text-foreground" @click="toggleShowImportMdDialog(true)">
         <Upload class="mr-2 size-4" />
         导入 Markdown
       </MenubarItem>
@@ -203,36 +212,37 @@ async function moveSelected() {
       文件
     </MenubarTrigger>
     <MenubarContent class="w-56" align="start">
-      <!-- 本地文件夹 -->
-      <MenubarItem @click="openFolder">
+      <MenubarItem :disabled="openFolderDisabled" :title="folderBlocker || undefined" @click="openFolder">
         <FolderOpen class="mr-2 size-4" />
         打开文件夹
       </MenubarItem>
-      <MenubarItem @click="openFolderPanel">
-        <FolderOpen class="mr-2 size-4" />
-        本地文件夹
+      <MenubarItem
+        v-if="folderActionReason"
+        disabled
+        class="text-xs text-muted-foreground whitespace-normal"
+      >
+        {{ folderActionReason }}
       </MenubarItem>
-      <MenubarItem @click="createSubfolder">
+      <MenubarItem :disabled="folderActionsDisabled" :title="folderActionReason || undefined" @click="createSubfolder">
         <FolderPlus class="mr-2 size-4" />
         新建子文件夹
       </MenubarItem>
-      <MenubarItem @click="moveSelected">
+      <MenubarItem :disabled="folderActionsDisabled" :title="folderActionReason || undefined" @click="moveSelected">
         <FolderInput class="mr-2 size-4" />
         移动到…
       </MenubarItem>
-      <MenubarItem @click="deleteSelectedSubfolder">
+      <MenubarItem :disabled="folderActionsDisabled" :title="folderActionReason || undefined" @click="deleteSelectedSubfolder">
         <Trash2 class="mr-2 size-4" />
         删除子文件夹
       </MenubarItem>
-      <MenubarItem @click="archiveDraft">
+      <MenubarItem :disabled="folderActionsDisabled" :title="folderActionReason || undefined" @click="archiveDraft">
         <Archive class="mr-2 size-4" />
         归档这篇
       </MenubarItem>
 
       <MenubarSeparator />
 
-      <!-- 导入 -->
-      <MenubarItem @click="toggleShowImportMdDialog(true)">
+      <MenubarItem class="text-foreground" @click="toggleShowImportMdDialog(true)">
         <Upload class="mr-2 size-4" />
         导入 Markdown
       </MenubarItem>

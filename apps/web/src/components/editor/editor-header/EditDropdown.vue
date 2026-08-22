@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { altSign, ctrlSign, shiftSign } from '@mobi/shared/configs'
+import { redoAction, undoAction } from '@mobi/shared/editor'
 import {
   Images,
+  Redo2,
   Replace,
   Search,
+  Undo2,
   WandSparkles,
 } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
@@ -54,6 +57,16 @@ function openReplace() {
 function openBlockLibrary() {
   uiStore.toggleBlockLibrary()
 }
+
+function undoEdit() {
+  if (editor.value)
+    undoAction(editor.value)
+}
+
+function redoEdit() {
+  if (editor.value)
+    redoAction(editor.value)
+}
 </script>
 
 <template>
@@ -63,6 +76,26 @@ function openBlockLibrary() {
       编辑
     </MenubarSubTrigger>
     <MenubarSubContent class="w-64">
+      <MenubarItem @click="undoEdit()">
+        <Undo2 class="mr-2 h-4 w-4" />
+        撤销
+        <MenubarShortcut>
+          <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">{{ ctrlSign }}</kbd>
+          <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">Z</kbd>
+        </MenubarShortcut>
+      </MenubarItem>
+      <MenubarItem @click="redoEdit()">
+        <Redo2 class="mr-2 h-4 w-4" />
+        重做
+        <MenubarShortcut>
+          <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">{{ ctrlSign }}</kbd>
+          <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">{{ shiftSign }}</kbd>
+          <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">Z</kbd>
+        </MenubarShortcut>
+      </MenubarItem>
+
+      <MenubarSeparator />
+
       <MenubarItem @click="formatContent()">
         <WandSparkles class="mr-2 h-4 w-4" />
         格式化文档
@@ -107,6 +140,26 @@ function openBlockLibrary() {
       编辑
     </MenubarTrigger>
     <MenubarContent class="w-64" align="start">
+      <MenubarItem @click="undoEdit()">
+        <Undo2 class="mr-2 h-4 w-4" />
+        撤销
+        <MenubarShortcut>
+          <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">{{ ctrlSign }}</kbd>
+          <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">Z</kbd>
+        </MenubarShortcut>
+      </MenubarItem>
+      <MenubarItem @click="redoEdit()">
+        <Redo2 class="mr-2 h-4 w-4" />
+        重做
+        <MenubarShortcut>
+          <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">{{ ctrlSign }}</kbd>
+          <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">{{ shiftSign }}</kbd>
+          <kbd class="mx-1 bg-gray-2 dark:bg-stone-9">Z</kbd>
+        </MenubarShortcut>
+      </MenubarItem>
+
+      <MenubarSeparator />
+
       <MenubarItem @click="formatContent()">
         <WandSparkles class="mr-2 h-4 w-4" />
         格式化文档

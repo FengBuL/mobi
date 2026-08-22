@@ -1,5 +1,6 @@
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import { defaultKeymap, historyKeymap } from '@codemirror/commands'
+import { editorHistory } from './history-join'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { foldGutter, foldKeymap } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
@@ -8,6 +9,7 @@ import { EditorSelection, EditorState, Prec } from '@codemirror/state'
 import { EditorView, keymap, placeholder } from '@codemirror/view'
 import { indentationMarkers } from '@replit/codemirror-indentation-markers'
 import { formatDoc } from '../utils/fileHelpers'
+import { handleBlockquoteEnter, handleBlockquoteTypedBlock } from './blockquote-enter'
 import { applyHeading, formatBold, formatCode, formatItalic, formatLink, formatOrderedList, formatStrikethrough, formatUnorderedList, redoAction, undoAction } from './format'
 
 /**
@@ -100,7 +102,7 @@ export function markdownKeymap(options?: MarkdownKeymapOptions) {
 export function markdownSetup(options?: MarkdownKeymapOptions) {
   return [
     // 基础功能
-    history(),
+    editorHistory(),
     highlightSelectionMatches(),
     closeBrackets(),
 
@@ -112,6 +114,14 @@ export function markdownSetup(options?: MarkdownKeymapOptions) {
       base: markdownLanguage,
       codeLanguages: languages,
       addKeymap: true,
+    }),
+
+    // 空引用行回车退出，避免把 > 续进后面的表格和代码块
+    Prec.highest(keymap.of([
+      { key: `Enter`, run: handleBlockquoteEnter },
+    ])),
+    EditorView.inputHandler.of((view, from, to, text) => {
+      return handleBlockquoteTypedBlock(view, from, to, text)
     }),
 
     // Markdown 快捷键（高优先级，优先于默认快捷键）

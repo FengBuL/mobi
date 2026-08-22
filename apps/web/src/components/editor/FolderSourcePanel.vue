@@ -423,7 +423,7 @@ async function handleExportAll() {
             variant="ghost"
             size="sm"
             class="h-7 w-7 p-0"
-            title="收起面板，之后从「文件 → 本地文件夹」打开"
+            title="收起面板，之后从「文件 → 打开文件夹」打开"
             @click="handleCollapsePanel"
           >
             <PanelLeftClose class="h-3.5 w-3.5" />
@@ -525,7 +525,7 @@ async function handleExportAll() {
           这个浏览器不能把稿子写成文件夹里的文件
         </p>
         <p class="text-xs mt-1">
-          稿子存在浏览器里，清缓存会丢。请用 Chrome / Edge 打开 http://localhost:5173/mobi/ ，不要用局域网地址；或用桌面版。
+          稿子存在浏览器里，清缓存会丢。请用 Chrome / Edge 打开本站，不要用局域网地址；或用桌面版。
         </p>
       </div>
 

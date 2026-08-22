@@ -11,10 +11,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useEditorCopyActions } from '@/composables/useEditorCopyActions'
 import { isDesktopRuntime } from '@/services/desktop/bridge'
+import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
 import { useUIStore } from '@/stores/ui'
-import { countUnsafeClipboardImagesFromHtml, formatLostWechatImageHint } from '@/utils/clipboard-image-status'
+import { countUnsafeClipboardImagesFromHtml, resolveLostImageHint } from '@/utils/clipboard-image-status'
 import { openDesktopDownload } from '@/utils/desktop-download'
+import { store } from '@/utils/storage'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
 import HelpDropdown from './HelpDropdown.vue'
@@ -24,7 +26,7 @@ import SettingsDropdown from './SettingsDropdown.vue'
 const emit = defineEmits([`startCopy`, `endCopy`])
 
 const uiStore = useUIStore()
-const { isOpenRightSlider, workspaceMode } = storeToRefs(uiStore)
+const { isOpenRightSlider, workspaceMode, isMobile } = storeToRefs(uiStore)
 
 const workspaceModes: Array<{ value: WorkspaceMode, label: string, hint: string }> = [
   { value: `simple`, label: `简洁`, hint: `只留编辑器和预览` },
@@ -61,10 +63,25 @@ const { handleCopy, copyToWeChat } = useEditorCopyActions({
 })
 
 const renderStore = useRenderStore()
+const postStore = usePostStore()
 const isDesktopApp = isDesktopRuntime()
 const { output } = storeToRefs(renderStore)
+const { currentPostId } = storeToRefs(postStore)
+const imgHost = store.reactive(`imgHost`, `default`)
+const hintEpoch = ref(0)
+const outputEpoch = ref(0)
+watch(currentPostId, () => {
+  hintEpoch.value += 1
+})
+watch(output, () => {
+  outputEpoch.value = hintEpoch.value
+}, { immediate: true })
 const lostImageCount = computed(() => countUnsafeClipboardImagesFromHtml(output.value))
-const lostImageHint = computed(() => formatLostWechatImageHint(lostImageCount.value))
+const lostImageHint = computed(() => resolveLostImageHint({
+  outputMatchesCurrentPost: outputEpoch.value === hintEpoch.value,
+  count: lostImageCount.value,
+  imgHost: imgHost.value,
+}))
 </script>
 
 <template>
@@ -164,11 +181,12 @@ const lostImageHint = computed(() => formatLostWechatImageHint(lostImageCount.va
 
       <!-- 简洁模式只留预览主题条上的「全局样式」，避免顶栏再开一扇门 -->
       <Button
-        v-if="workspaceMode === 'professional'"
+        v-if="workspaceMode === 'professional' && !isMobile"
         variant="outline"
         class="h-9"
         :class="{ 'border-foreground/45 bg-foreground/[0.06] text-foreground': isOpenRightSlider }"
-        @click="handleOpenStyleWorkspace"
+        type="button"
+        @click.prevent.stop="handleOpenStyleWorkspace"
       >
         <Palette class="mr-2 h-4 w-4" />
         <span>样式</span>

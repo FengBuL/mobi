@@ -8,6 +8,7 @@ import {
   mergeImportedProfiles,
   migrateAccountProfiles,
   pickPostAfterProfileDelete,
+  getDefaultProfileId,
   pickPostForProfile,
   rememberRecentBlockPreset,
   renameAccountProfile,
@@ -181,6 +182,14 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
     rememberLastPost(id, postStore.currentPostId)
   }
 
+  function attachOrphanPosts() {
+    const defaultId = getDefaultProfileId(profiles.value)
+    for (const post of postStore.posts) {
+      if (!post.profileId)
+        post.profileId = defaultId
+    }
+  }
+
   function hydrate() {
     const migrated = migrateAccountProfiles({
       profiles: profiles.value,
@@ -196,6 +205,7 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
         post.profileId = item.profileId
       }
     })
+    attachOrphanPosts()
     ready = true
     applyProfile(currentProfileId.value)
     const nextPostId = pickPostForProfile(
@@ -310,6 +320,11 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
     { deep: true },
   )
 
+  watch(() => postStore.posts.map(post => post.id).join(), () => {
+    if (ready)
+      attachOrphanPosts()
+  })
+
   watch(() => postStore.currentPostId, (postId) => {
     if (!ready || !postId) {
       return
@@ -319,15 +334,14 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
       return
     }
     if (!post.profileId) {
-      post.profileId = currentProfileId.value
-      return
+      post.profileId = getDefaultProfileId(profiles.value)
     }
     const resolved = resolveProfileId(post.profileId, profiles.value)
     if (post.profileId !== resolved) {
       post.profileId = resolved
     }
     if (resolved !== currentProfileId.value) {
-      applyProfile(resolved)
+      return
     }
     rememberLastPost(resolved, postId)
   })

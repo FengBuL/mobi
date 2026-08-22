@@ -139,6 +139,10 @@ export const useUIStore = defineStore(`ui`, () => {
     }
   }
 
+  function closeAuxPanel(name: AuxPanel) {
+    auxPanelFlags[name].value = false
+  }
+
   // 专业模式下同时开三栏，编辑器和预览会被压到不到 200px，预览一行放不下几个字。
   // 分栏仍然可拖拽，这里只挡住「越开越窄直到不能用」这条路。
   const MAX_OPEN_RAILS = 2
@@ -147,6 +151,13 @@ export const useUIStore = defineStore(`ui`, () => {
   for (const [key, flag] of Object.entries(auxPanelFlags)) {
     const name = key as AuxPanel
     watch(flag, (open) => {
+      // 换样子是左边抽屉，不占中间栏，专业模式里不要挤掉文章列表或样式
+      if (name === `blocks`) {
+        if (open && isSimpleWorkspace.value)
+          closeAuxPanels(`blocks`)
+        return
+      }
+
       if (!open) {
         railOpenOrder.value = railOpenOrder.value.filter(item => item !== name)
         return
@@ -182,6 +193,8 @@ export const useUIStore = defineStore(`ui`, () => {
       hasChosenWorkspaceMode.value = true
 
     closeAuxPanels()
+    if (mode === `professional` && !isMobile.value)
+      isOpenRightSlider.value = true
   }
 
   // 搜索面板状态
@@ -367,6 +380,7 @@ export const useUIStore = defineStore(`ui`, () => {
     isSimpleWorkspace,
     activeAuxPanel,
     closeAuxPanels,
+    closeAuxPanel,
     setWorkspaceMode,
 
     // ==================== 对话框状态 ====================

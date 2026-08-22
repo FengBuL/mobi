@@ -1,11 +1,14 @@
 import type { EditorView } from '@codemirror/view'
+import { isolateHistory } from '@codemirror/commands'
 import { Annotation } from '@codemirror/state'
+import { blockFieldEditSession } from '@mobi/shared/editor'
 import { formatDoc } from '@/utils'
 
 export const blockSelectionTransaction = Annotation.define<boolean>()
 
 interface EditorMutationOptions {
   preserveBlockSelection?: boolean
+  composeHistory?: boolean
 }
 
 /**
@@ -124,6 +127,33 @@ export const useEditorStore = defineStore(`editor`, () => {
     return { from: from + leading.length, to: from + leading.length + markup.length }
   }
 
+  const replaceRange = (from: number, to: number, text: string, options: EditorMutationOptions = {}) => {
+    if (!editor.value)
+      return
+
+    const annotations = [
+      options.preserveBlockSelection ? blockSelectionTransaction.of(true) : undefined,
+      options.composeHistory ? blockFieldEditSession.of(true) : isolateHistory.of(`before`),
+    ].filter(Boolean)
+
+    editor.value.dispatch({
+      changes: { from, to, insert: text },
+      annotations,
+    })
+    return { from, to: from + text.length }
+  }
+
+  const insertBlockAtEnd = (markup: string, options: EditorMutationOptions = {}) => {
+    if (!editor.value)
+      return
+
+    const end = editor.value.state.doc.length
+    editor.value.dispatch({
+      selection: { anchor: end },
+    })
+    return insertBlockAtCursor(markup, options)
+  }
+
   return {
     editor,
     formatContent,
@@ -134,5 +164,7 @@ export const useEditorStore = defineStore(`editor`, () => {
     replaceSelection,
     insertAtCursor,
     insertBlockAtCursor,
+    insertBlockAtEnd,
+    replaceRange,
   }
 })

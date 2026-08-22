@@ -27,9 +27,13 @@ const githubSchema = toTypedSchema(yup.object({
 
 const githubConfig = store.reactive(`githubConfig`, { repo: ``, branch: ``, accessToken: ``, useCDN: false })
 
+function saveOtherImageHost<T extends object>(host: string, config: { value: T }, formValues: Partial<T>) {
+  saveAndSelectImageHost(host, config, imgHost, formValues)
+  toast.success(`保存成功，已用作当前图床`)
+}
+
 async function githubSubmit(formValues: any) {
-  Object.assign(githubConfig.value, formValues)
-  toast.success(`保存成功`)
+  saveOtherImageHost(`github`, githubConfig, formValues)
 }
 
 // 阿里云
@@ -54,8 +58,7 @@ const aliOSSConfig = store.reactive(`aliOSSConfig`, {
 })
 
 async function aliOSSSubmit(formValues: any) {
-  Object.assign(aliOSSConfig.value, formValues)
-  toast.success(`保存成功`)
+  saveOtherImageHost(`aliOSS`, aliOSSConfig, formValues)
 }
 
 // 腾讯云
@@ -78,8 +81,7 @@ const txCOSConfig = store.reactive(`txCOSConfig`, {
 })
 
 async function txCOSSubmit(formValues: any) {
-  Object.assign(txCOSConfig.value, formValues)
-  toast.success(`保存成功`)
+  saveOtherImageHost(`txCOS`, txCOSConfig, formValues)
 }
 
 // 七牛云
@@ -102,8 +104,7 @@ const qiniuConfig = store.reactive(`qiniuConfig`, {
 })
 
 async function qiniuSubmit(formValues: any) {
-  Object.assign(qiniuConfig.value, formValues)
-  toast.success(`保存成功`)
+  saveOtherImageHost(`qiniu`, qiniuConfig, formValues)
 }
 
 // MinIO
@@ -126,8 +127,7 @@ const minioOSSConfig = store.reactive(`minioConfig`, {
 })
 
 async function minioOSSSubmit(formValues: any) {
-  Object.assign(minioOSSConfig.value, formValues)
-  toast.success(`保存成功`)
+  saveOtherImageHost(`minio`, minioOSSConfig, formValues)
 }
 
 // S3
@@ -154,8 +154,7 @@ const s3Config = store.reactive(`s3Config`, {
 })
 
 async function s3Submit(formValues: any) {
-  Object.assign(s3Config.value, formValues)
-  toast.success(`保存成功`)
+  saveOtherImageHost(`s3`, s3Config, formValues)
 }
 
 // Telegram 图床
@@ -169,8 +168,7 @@ const telegramSchema = toTypedSchema(
 const telegramConfig = store.reactive(`telegramConfig`, { token: ``, chatId: `` })
 
 async function telegramSubmit(values: any) {
-  Object.assign(telegramConfig.value, values)
-  toast.success(`保存成功`)
+  saveOtherImageHost(`telegram`, telegramConfig, values)
 }
 
 // 公众号
@@ -250,8 +248,7 @@ const r2Config = store.reactive(`r2Config`, {
 })
 
 async function r2Submit(formValues: any) {
-  Object.assign(r2Config.value, formValues)
-  toast.success(`保存成功`)
+  saveOtherImageHost(`r2`, r2Config, formValues)
 }
 
 // 又拍云
@@ -274,8 +271,7 @@ const upyunConfig = store.reactive(`upyunConfig`, {
 })
 
 async function upyunSubmit(formValues: any) {
-  Object.assign(upyunConfig.value, formValues)
-  toast.success(`保存成功`)
+  saveOtherImageHost(`upyun`, upyunConfig, formValues)
 }
 
 // Cloudinary
@@ -304,8 +300,7 @@ const cloudinaryConfig = store.reactive(`cloudinaryConfig`, {
 })
 
 async function cloudinarySubmit(formValues: any) {
-  Object.assign(cloudinaryConfig.value, formValues)
-  toast.success(`保存成功`)
+  saveOtherImageHost(`cloudinary`, cloudinaryConfig, formValues)
 }
 
 const options = [

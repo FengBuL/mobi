@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_MP_PROXY_ORIGIN, OFFICIAL_MP_PROXY_ORIGIN, selectMpProxyOrigin } from '@/services/wechat/proxyOrigin'
+import { putPresignedFile } from '@/utils/put-presigned-file'
 import { prepareMpProxySubmission, sanitizeStoredMpProxyOrigin, saveAndSelectImageHost, validateMpProxyBeforeSave } from '@/utils/image-host-config'
 
 describe(`图床配置保存`, () => {
@@ -17,6 +18,50 @@ describe(`图床配置保存`, () => {
       appsecret: `secret-test`,
     })
     expect(activeHost.value).toBe(`mp`)
+  })
+
+  it(`保存 GitHub / R2 配置后也会切到该图床`, () => {
+    const github = { value: { repo: ``, accessToken: `` } }
+    const r2 = { value: { accountId: ``, bucket: `` } }
+    const activeHost = { value: `default` }
+
+    saveAndSelectImageHost(`github`, github, activeHost, {
+      repo: `owner/repo`,
+      accessToken: `ghp_test`,
+    })
+    expect(activeHost.value).toBe(`github`)
+
+    saveAndSelectImageHost(`r2`, r2, activeHost, {
+      accountId: `acct`,
+      bucket: `assets`,
+    })
+    expect(activeHost.value).toBe(`r2`)
+    expect(r2.value).toEqual({
+      accountId: `acct`,
+      bucket: `assets`,
+    })
+  })
+})
+
+describe(`预签名上传`, () => {
+  it(`用 body 发送文件，失败会抛错`, async () => {
+    const originalFetch = window.fetch
+    const calls: Array<{ url: string, init?: RequestInit }> = []
+    window.fetch = (async (url: string, init?: RequestInit) => {
+      calls.push({ url, init })
+      return { ok: false, status: 403 } as Response
+    }) as typeof fetch
+
+    try {
+      await expect(putPresignedFile(`https://example.com/put`, new File([`x`], `a.png`, { type: `image/png` })))
+        .rejects
+        .toThrow(`上传失败：403`)
+      expect(calls[0]?.init?.body).toBeInstanceOf(File)
+      expect(calls[0]?.init).not.toHaveProperty(`data`)
+    }
+    finally {
+      window.fetch = originalFetch
+    }
   })
 })
 

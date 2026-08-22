@@ -2,6 +2,7 @@
 import type { MpAccount } from '@/stores/mpAccounts'
 import { FileDown, Pencil, Plus, Rss, Search, Trash2 } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
+import { escapeHtmlAttr } from '@/utils/html-attr'
 
 const editorStore = useEditorStore()
 const uiStore = useUIStore()
@@ -50,13 +51,13 @@ const VERIFY_LABELS: Record<string, string> = {
 
 /** 组装 HTML 片段 */
 function buildMpHtml(account: MpAccount) {
-  const logo = account.logo || ``
+  const logo = escapeHtmlAttr(account.logo || ``)
   const attrs = [
     `data-pluginname="mpprofile"`,
-    `data-id="${account.mpId}"`,
-    `data-nickname="${account.name}"`,
+    `data-id="${escapeHtmlAttr(account.mpId)}"`,
+    `data-nickname="${escapeHtmlAttr(account.name)}"`,
     `data-headimg="${logo}"`,
-    account.desc && `data-signature="${account.desc}"`,
+    account.desc && `data-signature="${escapeHtmlAttr(account.desc)}"`,
     `data-service_type="${account.serviceType || `1`}"`,
     `data-verify_status="${account.verify || `0`}"`,
   ].filter(Boolean).join(` `)

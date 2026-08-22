@@ -11,12 +11,16 @@ export function describeFolderPickerBlocker(input: {
     return ``
   }
   if (!input.isSecureContext) {
-    return `这个地址（${input.origin}）不能选本机文件夹。请用 http://localhost:5173/mobi/ 打开。`
+    return `这个地址（${input.origin}）不是安全上下文，浏览器不能选本机文件夹。请用 https 或本机 localhost 打开，或改用桌面版。`
   }
   if (!input.hasDirectoryPicker) {
     return `这个浏览器不能选本机文件夹。请用 Chrome / Edge，或桌面版。`
   }
   return ``
+}
+
+export function describeFolderActionDisabledReason(hasFolder: boolean) {
+  return hasFolder ? `` : `先打开一个本地文件夹`
 }
 
 export function shouldRemindBrowserDraftExport(input: {

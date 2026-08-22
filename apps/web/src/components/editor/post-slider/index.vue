@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CheckSquare, ChevronsDownUp, ChevronsUpDown, Ellipsis, FileText, PanelLeftClose, Plus, Search, X } from 'lucide-vue-next'
 import { draftFileSyncKey } from '@/composables/useDraftFileSync'
+import { useAccountProfileStore } from '@/stores/accountProfile'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useUIStore } from '@/stores/ui'
@@ -11,7 +12,13 @@ const uiStore = useUIStore()
 const { isMobile, isOpenPostSlider } = storeToRefs(uiStore)
 
 const postStore = usePostStore()
+const profileStore = useAccountProfileStore()
 const { posts } = storeToRefs(postStore)
+const { currentProfileId } = storeToRefs(profileStore)
+
+function belongsToCurrentProfile(post: { profileId?: string | null }) {
+  return post.profileId === currentProfileId.value
+}
 const draftFileSync = inject(draftFileSyncKey)
 
 const editorStore = useEditorStore()
@@ -55,7 +62,7 @@ function addPost() {
   const title = addPostInputVal.value.trim() || `未命名`
   if (posts.value.some(post => post.title === title))
     return toast.error(`内容标题已存在`)
-  postStore.addPost(title, parentId.value)
+  postStore.addPost(title, parentId.value, currentProfileId.value)
   isOpenAddDialog.value = false
   toast.success(`内容新增成功`)
 }
@@ -130,12 +137,13 @@ function recoverHistory() {
   }
 
   const content = post.history[currentHistoryIndex.value].content
-  post.content = content
-  const ed = toRaw(editor.value!)
-  ed.dispatch({
-    changes: { from: 0, to: ed.state.doc.length, insert: content },
-  })
-  toast.success(`记录恢复成功`)
+  postStore.updatePostContent(post.id, content)
+  if (postStore.currentPostId === post.id) {
+    editorStore.importContent(content)
+  }
+  toast.success(postStore.currentPostId === post.id
+    ? `记录恢复成功`
+    : `已恢复「${post.title}」的存档，没有改当前这篇`)
   isOpenHistoryDialog.value = false
 }
 
@@ -206,6 +214,7 @@ const searchResults = computed(() => {
   if (!q)
     return []
   return posts.value
+    .filter(belongsToCurrentProfile)
     .filter(post => post.title.toLowerCase().includes(q) || post.content.toLowerCase().includes(q))
     .map((post) => {
       const snippet = getContentSnippet(post.content, searchQuery.value.trim())
@@ -220,7 +229,7 @@ const searchResults = computed(() => {
 /* ============ 排序 ============ */
 const sortMode = store.reactive(addPrefix(`sort_mode`), `create-old-new`)
 const sortedPosts = computed(() => {
-  return [...posts.value].sort((a, b) => {
+  return [...posts.value].filter(belongsToCurrentProfile).sort((a, b) => {
     switch (sortMode.value) {
       case `A-Z`:
         return a.title.localeCompare(b.title)
@@ -314,7 +323,7 @@ function duplicateSelected() {
     return
   selectedPostIds.value.forEach((id) => {
     const p = postStore.getPostById(id)!
-    postStore.addPost(`${p.title} 副本`, p.parentId ?? null)
+    postStore.addPost(`${p.title} 副本`, p.parentId ?? null, p.profileId ?? currentProfileId.value)
     // 覆盖刚创建的那篇内容
     const newPost = posts.value[posts.value.length - 1]
     postStore.updatePostContent(newPost.id, p.content)
@@ -344,7 +353,7 @@ function mergeSelected() {
     return `## ${p.title}\n\n${p.content}`
   })
   const mergedContent = parts.join(`\n\n---\n\n`)
-  postStore.addPost(mergeTitle.value.trim(), null)
+  postStore.addPost(mergeTitle.value.trim(), null, currentProfileId.value)
   const newPost = posts.value[posts.value.length - 1]
   postStore.updatePostContent(newPost.id, mergedContent)
   toast.success(`已合并为「${mergeTitle.value.trim()}」`)

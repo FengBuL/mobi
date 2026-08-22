@@ -883,19 +883,19 @@ watch(isOpen, () => {
 
         <section v-show="activeInspectorPanel === 'component'" id="block-inspector-slot" class="block-inspector-slot">
           <HeadingBlockWorkspace
-            v-if="blockSelection"
+            v-if="blockSelection && activeInspectorPanel === 'component'"
             :category-id="blockSelection.category"
             mode="inspector"
           />
           <div v-else class="block-inspector-empty">
-            <span>COMPONENT</span>
-            <strong>从板块库选择一个组件</strong>
-            <p>组件列表会保留当前位置，选中后可在这里直接修改文字和字号。</p>
+            <span>当前组件</span>
+            <strong>点预览里的标题、引用或列表</strong>
+            <p>选中后可以在这里改文字和字号。也可以打开「换样子」挑样式。</p>
           </div>
         </section>
 
         <Tabs v-show="activeInspectorPanel === 'style'" v-model="activeStylePanel" class="w-full">
-          <TabsList class="grid w-full grid-cols-4">
+          <TabsList class="grid w-full grid-cols-2 gap-x-3 sm:grid-cols-4">
             <TabsTrigger value="template">
               版式
             </TabsTrigger>

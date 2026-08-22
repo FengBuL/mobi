@@ -24,6 +24,10 @@ function openCreate() {
   dialogMode.value = `create`
 }
 
+defineExpose({
+  openCreate,
+})
+
 function openRename() {
   nameDraft.value = currentName.value
   dialogMode.value = `rename`
