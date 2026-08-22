@@ -17,6 +17,9 @@ describe(`编辑工作流`, () => {
     expect(source).toContain(`composeHistory`)
     expect(source).toContain(`armBlockFieldEditJoin`)
     expect(source).toContain(`isOpenRightSlider`)
+    const editorStore = readSource(`apps/web/src/stores/editor.ts`)
+    expect(editorStore).toContain(`isolateHistory`)
+    expect(editorStore).not.toContain(`from '@codemirror/commands'`)
     expect(source).not.toContain(`更新到正文`)
   })
 

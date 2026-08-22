@@ -1,7 +1,6 @@
 import type { EditorView } from '@codemirror/view'
-import { isolateHistory } from '@codemirror/commands'
 import { Annotation } from '@codemirror/state'
-import { blockFieldEditSession } from '@mobi/shared/editor'
+import { blockFieldEditSession, isolateHistory } from '@mobi/shared/editor'
 import { formatDoc } from '@/utils'
 
 export const blockSelectionTransaction = Annotation.define<boolean>()

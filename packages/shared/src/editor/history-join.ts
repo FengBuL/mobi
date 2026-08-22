@@ -1,5 +1,7 @@
-import { history } from '@codemirror/commands'
+import { history, isolateHistory } from '@codemirror/commands'
 import { Annotation } from '@codemirror/state'
+
+export { isolateHistory }
 
 export const blockFieldEditSession = Annotation.define<boolean>()
 
