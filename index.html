@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="keywords" content="墨笔,markdown,markdown编辑器,公众号排版,微信公众号,富文本" />
+    <meta name="description" content="墨笔 | 写完就能贴进公众号。预览按贴完的结果画，保不住的构图当场打标。" />
+    <meta
+      name="viewport"
+      content="width=device-width, viewport-fit=cover, initial-scale=1.0"
+    />
+    <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171514" media="(prefers-color-scheme: dark)" />
+    <title>墨笔 · 公众号 Markdown 排版</title>
+    <link rel="icon" type="image/svg+xml" href="/mobi/logo.svg" />
+    <style>
+      /* 首屏在 JS 之前就要显示，所以配色写字面值，不依赖后面才加载的 CSS 变量 */
+      .app-splash {
+        --splash-paper: #faf8f5;
+        --splash-ink: #211f1d;
+        --splash-muted: #6f6862;
+
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        background-color: var(--splash-paper);
+        color: var(--splash-ink);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        transition: opacity 0.42s ease;
+      }
+
+      .app-splash.dark {
+        --splash-paper: #171514;
+        --splash-ink: #eae4dc;
+        --splash-muted: #97908a;
+      }
+
+      .app-splash.is-leaving {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .app-splash__mark {
+        width: 56px;
+        height: 56px;
+        animation: splash-breathe 2.4s ease-in-out infinite;
+      }
+
+      .app-splash__name {
+        font-size: 19px;
+        font-weight: 600;
+        letter-spacing: 0.32em;
+        text-indent: 0.32em;
+      }
+
+      .app-splash__tagline {
+        margin-top: -12px;
+        font-size: 13px;
+        letter-spacing: 0.02em;
+        color: var(--splash-muted);
+      }
+
+      .app-splash__status {
+        position: absolute;
+        bottom: 12%;
+        font-size: 12.5px;
+        color: var(--splash-muted);
+      }
+
+      .app-splash__status::after {
+        content: '';
+        animation: splash-dots 1.6s steps(4, end) infinite;
+      }
+
+      .app-splash__timeout {
+        position: absolute;
+        bottom: 7%;
+        display: none;
+        max-width: 30em;
+        padding: 0 1.5em;
+        font-size: 12.5px;
+        line-height: 1.7;
+        text-align: center;
+        color: #b93a26;
+      }
+
+      @keyframes splash-breathe {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.72;
+          transform: scale(0.955);
+        }
+      }
+
+      @keyframes splash-dots {
+        0% {
+          content: '';
+        }
+        25% {
+          content: '.';
+        }
+        50% {
+          content: '..';
+        }
+        75% {
+          content: '...';
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .app-splash__mark {
+          animation: none;
+        }
+      }
+    </style>
+    <script type="module" crossorigin src="/mobi/static/js/index-Dh4umOkE.js"></script>
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/rolldown-runtime-z0mNeY3V.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/codemirror-DMc2LCUs.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/highlight-C3HviDGL.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_aws-crypto_crc32-DLmsPBYe.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_aws-crypto_crc32c-wQHu2nNt.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_aws-crypto_sha1-browser-dQ13hlp0.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_aws-crypto_sha256-browser-_palsnBP.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_aws-sdk_client-s3-BHCWumC3.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_aws-sdk_s3-request-presigner-BBc0OYnv.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_floating-ui_core-BAKJCouc.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_floating-ui_dom-DN9ilyrL.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_floating-ui_vue-Ct_u3AHa.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_vee-validate-NGyzX28s.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_vee-validate_yup-CxcKt5lp.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_lucide-vue-next-BrL6CO0Y.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_ohash-BEUB9C4E.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_reka-ui-CXKo75Qa.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_axios-99OEbxaY.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_browser-image-compression-laTH_Giy.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_buffer-from-4AUHvFZD.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_class-variance-authority-eHkNKHue.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_antv_hierarchy-CdBEU3mX.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_antv_expr-B88Z1TRa.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_antv_infographic-CVw1qcXm.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_crypto-js-uxaj6usn.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_es-toolkit-DUCJdkSY.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_fflate-DrAju-hB.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_esprima-IgNSftG2.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_front-matter-BTR3imFr.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_html-to-image-IjNTmTFR.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_dompurify-nT4jlc2E.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_isomorphic-dompurify-DhF7sJIZ.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_boolbase-Bln7X-2h.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_cheerio-Bc38jRpu.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_entities-Cg-xQtK8.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_juice-DHjSZPm2.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_marked-DS2f1nPh.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_vue-BcpX_4fz.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/prettier-BRxjiv_R.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_call-bind-apply-helpers-CYofM96k.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_call-bound-CXGIVKbD.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_object-inspect-BJ6qQlAd.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_qiniu-js-CtfGH_TI.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_internationalized_date-BWfmFfYS.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_internationalized_number-Bbc6Myr6.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_radix-vue-CfJ4wCHu.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_tailwind-merge-mtbe1WfW.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_uuid-CgZ_FQhX.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_popperjs_core-9W6Rtzlx.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_vue-pick-colors-DTmCDxzl.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_vue-sonner-wcqNuqY4.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_property-expr-BA30Ses4.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_tiny-case-DcE2ZeJP.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_toposort-CkR4z0aV.js">
+    <link rel="modulepreload" crossorigin href="/mobi/static/js/vendor_yup-CROQDaFN.js">
+    <link rel="stylesheet" crossorigin href="/mobi/static/css/vendor_vue-sonner-Ds1aFT64.css">
+    <link rel="stylesheet" crossorigin href="/mobi/static/css/index-GDWdmc1a.css">
+  </head>
+
+  <body>
+    <noscript>
+      <strong>Please enable JavaScript to continue.</strong>
+    </noscript>
+    <div id="app"></div>
+
+    <!-- 放在 #app 外面：Vue 挂载会清空 #app，留在里面就没法做淡出 -->
+    <div class="app-splash" id="app-splash">
+      <svg class="app-splash__mark" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="64" rx="15" fill="#B93A26" />
+        <path d="M46 11C46 30.5 37 44 17.5 52.5L13.5 44.5C28 37 34.5 26.5 34.5 11Z" fill="#FBF7F0" />
+      </svg>
+      <div class="app-splash__name">墨笔</div>
+      <p class="app-splash__tagline">为编辑而生</p>
+      <p class="app-splash__status">正在准备编辑器</p>
+      <p class="app-splash__timeout" id="app-splash-timeout">
+        加载时间比平常久，可以刷新试试，或按 F12 看看控制台有没有报错
+      </p>
+    </div>
+    <script>
+      const theme = localStorage.getItem('vueuse-color-scheme')
+      if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.getElementById('app-splash').classList.add('dark')
+      }
+
+      setTimeout(() => {
+        const tip = document.getElementById('app-splash-timeout')
+        if (tip) {
+          tip.style.display = 'block'
+        }
+      }, 30000)
+    </script>
+  </body>
+</html>
