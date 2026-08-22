@@ -1721,9 +1721,10 @@ function destroyEditorView() {
 
 function resolveEditorHost() {
   const host = editorRef.value
-  if (host instanceof HTMLElement)
+  if (host instanceof HTMLDivElement)
     return host
-  return document.getElementById(`editor`)
+  const fallback = document.getElementById(`editor`)
+  return fallback instanceof HTMLDivElement ? fallback : null
 }
 
 function attachEditorToHost() {

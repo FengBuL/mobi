@@ -458,7 +458,7 @@ describe(`编辑工作流`, () => {
     expect(editor).toContain(`function attachEditorToHost`)
     expect(editor).toContain(`function ensureEditorAttached`)
     expect(editor).toContain(`function resolveEditorHost`)
-    expect(editor).toContain(`instanceof HTMLElement`)
+    expect(editor).toContain(`instanceof HTMLDivElement`)
     expect(editor).toMatch(/watch\(\s*\[editorRef,\s*viewMode,\s*showStyleRail,\s*showPostRail,\s*showFolderRail\]/)
     expect(editor).toContain(`markRaw(`)
     expect(editor).toContain(`shallowRef<EditorView`)
