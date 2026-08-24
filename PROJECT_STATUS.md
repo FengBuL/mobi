@@ -4,16 +4,16 @@
 
 ## 当前基线
 
-- 产品版本：`2.3.1`
-- 当前公开版本：`2.3.1`
+- 产品版本：`2.3.2`
+- 当前公开版本：`2.3.2`
 - Git 分支：`product/next`
-- 当前发布基线：`v2.3.1`
+- 当前发布基线：`v2.3.2`
 - 源码与分发：<https://github.com/FengBuL/mobi>
 - 许可证：[GNU AGPL-3.0-or-later](./LICENSE)
 - 网页版：<https://mobieditor.cn/>
 - 桌面下载：<https://app.mobieditor.cn/>
-- 当前公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.3.1>
-- 数据观测台：不在仓库里写死地址；自建见 `infra/telemetry-worker`
+- 当前公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.3.2>
+- 数据观测台：发布环境通过 `MOBI_TELEMETRY_ENDPOINT` 注入地址；自建见 `infra/telemetry-worker`
 
 ## 项目组成
 
@@ -40,7 +40,7 @@ patches                     pnpm 依赖补丁
 - v2.2.0：桌面应用内选择性更新、`api.mobieditor.cn` 官方代理默认值、公众号图片比例实体化与移动端预览尺寸校准；
 - v2.2.1：修复桌面主进程加载 `electron-updater` 时因 CommonJS 默认导入互操作错误导致的启动闪退；
 - v2.3.1：官方域名入口；连续换方案时样式生效。
-- 未发布（2026-08-22 晚）：P1 + 边角 + 查找/导出/确认/预览复制/编辑撤销/主题条/名片/Logo 已进工作区。390 关内容管理要回宽度。公众号图床 / 官方代理 / 板块自带色未动。Vitest 43 文件 / 610 通过。
+- v2.3.2：P1 + 边角 + 查找/导出/确认/预览复制/编辑撤销/主题条/名片/Logo 收口；网页和桌面构建恢复匿名观测链路。Vitest 43 文件 / 612 通过。
 
 每次交接或发布前都要重新运行验证命令，本文记录不能代替当前测试结果。
 

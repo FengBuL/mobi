@@ -12,6 +12,7 @@ cd "$(dirname "$0")/.."
 
 DIST_REPO=${MOBI_DIST_REPO:-https://github.com/FengBuL/mobi.git}
 CF_EDITOR_PROJECT=${MOBI_CF_EDITOR_PROJECT:-mobieditor}
+: "${MOBI_TELEMETRY_ENDPOINT:?请先设置 MOBI_TELEMETRY_ENDPOINT}"
 
 if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
   echo "请先设置 CLOUDFLARE_ACCOUNT_ID，不要把账号 ID 写进仓库。" >&2
@@ -29,14 +30,14 @@ deploy_pages() {
 }
 
 echo "==> 构建网页编辑器（根路径，给 mobieditor.cn）"
-VITE_APP_BASE_PATH=/ pnpm --filter @mobi/web build
+VITE_APP_BASE_PATH=/ VITE_TELEMETRY_ENDPOINT="$MOBI_TELEMETRY_ENDPOINT" pnpm --filter @mobi/web build
 deploy_pages apps/web/dist "$CF_EDITOR_PROJECT"
 
 echo "==> 发布桌面下载页（app.mobieditor.cn）"
 CLOUDFLARE_ACCOUNT_ID="$CF_ACCOUNT_ID" npx wrangler deploy --config apps/download/wrangler.toml
 
 echo "==> 同步旧地址 GitHub Pages（/mobi/）"
-VITE_APP_BASE_PATH=/mobi/ pnpm --filter @mobi/web build
+VITE_APP_BASE_PATH=/mobi/ VITE_TELEMETRY_ENDPOINT="$MOBI_TELEMETRY_ENDPOINT" pnpm --filter @mobi/web build
 cd apps/web/dist
 rm -rf .git
 git init -q -b gh-pages

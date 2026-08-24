@@ -1,10 +1,9 @@
 /**
  * 匿名使用统计的上报端点。
  *
- * 留空 = 完全不采集、不发送任何数据（当前默认状态）。
+ * 留空 = 完全不采集、不发送任何数据。
  *
- * 部署 infra/telemetry-worker 之后，把 Worker 地址填在这里，例如：
- *   export const TELEMETRY_ENDPOINT = `https://mobi-telemetry.xxx.workers.dev`
- * 填上并发版后，统计仍默认关闭；用户可在「设置」里打开。
+ * 生产构建通过 VITE_TELEMETRY_ENDPOINT 注入 Worker 地址。
+ * 地址注入后，统计默认开启，界面不显示开关。
  */
-export const TELEMETRY_ENDPOINT = ``
+export const TELEMETRY_ENDPOINT = import.meta.env.VITE_TELEMETRY_ENDPOINT || ``

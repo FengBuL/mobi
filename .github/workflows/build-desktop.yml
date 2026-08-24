@@ -14,7 +14,7 @@ on:
         description: '把安装包挂到这个 Release tag'
         required: true
         type: string
-        default: 'v2.3.1'
+        default: 'v2.3.2'
 
 permissions:
   contents: read
@@ -94,10 +94,21 @@ jobs:
           # 仓库的 .npmrc 把 Electron 二进制指到了国内镜像，GitHub 的机器上直接回官方源更快
           ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/v
 
+      - name: Validate telemetry endpoint
+        shell: bash
+        env:
+          VITE_TELEMETRY_ENDPOINT: ${{ vars.MOBI_TELEMETRY_ENDPOINT }}
+        run: |
+          if [ -z "$VITE_TELEMETRY_ENDPOINT" ]; then
+            echo "缺少 MOBI_TELEMETRY_ENDPOINT 仓库变量" >&2
+            exit 1
+          fi
+
       - name: Package
         run: pnpm --filter @mobi/desktop package:${{ matrix.target }}
         env:
           ELECTRON_MIRROR: https://github.com/electron/electron/releases/download/v
+          VITE_TELEMETRY_ENDPOINT: ${{ vars.MOBI_TELEMETRY_ENDPOINT }}
 
       # 签名对不上 bundle 时，Apple Silicon 会判「已损坏」并拒绝打开，
       # 而这在装了应用的开发机上看不出来——本地跑的时候隔离属性早被摘掉了。

@@ -6,15 +6,17 @@ function readSource(path: string) {
   return readFileSync(resolve(process.cwd(), path), `utf8`)
 }
 
-describe(`匿名统计默认关闭`, () => {
-  it(`没设过开关时不报送，只有显式 true 才打开`, () => {
+describe(`匿名统计默认开启`, () => {
+  it(`没设过开关时报送，曾经明确关闭的用户保持关闭`, () => {
     const telemetry = readSource(`apps/web/src/utils/telemetry.ts`)
-    expect(telemetry).toContain(`默认关闭`)
-    expect(telemetry).toContain(`localStorage.getItem(CONSENT_KEY) === \`true\``)
-    expect(telemetry).not.toContain(`!== \`false\``)
+    expect(telemetry).toContain(`默认开启`)
+    expect(telemetry).toContain(`localStorage.getItem(CONSENT_KEY) !== \`false\``)
   })
 
-  it(`源码不写死个人观测台和 Cloudflare 标识`, () => {
+  it(`从构建环境读取观测台地址，源码不写死个人标识`, () => {
+    const telemetryConfig = readSource(`apps/web/src/config/telemetry.ts`)
+    expect(telemetryConfig).toContain(`import.meta.env.VITE_TELEMETRY_ENDPOINT`)
+
     const files = [
       `apps/web/src/config/telemetry.ts`,
       `PROJECT_STATUS.md`,
@@ -35,7 +37,7 @@ describe(`匿名统计默认关闭`, () => {
     }
   })
 
-  it(`界面不再提供匿名统计开关`, () => {
+  it(`设置和关于界面都不显示匿名统计开关`, () => {
     const settings = readSource(`apps/web/src/components/editor/editor-header/SettingsDropdown.vue`)
     const about = readSource(`apps/web/src/components/editor/editor-header/AboutDialog.vue`)
 
@@ -43,7 +45,16 @@ describe(`匿名统计默认关闭`, () => {
     expect(settings).not.toContain(`setTelemetryConsent`)
     expect(about).not.toContain(`setTelemetryConsent`)
     expect(about).not.toContain(`匿名使用统计`)
-    expect(about).not.toContain(`开关在「设置」`)
+  })
+
+  it(`发布流程把观测台地址注入网页和桌面构建`, () => {
+    const deploy = readSource(`scripts/deploy-web.sh`)
+    const desktopWorkflow = readSource(`.github/workflows/build-desktop.yml`)
+
+    expect(deploy).toContain(`VITE_TELEMETRY_ENDPOINT="$MOBI_TELEMETRY_ENDPOINT"`)
+    expect(deploy).toContain(`MOBI_TELEMETRY_ENDPOINT:?请先设置 MOBI_TELEMETRY_ENDPOINT`)
+    expect(desktopWorkflow).toContain(`VITE_TELEMETRY_ENDPOINT: \${{ vars.MOBI_TELEMETRY_ENDPOINT }}`)
+    expect(desktopWorkflow).toContain(`缺少 MOBI_TELEMETRY_ENDPOINT 仓库变量`)
   })
 
   it(`三类 Issue 模板都要求主题、两张截图、是否配图床`, () => {
