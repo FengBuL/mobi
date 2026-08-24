@@ -1,0 +1,1 @@
+import{Bt as e,Vt as t}from"./vendor_antv_infographic-CVw1qcXm.js";function n(n){return typeof n==`string`?new e([[document.querySelector(n)]],[document.documentElement]):new e([[n]],t)}export{n as t};
