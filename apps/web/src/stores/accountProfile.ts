@@ -5,10 +5,10 @@ import {
   buildAccountProfileExport,
   createAccountProfile,
   deleteAccountProfile,
+  getDefaultProfileId,
   mergeImportedProfiles,
   migrateAccountProfiles,
   pickPostAfterProfileDelete,
-  getDefaultProfileId,
   pickPostForProfile,
   rememberRecentBlockPreset,
   renameAccountProfile,
@@ -283,6 +283,7 @@ export const useAccountProfileStore = defineStore(`accountProfile`, () => {
       currentPostId: postStore.currentPostId,
       deleteId: id,
       fallbackProfileId: removed.currentProfileId,
+      fallbackLastPostId: removed.profiles.find(profile => profile.id === removed.currentProfileId)?.lastPostId,
     })
 
     suppressPersist = true

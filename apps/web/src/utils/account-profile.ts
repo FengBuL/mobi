@@ -279,10 +279,16 @@ export function pickPostAfterProfileDelete(input: {
   currentPostId: string
   deleteId: string
   fallbackProfileId: string
+  fallbackLastPostId?: string | null
 }) {
   const current = input.postsBefore.find(post => post.id === input.currentPostId)
   if (!current || current.profileId !== input.deleteId) {
     return input.currentPostId
+  }
+  if (input.fallbackLastPostId && input.postsBefore.some(
+    post => post.id === input.fallbackLastPostId && post.profileId === input.fallbackProfileId,
+  )) {
+    return input.fallbackLastPostId
   }
   const kept = input.postsBefore.find(post => post.profileId === input.fallbackProfileId)
   return kept?.id ?? input.currentPostId

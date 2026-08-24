@@ -212,6 +212,21 @@ describe(`我的号：重命名与删除`, () => {
     })).toBe(`draft-a`)
   })
 
+  it(`第一个号有多篇稿时，删掉第二个号应回到离开前正在看的那篇`, () => {
+    const extraId = `profile-second`
+    expect(pickPostAfterProfileDelete({
+      postsBefore: [
+        { id: `draft-a1`, profileId: DEFAULT_PROFILE_ID },
+        { id: `draft-a2`, profileId: DEFAULT_PROFILE_ID },
+        { id: `draft-b`, profileId: extraId },
+      ],
+      currentPostId: `draft-b`,
+      deleteId: extraId,
+      fallbackProfileId: DEFAULT_PROFILE_ID,
+      fallbackLastPostId: `draft-a2`,
+    })).toBe(`draft-a2`)
+  })
+
   it(`切到没有自己稿的号时，不能继续用另一号的稿`, () => {
     expect(pickPostForProfile(
       [{ id: `draft-a`, profileId: DEFAULT_PROFILE_ID }],
