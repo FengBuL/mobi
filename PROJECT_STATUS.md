@@ -4,15 +4,15 @@
 
 ## 当前基线
 
-- 产品版本：`2.3.2`
-- 当前公开版本：`2.3.2`
+- 产品版本：`2.3.3`
+- 当前公开版本：`2.3.3`
 - Git 分支：`product/next`
-- 当前发布基线：`v2.3.2`
+- 当前发布基线：`v2.3.3`
 - 源码与分发：<https://github.com/FengBuL/mobi>
 - 许可证：[GNU AGPL-3.0-or-later](./LICENSE)
 - 网页版：<https://mobieditor.cn/>
 - 桌面下载：<https://app.mobieditor.cn/>
-- 当前公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.3.2>
+- 当前公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.3.3>
 - 数据观测台：发布环境通过 `MOBI_TELEMETRY_ENDPOINT` 注入地址；自建见 `infra/telemetry-worker`
 
 ## 项目组成
@@ -41,6 +41,7 @@ patches                     pnpm 依赖补丁
 - v2.2.1：修复桌面主进程加载 `electron-updater` 时因 CommonJS 默认导入互操作错误导致的启动闪退；
 - v2.3.1：官方域名入口；连续换方案时样式生效。
 - v2.3.2：P1 + 边角 + 查找/导出/确认/预览复制/编辑撤销/主题条/名片/Logo 收口；网页和桌面构建恢复匿名观测链路。Vitest 43 文件 / 612 通过。
+- v2.3.3：删掉新建的号后，恢复默认号离开前正在看的稿。Vitest 43 文件 / 613 通过。
 
 每次交接或发布前都要重新运行验证命令，本文记录不能代替当前测试结果。
 

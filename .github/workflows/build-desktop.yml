@@ -11,10 +11,10 @@ on:
   workflow_dispatch:
     inputs:
       upload_tag:
-        description: '把安装包挂到这个 Release tag'
+        description: 把安装包挂到这个 Release tag
         required: true
         type: string
-        default: 'v2.3.2'
+        default: v2.3.3
 
 permissions:
   contents: read
