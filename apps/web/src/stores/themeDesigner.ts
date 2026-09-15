@@ -10,6 +10,7 @@ import { addPrefix } from '@/utils'
 import { createClientId } from '@/utils/id'
 import { store } from '@/utils/storage'
 import { removeSavedItem, restoreSavedItem } from '@/utils/style-panel'
+import { trackEvent } from '@/utils/telemetry'
 import {
   cloneThemeTokens,
   collectThemeTokenDiff,
@@ -150,11 +151,23 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
     draft.value = { ...draft.value, tokens: next }
   }
 
+  // 「精细调节」每个字段只在精细调节里能改到，这里记一次就能覆盖所有卡片。
+  // 拖滑杆会连续触发，同一字段 800ms 内只记一次。
+  const tokenTrackTimers = new Map<string, number>()
+  function trackTokenAdjust(action: string, groupId: string, key = ``) {
+    const id = `${action}:${groupId}:${key}`
+    if (tokenTrackTimers.has(id))
+      return
+    tokenTrackTimers.set(id, window.setTimeout(() => tokenTrackTimers.delete(id), 800))
+    trackEvent(`style_token_adjust`, { action, group: groupId, key })
+  }
+
   function setToken(groupId: string, key: string, value: ThemeTokenValue) {
     checkpoint()
     const next = cloneThemeTokens(draft.value.tokens)
     next[groupId] = { ...next[groupId], [key]: value }
     commitTokens(next)
+    trackTokenAdjust(`set`, groupId, key)
   }
 
   function resetToken(groupId: string, key: string, recordHistory = true) {
@@ -175,6 +188,7 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
     }
 
     commitTokens(next)
+    trackTokenAdjust(`reset`, groupId, key)
   }
 
   function resetGroup(groupId: string, recordHistory = true) {
@@ -186,6 +200,7 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
     const next = cloneThemeTokens(draft.value.tokens)
     delete next[groupId]
     commitTokens(next)
+    trackTokenAdjust(`reset_group`, groupId)
   }
 
   function resetAll() {
@@ -194,6 +209,7 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
 
     checkpoint()
     commitTokens({})
+    trackTokenAdjust(`reset_all`, `*`)
   }
 
   function replaceTokens(next: ThemeTokens, recordHistory = true) {
@@ -216,6 +232,7 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
 
   function applyPalette(color: string) {
     replaceTokens(derivePaletteTokens(draft.value.tokens, color))
+    trackTokenAdjust(`palette`, `*`)
   }
 
   function undo() {
@@ -297,6 +314,7 @@ export const useThemeDesignerStore = defineStore(`themeDesigner`, () => {
 
     customThemes.value = [created, ...customThemes.value]
     draft.value = { ...draft.value, sourceId: created.id, name: created.name }
+    trackEvent(`style_adjust`, { control: `custom_layout_save`, surface: `panel`, tokens: countThemeTokens(created.tokens) })
 
     return created
   }

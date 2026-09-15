@@ -1,5 +1,8 @@
+import type { Ref } from 'vue'
+import type { FeedbackPreset } from '@/utils/feedback'
 import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'
+import { trackEvent } from '@/utils/telemetry'
 
 export type WorkspaceMode = 'simple' | 'professional'
 
@@ -107,6 +110,19 @@ export const useUIStore = defineStore(`ui`, () => {
   // 是否打开重置样式确认对话框
   const isOpenConfirmDialog = ref(false)
 
+  // ==================== 应用内反馈 ====================
+  /**
+   * 反馈弹窗由顶栏渲染，但复制后的微提示、出错提示也要能把它叫出来，
+   * 所以状态放在这里。preset 决定跳过第一步直接进正文。
+   */
+  const isShowFeedbackDialog = ref(false)
+  const feedbackPreset = ref<FeedbackPreset>({ source: `button` })
+
+  function openFeedback(preset: FeedbackPreset = { source: `button` }) {
+    feedbackPreset.value = preset
+    isShowFeedbackDialog.value = true
+  }
+
   // ==================== 工作区模式 ====================
   // simple 只留写作和预览，professional 解锁全部侧栏
   const workspaceMode = store.reactive<WorkspaceMode>(WORKSPACE_MODE_KEY, `simple`)
@@ -124,6 +140,23 @@ export const useUIStore = defineStore(`ui`, () => {
 
   // 移动端只有一栏，专业模式的多栏布局在这里没有落脚点
   const isSimpleWorkspace = computed(() => isMobile.value || workspaceMode.value === `simple`)
+
+  // 哪些面板真的有人打开：样式、板块库、文章列表、文件夹、图床
+  const panelFlags: Array<[string, Ref<boolean>]> = [
+    [`style`, isOpenRightSlider],
+    [`blocks`, isOpenBlockWorkspace],
+    [`posts`, isOpenPostSlider],
+    [`folder`, isOpenFolderPanel],
+    [`upload_img`, isShowUploadImgDialog],
+    [`image_layout`, isShowImageLayoutDialog],
+  ]
+  for (const [panel, flag] of panelFlags) {
+    watch(flag, (open) => {
+      if (open)
+        trackEvent(`panel_open`, { panel, mode: workspaceMode.value })
+    })
+  }
+  watch(workspaceMode, mode => trackEvent(`workspace_mode`, { mode }))
 
   const auxPanelFlags = {
     posts: isOpenPostSlider,
@@ -400,6 +433,9 @@ export const useUIStore = defineStore(`ui`, () => {
     isShowTemplateDialog,
     toggleShowTemplateDialog,
     isOpenConfirmDialog,
+    isShowFeedbackDialog,
+    feedbackPreset,
+    openFeedback,
 
     // ==================== 搜索面板 ====================
     searchTabRequest,

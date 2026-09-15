@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { WorkspaceMode } from '@/stores/ui'
-import { ChevronDown, Copy, Menu, MonitorDown, Palette } from 'lucide-vue-next'
+import type { FeedbackSource } from '@/utils/feedback'
+import { ChevronDown, Copy, Menu, MessageSquareText, MonitorDown, Palette } from 'lucide-vue-next'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useCopyNudge } from '@/composables/useCopyNudge'
 import { useEditorCopyActions } from '@/composables/useEditorCopyActions'
 import { isDesktopRuntime } from '@/services/desktop/bridge'
 import { usePostStore } from '@/stores/post'
@@ -16,8 +18,10 @@ import { useRenderStore } from '@/stores/render'
 import { useUIStore } from '@/stores/ui'
 import { countUnsafeClipboardImagesFromHtml, resolveLostImageHint } from '@/utils/clipboard-image-status'
 import { openDesktopDownload } from '@/utils/desktop-download'
+import { readEntryState, shouldShowEntryDot, writeEntryState } from '@/utils/feedback-nudge'
 import { store } from '@/utils/storage'
 import EditDropdown from './EditDropdown.vue'
+import FeedbackDialog from './FeedbackDialog.vue'
 import FileDropdown from './FileDropdown.vue'
 import HelpDropdown from './HelpDropdown.vue'
 import MarkdownGuideDialog from './MarkdownGuideDialog.vue'
@@ -43,6 +47,26 @@ const copyFormats = [
 // 对话框状态
 const aboutDialogVisible = ref(false)
 const markdownGuideDialogVisible = ref(false)
+
+// 反馈入口：前几次打开带红点，点过一次就不再亮
+const entryState = ref(readEntryState())
+const showFeedbackDot = computed(() => shouldShowEntryDot(entryState.value))
+
+onMounted(() => {
+  entryState.value = { ...entryState.value, sessions: entryState.value.sessions + 1 }
+  writeEntryState(entryState.value)
+})
+
+function handleOpenFeedback(source: FeedbackSource = `button`) {
+  if (!entryState.value.opened) {
+    entryState.value = { ...entryState.value, opened: true }
+    writeEntryState(entryState.value)
+  }
+  uiStore.openFeedback({ source })
+}
+
+// 复制后贴完回来问一句「一样吗」
+useCopyNudge()
 
 // 处理帮助菜单事件
 function handleOpenAbout() {
@@ -96,6 +120,18 @@ const lostImageHint = computed(() => resolveLostImageHint({
         <SettingsDropdown />
         <HelpDropdown @open-about="handleOpenAbout" @open-markdown-guide="handleOpenMarkdownGuide" />
       </Menubar>
+      <!-- 反馈从「帮助」里拎出来，紧跟其后：描边、主题色图标、前几次带红点，比菜单项重一档但不和右侧复制抢 -->
+      <button
+        type="button"
+        class="feedback-entry"
+        :class="{ 'feedback-entry--fresh': showFeedbackDot }"
+        title="贴进公众号不对、图丢了、想要功能，都可以在这里说"
+        @click="handleOpenFeedback('button')"
+      >
+        <MessageSquareText class="feedback-entry__icon size-4" />
+        <span>反馈</span>
+        <span v-if="showFeedbackDot" class="feedback-entry__dot" aria-hidden="true" />
+      </button>
       <button
         v-if="!isDesktopApp"
         type="button"
@@ -120,6 +156,10 @@ const lostImageHint = computed(() => resolveLostImageHint({
             <EditDropdown :as-sub="true" />
             <SettingsDropdown :as-sub="true" />
             <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-markdown-guide="handleOpenMarkdownGuide" />
+            <MenubarItem @click="handleOpenFeedback('menu')">
+              <MessageSquareText class="mr-2 h-4 w-4" />
+              反馈
+            </MenubarItem>
             <MenubarItem v-if="!isDesktopApp" @click="openDesktopDownload()">
               <MonitorDown class="mr-2 h-4 w-4" />
               下载桌面版
@@ -197,6 +237,7 @@ const lostImageHint = computed(() => resolveLostImageHint({
   <!-- 对话框组件，嵌套菜单无法正常挂载，需要提取层级 -->
   <AboutDialog :visible="aboutDialogVisible" @close="aboutDialogVisible = false" />
   <MarkdownGuideDialog :visible="markdownGuideDialogVisible" @close="markdownGuideDialogVisible = false" />
+  <FeedbackDialog />
 </template>
 
 <style lang="less" scoped>
@@ -265,6 +306,76 @@ const lostImageHint = computed(() => resolveLostImageHint({
     &:hover {
       background: hsl(var(--foreground) / 0.06);
     }
+  }
+}
+
+/*
+ * 反馈入口比菜单项重一档：描边 + 主题色图标，hover 上墨。
+ * 不做实心按钮，右侧「复制到公众号」才是主动作。
+ */
+.feedback-entry {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-left: 0.375rem;
+  padding: 0.375rem 0.75rem 0.375rem 0.625rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: hsl(var(--foreground) / 0.8);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+
+  &__icon {
+    color: hsl(var(--primary));
+    transition: transform 0.2s ease;
+  }
+
+  &:hover {
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--foreground) / 0.55);
+    background: hsl(var(--foreground) / 0.04);
+
+    .feedback-entry__icon {
+      transform: rotate(-8deg) scale(1.08);
+    }
+  }
+
+  &__dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--background));
+    animation: dot-pulse 2.2s ease-in-out infinite;
+  }
+
+  &--fresh {
+    border-color: hsl(var(--primary) / 0.5);
+  }
+}
+
+@keyframes dot-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px hsl(var(--background));
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px hsl(var(--background)),
+      0 0 0 5px hsl(var(--primary) / 0.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback-entry__dot {
+    animation: none;
   }
 }
 

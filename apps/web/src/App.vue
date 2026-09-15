@@ -2,12 +2,15 @@
 import { onMounted } from 'vue'
 import { Toaster } from '@/components/ui/sonner'
 import { useUIStore } from '@/stores/ui'
+import { trackAppOpen } from '@/utils/telemetry'
 import CodemirrorEditor from '@/views/CodemirrorEditor.vue'
 
 const uiStore = useUIStore()
-const { isDark } = storeToRefs(uiStore)
+const { isDark, workspaceMode } = storeToRefs(uiStore)
 
 onMounted(() => {
+  trackAppOpen({ mode: workspaceMode.value, dark: isDark.value })
+
   // 若 URL 带有 open 参数（Markdown 链接），打开导入对话框并自动导入
   const params = new URLSearchParams(window.location.search)
   const openUrl = params.get(`open`)

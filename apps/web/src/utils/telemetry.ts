@@ -1,6 +1,11 @@
+import { prefix } from '@mobi/shared/configs'
 import { TELEMETRY_ENDPOINT } from '@/config/telemetry'
 import { isDesktopRuntime } from '@/services/desktop/bridge'
-import { addPrefix } from '@/utils'
+
+// 不从 '@/utils' 取 addPrefix：storage.ts 和 utils/index.ts 都会引本模块，绕开循环依赖
+function addPrefix(str: string) {
+  return `${prefix}__${str}`
+}
 
 /**
  * 匿名使用统计。
@@ -13,7 +18,7 @@ import { addPrefix } from '@/utils'
  * - 请求体用 text/plain 发 JSON，避开 CORS 预检，desktop（mobi://）和网页都走同一条路
  */
 
-type TelemetryProps = Record<string, string | number | boolean>
+export type TelemetryProps = Record<string, string | number | boolean>
 
 interface TelemetryEvent {
   event: string
@@ -23,6 +28,7 @@ interface TelemetryEvent {
 
 const CONSENT_KEY = addPrefix(`telemetry_enabled`)
 const ANON_ID_KEY = addPrefix(`telemetry_id`)
+const FIRST_SEEN_KEY = addPrefix(`telemetry_first_seen`)
 
 const FLUSH_INTERVAL_MS = 15_000
 const MAX_QUEUE_SIZE = 20
@@ -126,6 +132,75 @@ export function trackEvent(event: string, props: TelemetryProps = {}): void {
     flushTimer = null
     flush()
   }, FLUSH_INTERVAL_MS)
+}
+
+/** 视口宽度分桶：看板按桶分组，不存精确像素 */
+export function bucketViewportWidth(width: number): string {
+  if (width <= 768)
+    return `<=768`
+  if (width < 1280)
+    return `769-1279`
+  if (width < 1440)
+    return `1280-1439`
+  if (width < 1680)
+    return `1440-1679`
+  if (width < 1920)
+    return `1680-1919`
+  if (width < 2560)
+    return `1920-2559`
+  return `>=2560`
+}
+
+/** 字数分桶，只用于判断稿子长短，不存正文 */
+export function bucketCount(count: number, steps: number[] = [0, 300, 800, 1500, 3000, 6000]): string {
+  for (let index = steps.length - 1; index >= 0; index--) {
+    const floor = steps[index]
+    if (count >= floor) {
+      const next = steps[index + 1]
+      return next === undefined ? `>=${floor}` : `${floor}-${next - 1}`
+    }
+  }
+  return `0`
+}
+
+/**
+ * 每次打开记一条。first 标出这台设备是不是第一次来，看板据此算新增 / 回访。
+ */
+export function trackAppOpen(extra: TelemetryProps = {}): void {
+  if (!isActive())
+    return
+
+  let first = false
+  try {
+    if (!localStorage.getItem(FIRST_SEEN_KEY)) {
+      // 2.3.2 起就有 anonId 的老设备没有 first_seen 字段，不能被当成新用户
+      first = !localStorage.getItem(ANON_ID_KEY)
+      localStorage.setItem(FIRST_SEEN_KEY, String(Date.now()))
+    }
+  }
+  catch {}
+
+  const width = window.innerWidth
+  const height = window.innerHeight
+  trackEvent(`app_open`, {
+    first,
+    viewport: bucketViewportWidth(width),
+    width,
+    height,
+    dpr: Math.round((window.devicePixelRatio || 1) * 100) / 100,
+    ...extra,
+  })
+}
+
+/** 给反馈用：统计开着才带匿名 ID，方便把一条反馈和它前后的操作对上 */
+export function getTelemetryAnonId(): string {
+  return isActive() ? getAnonId() : ``
+}
+
+/** 出错时只记类别和一句短原因，不带文章内容和地址 */
+export function trackError(kind: string, message?: unknown): void {
+  const text = message instanceof Error ? message.message : typeof message === `string` ? message : ``
+  trackEvent(`error`, { kind, message: text.slice(0, 80) })
 }
 
 if (typeof window !== `undefined`) {

@@ -24,13 +24,14 @@ import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 import { checkImage, toBase64 } from '@/utils'
-import { copyPlain } from '@/utils/clipboard'
 import { blockCategories, parseBlockEntries } from '@/utils/blocks/registry'
 import {
   resolveMarkdownSourceAtPosition,
   resolveMarkdownSourceRange,
 } from '@/utils/blocks/source-selection'
+import { copyPlain } from '@/utils/clipboard'
 import { loadImageFileFromUrl, resolveSlicedImageUrl, sliceImageFileVertically } from '@/utils/clipboard-image-crop'
+import { getDroppedFileSystemHandle, isImageFile, listDataTransferItems, listDroppedFiles } from '@/utils/dropped-files'
 import {
   embeddedContentProjectionTheme,
   embeddedContentVisibility,
@@ -39,7 +40,6 @@ import {
   stripEmbeddedContent,
 } from '@/utils/editor-content-visibility'
 import { shouldSyncPreviewFromEditorUpdate } from '@/utils/editor-preview-sync'
-import { getDroppedFileSystemHandle, isImageFile, listDataTransferItems, listDroppedFiles } from '@/utils/dropped-files'
 import { fileUpload, getMpUploadConfig, hasMpUploadConfig, IMAGE_HOST_SETUP_HINT, uploadFileToMp } from '@/utils/file'
 import {
   applyWechatPreviewDiffHints,
@@ -54,6 +54,7 @@ import {
 import { cloneWithoutEditorChrome, PREVIEW_BLOCK_PICK_HINT, readPreviewElementText } from '@/utils/preview-text'
 import { store } from '@/utils/storage'
 import { applyWechatPreviewTextureDowngrade, resolveWechatPreviewFrame } from '@/utils/wechat-preview'
+import { FOLDER_RAIL_PX, POST_RAIL_PX, railPercentSizes, STYLE_RAIL_PX } from '@/utils/workspace-layout'
 
 const blockSelectionStore = useBlockSelectionStore()
 const editorStore = useEditorStore()
@@ -193,9 +194,19 @@ const showStyleRail = computed(() => !isSimpleWorkspace.value && isOpenRightSlid
 // 是否有侧面板挤占编辑器与预览
 const hasSidePanel = computed(() => showBlockRail.value || showStyleRail.value)
 
+// 侧栏按像素定宽再换成百分比：1280 的笔记本别把样式栏压成一列，2560 的大屏也别摊掉一半
+const { width: windowWidth } = useWindowSize()
+const postRailSizes = computed(() => railPercentSizes(POST_RAIL_PX, windowWidth.value))
+const folderRailSizes = computed(() => railPercentSizes(FOLDER_RAIL_PX, windowWidth.value))
+const styleRailSizes = computed(() => {
+  const outerRailsPx = (showPostRail.value ? POST_RAIL_PX.target : 0)
+    + (showFolderRail.value ? FOLDER_RAIL_PX.target : 0)
+  return railPercentSizes(STYLE_RAIL_PX, windowWidth.value - outerRailsPx)
+})
+
 // 三条侧栏全开也要给编辑器和预览留够 34%，否则它们会被压到 min-size 以下
 const blockPanelDefaultSize = computed(() => (showBlockRail.value ? 22 : 0))
-const rightPanelDefaultSize = computed(() => (showStyleRail.value ? 24 : 0))
+const rightPanelDefaultSize = computed(() => (showStyleRail.value ? styleRailSizes.value.default : 0))
 const mainAreaDefaultSize = computed(() => (
   100 - blockPanelDefaultSize.value - rightPanelDefaultSize.value
 ))
@@ -1897,9 +1908,9 @@ onUnmounted(() => {
             v-if="showPostRail"
             id="post-rail"
             :order="1"
-            :default-size="15"
-            :min-size="10"
-            :max-size="22"
+            :default-size="postRailSizes.default"
+            :min-size="postRailSizes.min"
+            :max-size="postRailSizes.max"
           >
             <PostSlider />
           </ResizablePanel>
@@ -1909,9 +1920,9 @@ onUnmounted(() => {
             v-if="showFolderRail"
             id="folder-rail"
             :order="2"
-            :default-size="16"
-            :min-size="10"
-            :max-size="26"
+            :default-size="folderRailSizes.default"
+            :min-size="folderRailSizes.min"
+            :max-size="folderRailSizes.max"
           >
             <FolderSourcePanel />
           </ResizablePanel>
@@ -2071,8 +2082,8 @@ onUnmounted(() => {
                 id="style-rail"
                 :order="5"
                 :default-size="rightPanelDefaultSize"
-                :min-size="20"
-                :max-size="50"
+                :min-size="styleRailSizes.min"
+                :max-size="styleRailSizes.max"
               >
                 <RightSlider />
               </ResizablePanel>
@@ -2730,6 +2741,41 @@ onUnmounted(() => {
   .workspace-panel--mobile-app .editor-panel__body,
   .workspace-panel--mobile-app .preview-panel__body {
     background: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted) / 0.42));
+  }
+}
+
+/*
+ * 1366×768 / 1280×720 的笔记本：顶栏 + 标题栏 + 工具栏 + 内边距吃掉近 200px，
+ * 稿子只剩四百来像素。矮屏把这些装饰性留白收一档，把高度还给正文。
+ */
+@media (min-width: 769px) and (max-height: 820px) {
+  .codeMirror-wrapper,
+  .preview-stage {
+    padding: 0.6rem !important;
+  }
+
+  .workspace-panel__header {
+    padding: 0.75rem 1.1rem 0.6rem;
+  }
+
+  .workspace-panel__header--compact {
+    padding: 0.5rem 0.9rem;
+  }
+
+  .workspace-panel__copy h2 {
+    font-size: 1.05rem;
+  }
+
+  .workspace-panel__body {
+    padding: 0.6rem;
+  }
+
+  .editor-panel__body :deep(.cm-scroller) {
+    padding-top: 0.6rem !important;
+  }
+
+  .preview-paper-stack {
+    padding-top: 0.3rem;
   }
 }
 </style>

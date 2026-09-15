@@ -6,6 +6,7 @@
 import type { Ref } from 'vue'
 import { customRef, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
+import { trackError } from './telemetry'
 
 const STORAGE_NEAR_FULL_BYTES = 4 * 1024 * 1024
 const STORAGE_NEAR_FULL_RATIO = 0.8
@@ -20,6 +21,7 @@ function notifyStorageWriteFailure() {
     return
   lastWriteFailureToastAt = now
   toast.error(WRITE_FAILURE_TOAST)
+  trackError(`storage_write`)
 }
 
 async function warnIfStorageNearFull() {
@@ -33,6 +35,7 @@ async function warnIfStorageNearFull() {
     if (usage > STORAGE_NEAR_FULL_BYTES || (quota > 0 && usage / quota > STORAGE_NEAR_FULL_RATIO)) {
       hasWarnedStorageNearFull = true
       toast.warning(`本地存稿空间快满了。导出一份再删旧稿，以免写不进去。`)
+      trackError(`storage_near_full`)
     }
   }
   catch {

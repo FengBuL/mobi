@@ -71,6 +71,7 @@ declare module 'vue' {
     EditDropdown: typeof import('./src/components/editor/editor-header/EditDropdown.vue')['default']
     EditorContextMenu: typeof import('./src/components/editor/EditorContextMenu.vue')['default']
     EditorHeader: typeof import('./src/components/editor/editor-header/index.vue')['default']
+    FeedbackDialog: typeof import('./src/components/editor/editor-header/FeedbackDialog.vue')['default']
     FileDropdown: typeof import('./src/components/editor/editor-header/FileDropdown.vue')['default']
     FloatingToc: typeof import('./src/components/editor/FloatingToc.vue')['default']
     FolderSourcePanel: typeof import('./src/components/editor/FolderSourcePanel.vue')['default']

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BookOpen, HelpCircle, MessageSquare, Tag } from 'lucide-vue-next'
+import { BookOpen, HelpCircle, Tag } from 'lucide-vue-next'
 import { formatVersionHistoryLabel } from '@/utils/version-label'
 
 const props = withDefaults(defineProps<{
@@ -24,10 +24,6 @@ function openMarkdownGuideDialog() {
   emit(`openMarkdownGuide`)
 }
 
-function openFeedback() {
-  window.open(`${REPO_URL}/issues`, `_blank`)
-}
-
 function openReleases() {
   window.open(`${REPO_URL}/releases`, `_blank`)
 }
@@ -40,10 +36,6 @@ function openReleases() {
       帮助
     </MenubarSubTrigger>
     <MenubarSubContent align="start">
-      <MenubarItem @click="openFeedback()">
-        <MessageSquare class="mr-2 h-4 w-4" />
-        反馈
-      </MenubarItem>
       <MenubarItem @click="openReleases()">
         <Tag class="mr-2 h-4 w-4" />
         {{ versionHistoryLabel }}
@@ -63,10 +55,6 @@ function openReleases() {
   <MenubarMenu v-else>
     <MenubarTrigger>帮助</MenubarTrigger>
     <MenubarContent align="start">
-      <MenubarItem @click="openFeedback()">
-        <MessageSquare class="mr-2 h-4 w-4" />
-        反馈
-      </MenubarItem>
       <MenubarItem @click="openReleases()">
         <Tag class="mr-2 h-4 w-4" />
         {{ versionHistoryLabel }}

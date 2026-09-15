@@ -11,6 +11,7 @@ import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
+import { trackEvent } from '@/utils/telemetry'
 
 const props = withDefaults(defineProps<{
   /** full 给样式面板用，compact 给预览区旁边的轻量微调用 */
@@ -48,24 +49,37 @@ function applyAndRefresh() {
   editorRefresh()
 }
 
+/** 记「动了哪个控件」。字体、字号记具体值，颜色只记动过，不记色值 */
+function trackAdjust(control: string, value?: string) {
+  trackEvent(`style_adjust`, {
+    control,
+    surface: variant.value,
+    ...(value === undefined ? {} : { value }),
+  })
+}
+
 function fontChanged(value: string) {
   themeStore.fontFamily = value
   applyAndRefresh()
+  trackAdjust(`font_family`, value)
 }
 
 function sizeChanged(value: string) {
   themeStore.fontSize = value
   applyAndRefresh()
+  trackAdjust(`font_size`, value)
 }
 
 function colorChanged(value: string) {
   themeStore.primaryColor = value
   applyAndRefresh()
+  trackAdjust(`primary_color`)
 }
 
 function restoreThemePrimaryColor() {
   themeStore.followThemePrimaryColor()
   applyAndRefresh()
+  trackAdjust(`primary_color_follow_theme`)
 }
 
 const compactColorOptions = computed(() => colorOptions.filter(item => !hiddenColors.value.includes(item.value as string)))
@@ -83,6 +97,7 @@ function saveCustomColor() {
   const current = primaryColor.value as string
   if (current && !savedCustomColors.value.includes(current)) {
     savedCustomColors.value.push(current)
+    trackAdjust(`primary_color_save`)
   }
 }
 

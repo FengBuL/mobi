@@ -62,8 +62,9 @@ const visibleCount = computed(() => countVisibleThemeCards(
   featuredCards.length + overflowCandidates.value.length,
 ))
 
+// 栏窄到连 5 套都放不下时，第一层也要收，否则「更多」会被推到滚动区外看不见
 const visibleCards = computed(() => [
-  ...featuredCards,
+  ...featuredCards.slice(0, Math.min(featuredCards.length, visibleCount.value)),
   ...overflowCandidates.value.slice(0, Math.max(0, visibleCount.value - FEATURED_THEME_COUNT)),
 ])
 
@@ -71,9 +72,18 @@ const overflowVisibleIds = computed(() => visibleCards.value
   .slice(FEATURED_THEME_COUNT)
   .map(item => item.value))
 
+// 被挤出第一层的主打主题，得在「更多」里补回来
+const squeezedFeaturedIds = computed(() => featuredCards
+  .slice(Math.min(featuredCards.length, visibleCount.value))
+  .map(item => item.value))
+
 const isOverflowTheme = computed(() => !visibleCards.value.some(item => item.value === theme.value))
 
-const moreThemeSamples = computed(() => buildMoreThemeSamples(hiddenThemes.value, overflowVisibleIds.value))
+const moreThemeSamples = computed(() => buildMoreThemeSamples(
+  hiddenThemes.value,
+  overflowVisibleIds.value,
+  squeezedFeaturedIds.value,
+))
 
 function editorRefresh() {
   themeStore.updateCodeTheme()

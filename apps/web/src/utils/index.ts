@@ -32,6 +32,7 @@ import { buildExtendedWeChatMediaBody, defaultWeChatMediaPalette } from '@/utils
 import { getMpUploadConfig, hasMpUploadConfig, uploadFileToMp } from './file'
 import { ensureMathJax } from './mathjax'
 import { store } from './storage'
+import { trackError } from './telemetry'
 
 export {
   LocalStorageEngine as LocalEngine,
@@ -686,7 +687,9 @@ async function uploadClipboardImagesToMp(clipboardDiv: HTMLElement) {
       }
     }
     catch (error) {
-      image.setAttribute(`data-mp-upload-error`, normalizeClipboardErrorMessage(error))
+      const message = normalizeClipboardErrorMessage(error)
+      image.setAttribute(`data-mp-upload-error`, message)
+      trackError(`mp_upload`, message)
     }
     finally {
       image.removeAttribute(`data-mobi-crop-aspect`)

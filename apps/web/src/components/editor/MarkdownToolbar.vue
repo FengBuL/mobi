@@ -274,4 +274,22 @@ function insertMpCard() {
   font-size: 0.68rem;
   font-weight: 700;
 }
+
+/*
+ * 1280/1366 宽的笔记本开着样式栏时，编辑栏只剩 450px 左右。
+ * 15 个按钮按 2rem 排会折成两行，白吃掉 45px 高度；收窄到 1.6rem 就还在一行里。
+ * 放在文件末尾：和上面的按钮规则同权重，靠书写顺序压过去。
+ */
+@container (max-width: 31rem) {
+  .markdown-toolbar__rail {
+    gap: 0.3rem;
+  }
+
+  .markdown-toolbar__button,
+  .markdown-toolbar__button--image,
+  .markdown-toolbar__button--auto-format {
+    min-width: 1.6rem;
+    padding: 0 0.28rem;
+  }
+}
 </style>

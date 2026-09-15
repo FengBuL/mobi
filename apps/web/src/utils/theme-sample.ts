@@ -69,19 +69,27 @@ export function buildThemeSampleCss(name: ThemeName) {
   ].join(`\n`)
 }
 
+/**
+ * 「更多」里的主题样张。默认不含第一层主打主题；
+ * `includeFeaturedIds` 是第一层放不下、被挤出去的主打主题，要在这里补回来。
+ */
 export function buildMoreThemeSamples(
   hiddenThemes: readonly string[] = [],
   excludeIds: readonly string[] = [],
+  includeFeaturedIds: readonly string[] = [],
 ) {
   const html = getThemeSampleHtml()
   const hidden = new Set(hiddenThemes)
   const excluded = new Set(excludeIds)
+  const includeFeatured = new Set(includeFeaturedIds)
 
   return themeCategoryOptions
     .map(category => ({
       category: category.category,
       themes: category.themes
-        .filter(option => !featuredIdSet.has(option.value) && !hidden.has(option.value) && !excluded.has(option.value))
+        .filter(option => (!featuredIdSet.has(option.value) || includeFeatured.has(option.value))
+          && !hidden.has(option.value)
+          && !excluded.has(option.value))
         .map((option) => {
           const css = buildThemeSampleCss(option.value)
           return {

@@ -70,6 +70,24 @@ const {
 
 const activeStylePanel = ref(`template`)
 const activeInspectorPanel = ref<`component` | `style`>(`style`)
+
+/** 全局样式里动了哪个控件。值只记枚举型（开 / 关、预置名），不记自由输入 */
+function trackAdjust(control: string, value?: string | boolean) {
+  trackEvent(`style_adjust`, {
+    control,
+    surface: `panel`,
+    ...(value === undefined ? {} : { value: String(value) }),
+  })
+}
+
+// 哪个页签被翻开，用来判断「版式 / 文字 / 区块 / 细节」哪几页根本没人看
+watch(activeStylePanel, (tab) => {
+  if (activeInspectorPanel.value === `style`)
+    trackEvent(`style_tab_open`, { tab })
+})
+watch(activeInspectorPanel, (panel) => {
+  trackEvent(`style_tab_open`, { tab: panel === `component` ? `component` : activeStylePanel.value })
+})
 const { selection: blockSelection } = storeToRefs(blockSelectionStore)
 const { blockInspectorRequest } = storeToRefs(uiStore)
 
@@ -431,6 +449,7 @@ async function commitCancelStylePreset() {
 }
 
 function cancelActiveStylePreset() {
+  trackAdjust(`preset_cancel`)
   if (!presetSession.value?.snapshot) {
     leaveActiveStylePreset()
     return
@@ -470,6 +489,7 @@ function saveCurrentStylePreset() {
   savePresetName.value = ``
   savePresetFeedback.value = `方案「${name}」已保存`
   toast.success(savePresetFeedback.value)
+  trackAdjust(`preset_save`)
 }
 
 function undoDeleteCustomStylePreset(removal: { item: IStylePreset, index: number }) {
@@ -515,6 +535,7 @@ function resetTextGroup() {
   themeStore.isUseJustify = false
   themeStore.applyCurrentTheme()
   editorRefresh()
+  trackAdjust(`reset_text_group`)
 }
 
 function resetDetailGroup() {
@@ -525,6 +546,7 @@ function resetDetailGroup() {
   themeStore.isCiteStatus = defaultStyleConfig.isCiteStatus
   themeStore.isCountStatus = defaultStyleConfig.isCountStatus
   editorRefresh()
+  trackAdjust(`reset_detail_group`)
 }
 
 function getDesignerGroup(groupId: string) {
@@ -564,6 +586,7 @@ async function commitLayoutSelect(value: string) {
       baseTheme: target.baseTheme,
       tokens: toPlainSnapshot(target.tokens),
     })
+    trackAdjust(`custom_layout_apply`)
   }
   else if (value.startsWith(`theme:`)) {
     const baseTheme = value.slice(`theme:`.length) as ThemeName
@@ -610,6 +633,7 @@ function restoreCurrentLayout() {
   }
 
   toast.success(`已恢复当前版式，可使用撤销返回`)
+  trackAdjust(`layout_restore`)
 }
 
 function handleThemeWheel(event: WheelEvent) {
@@ -727,16 +751,19 @@ function exportCustomVisualThemeJSON(item: CustomTheme) {
 function codeBlockThemeChanged(newTheme: string) {
   themeStore.codeBlockTheme = newTheme
   editorRefresh()
+  trackAdjust(`code_block_theme`, newTheme)
 }
 
 function macCodeBlockChanged() {
   themeStore.isShowCodeLanguage = !themeStore.isShowCodeLanguage
   editorRefresh()
+  trackAdjust(`code_language`, themeStore.isShowCodeLanguage)
 }
 
 function showLineNumberChanged() {
   themeStore.isShowLineNumber = !themeStore.isShowLineNumber
   editorRefresh()
+  trackAdjust(`line_number`, themeStore.isShowLineNumber)
 }
 
 function useIndentChanged() {
@@ -744,6 +771,7 @@ function useIndentChanged() {
   // 使用新主题系统
   themeStore.applyCurrentTheme()
   editorRefresh()
+  trackAdjust(`indent`, themeStore.isUseIndent)
 }
 
 function useJustifyChanged() {
@@ -751,6 +779,7 @@ function useJustifyChanged() {
   // 使用新主题系统
   themeStore.applyCurrentTheme()
   editorRefresh()
+  trackAdjust(`justify`, themeStore.isUseJustify)
 }
 
 function setShowCodeLanguage(enabled: boolean) {
@@ -779,6 +808,7 @@ function setCiteStatus(enabled: boolean) {
     return
   themeStore.isCiteStatus = enabled
   editorRefresh()
+  trackAdjust(`cite_links`, enabled)
 }
 
 function setCountStatus(enabled: boolean) {
@@ -786,6 +816,7 @@ function setCountStatus(enabled: boolean) {
     return
   themeStore.isCountStatus = enabled
   editorRefresh()
+  trackAdjust(`word_count`, enabled)
 }
 
 // 控制是否启用动画

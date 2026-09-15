@@ -1,3 +1,4 @@
+import { armCopyNudge } from '@/composables/useCopyNudge'
 import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
 import { useRenderStore } from '@/stores/render'
@@ -7,7 +8,7 @@ import { addPrefix, generatePureHTML, processClipboardContent } from '@/utils'
 import { formatLostWechatImageHint, isLocalClipboardImageSrc, isUnsafeClipboardImage } from '@/utils/clipboard-image-status'
 import { hasMpUploadConfig } from '@/utils/file'
 import { store } from '@/utils/storage'
-import { trackEvent } from '@/utils/telemetry'
+import { bucketCount, trackError, trackEvent } from '@/utils/telemetry'
 import { createWeChatClipboardBlobs } from '@/utils/wechat-compat'
 
 type CopyMode = 'txt' | 'html' | 'html-without-style' | 'html-and-style' | 'md'
@@ -26,7 +27,20 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
 
   const { editor } = storeToRefs(editorStore)
   const { output } = storeToRefs(renderStore)
-  const { primaryColor } = storeToRefs(themeStore)
+  const { primaryColor, theme } = storeToRefs(themeStore)
+
+  /** 复制那一刻稿子长什么样：主题、有没有板块、几张图没转存、多长。不带正文 */
+  async function describeCopyContext(root: HTMLElement, unsafeImages: number) {
+    const chars = editor.value?.state.doc.length ?? 0
+    return {
+      theme: theme.value,
+      blocks: root.querySelectorAll(`[data-block-preset]`).length,
+      images: root.querySelectorAll(`img`).length,
+      unsafeImages,
+      chars: bucketCount(chars),
+      mpConfigured: await hasMpUploadConfig(),
+    }
+  }
 
   const copyMode = store.reactive<CopyMode>(addPrefix(`copyMode`), `txt`)
 
@@ -38,6 +52,11 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
   const finish = () => options.onEnd?.()
   const start = () => options.onStart?.()
   const normalizeErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error))
+  // 出错的那一刻是用户最愿意说话的时候：错误提示里直接给一个反馈入口，错误信息预填进去
+  const reportAction = (kind: string, error: unknown) => ({
+    label: `告诉我们`,
+    onClick: () => uiStore.openFeedback({ source: `error`, types: [`copy_fail`], seed: `复制时出错（${kind}）：${normalizeErrorMessage(error)}` }),
+  })
   // 复制中止时只报一个数字，用户根本不知道是哪张图卡住了。
   // 长图版式尤其容易踩：一张几 MB 的长海报会被公众号图床接口拒收，
   // 于是「滚动图复制不成功」，而提示语只说「仍是外链或本地地址」。
@@ -148,7 +167,8 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
           await processClipboardContent(primaryColor.value)
         }
         catch (error) {
-          toast.error(`处理 HTML 失败，请联系开发者。${normalizeErrorMessage(error)}`)
+          trackError(`copy_process`, error)
+          toast.error(`处理 HTML 失败。${normalizeErrorMessage(error)}`, { duration: 12000, action: reportAction(`copy_process`, error) })
           editorRefresh()
           finish()
           return
@@ -157,14 +177,18 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
         const clipboardDiv = document.getElementById(`output`)
 
         if (!clipboardDiv) {
+          trackError(`copy_no_output`)
           toast.error(`未找到复制输出区域，请刷新页面后重试。`)
           editorRefresh()
           finish()
           return
         }
 
+        let unsafeImageCount = 0
+
         if (copyMode.value === `txt`) {
           const unsafeImages = getUnsafeClipboardImages(clipboardDiv)
+          unsafeImageCount = unsafeImages.length
           // 未转存图（本地 data/blob 和外链非 mmbiz）仍复制，只警告张数，不用 toast.error 拦住。
           const localImages = unsafeImages.filter(item => item.isLocal)
           const remoteImages = unsafeImages.filter(item => !item.isLocal)
@@ -208,6 +232,7 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
         window.getSelection()?.removeAllRanges()
 
         const temp = clipboardDiv.innerHTML
+        const copyContext = await describeCopyContext(clipboardDiv, unsafeImageCount)
 
         if (copyMode.value === `txt`) {
           try {
@@ -222,10 +247,11 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
           catch (error) {
             const fallbackSucceeded = fallbackCopyUsingExecCommand(temp)
             if (!fallbackSucceeded) {
+              trackError(`copy_clipboard`, error)
               clipboardDiv.innerHTML = output.value
               window.getSelection()?.removeAllRanges()
               editorRefresh()
-              toast.error(`复制失败，请联系开发者。${normalizeErrorMessage(error)}`)
+              toast.error(`复制失败。${normalizeErrorMessage(error)}`, { duration: 12000, action: reportAction(`copy_clipboard`, error) })
               finish()
               return
             }
@@ -249,7 +275,9 @@ export function useEditorCopyActions(options: UseEditorCopyActionsOptions = {}) 
             ? `已复制 HTML 源码，请进行下一步操作。`
             : `已复制渲染后的内容到剪贴板，可直接到公众号后台粘贴。`,
         )
-        trackEvent(`copy`, { mode: copyMode.value })
+        trackEvent(`copy`, { mode: copyMode.value, ...copyContext })
+        if (copyMode.value === `txt`)
+          armCopyNudge(theme.value)
 
         window.dispatchEvent(
           new CustomEvent(`copyToMp`, {

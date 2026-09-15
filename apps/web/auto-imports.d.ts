@@ -7,7 +7,9 @@
 export {}
 declare global {
   const EffectScope: typeof import('vue').EffectScope
+  const __resetCopyNudgeSession: typeof import('./src/composables/useCopyNudge').__resetCopyNudgeSession
   const acceptHMRUpdate: typeof import('pinia').acceptHMRUpdate
+  const armCopyNudge: typeof import('./src/composables/useCopyNudge').armCopyNudge
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
   const blockSelectionTransaction: typeof import('./src/stores/editor').blockSelectionTransaction
@@ -158,6 +160,7 @@ declare global {
   const useCloned: typeof import('@vueuse/core').useCloned
   const useColorMode: typeof import('@vueuse/core').useColorMode
   const useConfirmDialog: typeof import('@vueuse/core').useConfirmDialog
+  const useCopyNudge: typeof import('./src/composables/useCopyNudge').useCopyNudge
   const useCountdown: typeof import('@vueuse/core').useCountdown
   const useCounter: typeof import('@vueuse/core').useCounter
   const useCssEditorStore: typeof import('./src/stores/cssEditor').useCssEditorStore
