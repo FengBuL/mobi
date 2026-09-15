@@ -4,15 +4,15 @@
 
 ## 当前基线
 
-- 产品版本：`2.3.3`
-- 当前公开版本：`2.3.3`
+- 产品版本：`2.3.4`
+- 当前公开版本：`2.3.4`
 - Git 分支：`product/next`
-- 当前发布基线：`v2.3.3`
+- 当前发布基线：`v2.3.4`
 - 源码与分发：<https://github.com/FengBuL/mobi>
 - 许可证：[GNU AGPL-3.0-or-later](./LICENSE)
 - 网页版：<https://mobieditor.cn/>
 - 桌面下载：<https://app.mobieditor.cn/>
-- 当前公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.3.3>
+- 当前公开 Release：<https://github.com/FengBuL/mobi/releases/tag/v2.3.4>
 - 数据观测台：发布环境通过 `MOBI_TELEMETRY_ENDPOINT` 注入地址；自建见 `infra/telemetry-worker`
 
 ## 项目组成
@@ -42,6 +42,7 @@ patches                     pnpm 依赖补丁
 - v2.3.1：官方域名入口；连续换方案时样式生效。
 - v2.3.2：P1 + 边角 + 查找/导出/确认/预览复制/编辑撤销/主题条/名片/Logo 收口；网页和桌面构建恢复匿名观测链路。Vitest 43 文件 / 612 通过。
 - v2.3.3：删掉新建的号后，恢复默认号离开前正在看的稿。Vitest 43 文件 / 613 通过。
+- v2.3.4：应用内反馈（顶栏按钮、多选标签弹窗、复制后 👍/👎、出错入口）；匿名统计补漏斗 / 全局样式 / 错误埋点，观测台看板加筛选、环比、下钻、留存、反馈处理态；1280–1366 宽与矮屏布局适配。Vitest 45 文件 / 642 通过。
 
 每次交接或发布前都要重新运行验证命令，本文记录不能代替当前测试结果。
 

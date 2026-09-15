@@ -7,3 +7,7 @@ compatibility_date = "2026-08-01"
 binding = "DB"
 database_name = "mobi-telemetry"
 database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# 反馈转 GitHub Issue 的仓库；配了 GITHUB_TOKEN secret 才会真的建
+[vars]
+GITHUB_REPO = "FengBuL/mobi"

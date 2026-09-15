@@ -4,7 +4,7 @@
 
 格式对照 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 SemVer。粘贴与图床相关的句子都能对到 TASK-06 记录表，不写「贴进去 100% 一样」。
 
-## [未发布]
+## [2.3.4] - 2026-09-15
 
 ### 新增
 
