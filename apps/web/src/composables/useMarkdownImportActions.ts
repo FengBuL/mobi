@@ -1,6 +1,7 @@
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { titleFromImportedMarkdown } from '@/utils/imported-markdown'
+import { trackContentEdit } from '@/utils/telemetry'
 
 const MARKDOWN_FILE_PATTERN = /\.(md|markdown|txt)$/i
 
@@ -25,6 +26,7 @@ export function useMarkdownImportActions() {
     const current = editorStore.getContent().trim()
     if (current && !window.confirm(`导入会替换当前正文，标题卡和列表名也会按文稿改。继续？`))
       return false
+    trackContentEdit(`file`, content.length)
     editorStore.importContent(content)
     const post = postStore.currentPost
     if (post) {

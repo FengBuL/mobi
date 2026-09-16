@@ -29,6 +29,9 @@ interface TelemetryEvent {
 const CONSENT_KEY = addPrefix(`telemetry_enabled`)
 const ANON_ID_KEY = addPrefix(`telemetry_id`)
 const FIRST_SEEN_KEY = addPrefix(`telemetry_first_seen`)
+/** 会话级标记放 sessionStorage：同一标签页内刷新也只算一次 */
+const SESSION_EDITED_KEY = addPrefix(`telemetry_session_edited`)
+const SESSION_COPIED_KEY = addPrefix(`telemetry_session_copied`)
 
 const FLUSH_INTERVAL_MS = 15_000
 const MAX_QUEUE_SIZE = 20
@@ -36,6 +39,8 @@ const MAX_QUEUE_SIZE = 20
 let queue: TelemetryEvent[] = []
 let flushTimer: number | null = null
 let sessionId = ``
+let sessionEndSent = false
+const sessionStartedAt = Date.now()
 
 export function isTelemetryConfigured(): boolean {
   return TELEMETRY_ENDPOINT.trim().length > 0
@@ -119,6 +124,10 @@ export function trackEvent(event: string, props: TelemetryProps = {}): void {
 
   queue.push({ event, props, ts: Date.now() })
 
+  if (event === `copy`) {
+    writeSessionFlag(SESSION_COPIED_KEY)
+  }
+
   if (queue.length >= MAX_QUEUE_SIZE) {
     if (flushTimer != null) {
       window.clearTimeout(flushTimer)
@@ -192,6 +201,70 @@ export function trackAppOpen(extra: TelemetryProps = {}): void {
   })
 }
 
+function readSessionFlag(key: string): boolean {
+  try {
+    return sessionStorage.getItem(key) === `1`
+  }
+  catch {
+    return false
+  }
+}
+
+function writeSessionFlag(key: string): void {
+  try {
+    sessionStorage.setItem(key, `1`)
+  }
+  catch {}
+}
+
+export type ContentEditKind = 'type' | 'paste' | 'file'
+
+/** 粘贴进正文多少字以上才算「贴了自己的稿」，再短当普通打字 */
+export const PASTE_AS_DRAFT_MIN_CHARS = 200
+
+/**
+ * 正文第一次被用户改动。区分「只看示例稿的看客」和「写了自己稿子的写手」。
+ * 同一会话只报一次；默认稿加载、切主题、插板块这类程序化改动不经过这里。
+ * 只记改动方式和改动后字数分桶，不记正文。
+ */
+export function trackContentEdit(kind: ContentEditKind, chars: number): void {
+  if (!isActive() || readSessionFlag(SESSION_EDITED_KEY))
+    return
+
+  writeSessionFlag(SESSION_EDITED_KEY)
+  trackEvent(`content_edit`, { kind, chars: bucketCount(chars) })
+}
+
+/** 会话时长分桶（秒），看板只看分布 */
+export function bucketSeconds(seconds: number): string {
+  if (seconds < 30)
+    return `<30`
+  if (seconds < 120)
+    return `30-120`
+  if (seconds < 600)
+    return `120-600`
+  if (seconds < 1800)
+    return `600-1800`
+  return `1800+`
+}
+
+/**
+ * 页面隐藏或关闭时报一次会话收尾：待了多久、改过正文没有、复制过没有。
+ * 同一次页面加载只报一次；随即用 sendBeacon 把队列冲出去。
+ */
+export function trackSessionEnd(now = Date.now()): void {
+  if (!isActive() || sessionEndSent)
+    return
+
+  sessionEndSent = true
+  trackEvent(`session_end`, {
+    seconds: bucketSeconds(Math.max(0, Math.round((now - sessionStartedAt) / 1000))),
+    edited: readSessionFlag(SESSION_EDITED_KEY),
+    copied: readSessionFlag(SESSION_COPIED_KEY),
+  })
+  flush(true)
+}
+
 /** 给反馈用：统计开着才带匿名 ID，方便把一条反馈和它前后的操作对上 */
 export function getTelemetryAnonId(): string {
   return isActive() ? getAnonId() : ``
@@ -204,5 +277,12 @@ export function trackError(kind: string, message?: unknown): void {
 }
 
 if (typeof window !== `undefined`) {
-  window.addEventListener(`pagehide`, () => flush(true))
+  window.addEventListener(`pagehide`, () => {
+    trackSessionEnd()
+    flush(true)
+  })
+  document.addEventListener(`visibilitychange`, () => {
+    if (document.visibilityState === `hidden`)
+      trackSessionEnd()
+  })
 }

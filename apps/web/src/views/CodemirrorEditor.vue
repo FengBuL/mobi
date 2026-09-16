@@ -32,6 +32,7 @@ import {
 import { copyPlain } from '@/utils/clipboard'
 import { loadImageFileFromUrl, resolveSlicedImageUrl, sliceImageFileVertically } from '@/utils/clipboard-image-crop'
 import { getDroppedFileSystemHandle, isImageFile, listDataTransferItems, listDroppedFiles } from '@/utils/dropped-files'
+import { resolveUserContentEdit } from '@/utils/editor-content-edit'
 import {
   embeddedContentProjectionTheme,
   embeddedContentVisibility,
@@ -53,6 +54,7 @@ import {
 } from '@/utils/image-layouts'
 import { cloneWithoutEditorChrome, PREVIEW_BLOCK_PICK_HINT, readPreviewElementText } from '@/utils/preview-text'
 import { store } from '@/utils/storage'
+import { trackContentEdit } from '@/utils/telemetry'
 import { applyWechatPreviewTextureDowngrade, resolveWechatPreviewFrame } from '@/utils/wechat-preview'
 import { FOLDER_RAIL_PX, POST_RAIL_PX, railPercentSizes, STYLE_RAIL_PX } from '@/utils/workspace-layout'
 
@@ -1529,6 +1531,10 @@ function createFormTextArea(dom: HTMLDivElement) {
           const preserveBlockSelection = update.transactions.some(transaction => transaction.annotation(blockSelectionTransaction))
           if (!preserveBlockSelection) {
             blockSelectionStore.clear()
+          }
+          const userEdit = resolveUserContentEdit(update.transactions)
+          if (userEdit) {
+            trackContentEdit(userEdit.kind, userEdit.chars)
           }
           const value = update.state.doc.toString()
           const editingPostId = currentPost.value?.id

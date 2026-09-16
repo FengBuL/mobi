@@ -199,7 +199,8 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
     .funnel-step.active { border-color: var(--ink); background: rgba(255, 255, 255, .5); }
     .funnel-bar { height: 26px; background: var(--paper-deep); position: relative; overflow: hidden; }
     .funnel-bar span { position: absolute; inset: 0 auto 0 0; background: var(--ink); transform-origin: left; animation: grow .7s cubic-bezier(.2,.8,.2,1) both; transition: width .5s cubic-bezier(.2,.8,.2,1); }
-    .funnel-step:nth-child(4) .funnel-bar span { background: var(--red); }
+    .funnel-step:last-child .funnel-bar span { background: var(--red); }
+    .funnel-step[data-step="content_edit"] .funnel-bar span { background: var(--green); }
     .funnel-value { text-align: right; font: 800 14px ui-monospace, monospace; }
     .funnel-rate { text-align: right; color: var(--muted); font: 11px ui-monospace, monospace; }
     .funnel-prev { display: block; color: var(--muted); font: 10px ui-monospace, monospace; text-align: right; }
@@ -376,7 +377,7 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
     <section class="grid">
       <article class="panel">
         <div class="panel-head"><h2>主路径漏斗</h2><span class="panel-kicker">Funnel · devices · 点一步看拆分</span></div>
-        <p class="panel-hint">每一步统计做过这件事的设备数，灰字是上一周期。app_open 从 2.3.4 才开始记，老版本设备不会出现在第一步。</p>
+        <p class="panel-hint">每一步统计做过这件事的设备数，灰字是上一周期。app_open 从 2.3.4 才开始记，「改过正文」从 2.3.5 才开始记，老版本设备不会出现在这两步。</p>
         <div class="funnel" id="funnel"></div>
         <div class="drill" id="drill" hidden></div>
       </article>
@@ -384,6 +385,20 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
         <div class="panel-head"><h2>屏幕宽度</h2><span class="panel-kicker">Viewport</span></div>
         <p class="panel-hint">打开时的浏览器窗口宽度分桶，按设备去重。点一行 = 只看这类设备。</p>
         <div class="ranking" id="viewport-ranking"></div>
+      </article>
+    </section>
+
+    <section class="grid even">
+      <article class="panel">
+        <div class="panel-head"><h2>看客 / 写手</h2><span class="panel-kicker">Audience · 2.3.5+</span></div>
+        <p class="panel-hint">「写手」= 这个周期里亲手改过正文（打字、粘贴 ≥ 200 字、打开本地文件）的设备；只切主题、只看示例稿的算「看客」。</p>
+        <div class="facts" id="audience-facts"></div>
+        <div class="ranking" id="edit-kind-ranking" style="margin-top:18px"></div>
+      </article>
+      <article class="panel">
+        <div class="panel-head"><h2>会话时长</h2><span class="panel-kicker">Session length</span></div>
+        <p class="panel-hint">页面切走或关闭时报一次，每次打开只算一次。右列是这一档里改过正文 / 复制过的会话数。</p>
+        <div class="ranking" id="session-seconds-ranking"></div>
       </article>
     </section>
 
@@ -480,14 +495,16 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
 
   <script>
     const EVENT_LABELS = {
-      app_open: '打开应用', copy: '复制内容', theme_change: '切换主题', block_select: '点选预览块',
+      app_open: '打开应用', content_edit: '改过正文', session_end: '会话收尾', copy: '复制内容', theme_change: '切换主题', block_select: '点选预览块',
       block_apply: '应用板块', image_layout_apply: '应用图文排版', export: '导出文件',
       style_adjust: '调整全局样式', style_token_adjust: '精细调节', style_tab_open: '翻样式页签',
       style_preset_apply: '应用整套搭配', panel_open: '打开面板', workspace_mode: '切换工作区',
       mp_config_saved: '保存公众号配置', copy_verdict: '复制后评价', feedback_submit: '提交反馈', error: '出错'
     };
     const PLATFORM_LABELS = { desktop: '桌面端', web: '网页版', unknown: '未知平台' };
-    const FUNNEL_LABELS = { app_open: '打开', theme_change: '换主题', block_select: '点选', copy: '复制' };
+    const FUNNEL_LABELS = { app_open: '打开', content_edit: '改过正文', theme_change: '换主题', block_select: '点选', copy: '复制' };
+    const EDIT_KIND_LABELS = { type: '打字', paste: '粘贴长文', file: '打开文件' };
+    const SESSION_SECONDS_LABELS = { '<30': '不到 30 秒', '30-120': '30 秒 – 2 分', '120-600': '2 – 10 分', '600-1800': '10 – 30 分', '1800+': '30 分以上' };
     const THEME_LABELS = {
       default: '编辑黑白', magazine: '奢刊衬线', press: '复古铅印', insight: '行业洞察',
       launch: '产品发布', legal: '琥珀手册', cyber: '霓虹粗野', blueprint: '蓝图工程',
@@ -534,12 +551,13 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
     const MODE_LABELS = { simple: '简洁', professional: '专业' };
     const SERIES = [
       { key: 'app_open', label: '打开', color: '#171713' },
+      { key: 'content_edit', label: '改过正文', color: '#2c6e6a' },
       { key: 'copy', label: '复制', color: '#b73327' },
       { key: 'theme_change', label: '换主题', color: '#315e78' },
       { key: 'block_select', label: '点选', color: '#2f6652' },
       { key: 'style_adjust', label: '调样式', color: '#a2762f' },
       { key: 'feedback_submit', label: '反馈', color: '#5b4a7a' },
-      { key: 'error', label: '出错', color: '#2c6e6a' }
+      { key: 'error', label: '出错', color: '#8a8177' }
     ];
     const COLORS = ['#b73327', '#315e78', '#2f6652', '#a2762f', '#746f65'];
     const SMALL_SAMPLE = 20;
@@ -838,6 +856,32 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
         '<div class="verdict-card bad"><span>复制后说「不对」</span><b>' + number(bad.count) + '</b><span>' + number(bad.users) + ' 台设备 · ' + (answered ? percent(bad.count, answered) : '尚无回答') + '</span></div>';
     }
 
+    // ---------- 看客 / 写手 ----------
+    function renderAudience(audience) {
+      const opened = Number(audience.opened || 0), edited = Number(audience.edited || 0), copied = Number(audience.copied || 0);
+      const facts = [
+        ['打开过', number(opened), '台'],
+        ['改过正文（写手）', number(edited), opened ? percent(edited, opened) + ' 的打开设备' : '台'],
+        ['只看不改（看客）', number(Math.max(0, opened - edited)), '台'],
+        ['复制过', number(copied), edited ? percent(copied, edited) + ' 的写手' : '台']
+      ];
+      el('audience-facts').innerHTML = opened || edited ? facts.map((fact) =>
+        '<div class="fact"><p class="fact-label">' + esc(fact[0]) + '</p><p class="fact-value">' + esc(fact[1]) + '<small>' + esc(fact[2]) + '</small></p></div>'
+      ).join('') : empty('尚无 content_edit 记录（需要 2.3.5+ 客户端）');
+      renderRanking(el('edit-kind-ranking'), (audience.editKinds || []).map((row) => ({ ...row })), {
+        label: (item) => (EDIT_KIND_LABELS[item.kind] || item.kind || '未知') + ' · ' + (item.chars || '?') + ' 字',
+        color: 'green',
+        emptyText: '尚无改动方式记录'
+      });
+      const seconds = (audience.sessionSeconds || []).map((row) => ({ ...row }));
+      renderRanking(el('session-seconds-ranking'), seconds, {
+        label: (item) => SESSION_SECONDS_LABELS[item.seconds] || item.seconds,
+        sub: (item) => '改过 ' + number(item.edited) + ' · 复制过 ' + number(item.copied),
+        color: 'blue',
+        emptyText: '尚无会话时长记录（需要 2.3.5+ 客户端）'
+      });
+    }
+
     // ---------- 反馈 ----------
     function renderFeedbackFilters(rows) {
       const types = [''].concat(Object.keys(FEEDBACK_LABELS));
@@ -970,6 +1014,7 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
       renderPlatforms(data.byPlatform || []);
       renderRetention(data.retention || []);
       renderCopyFacts(data.copyContext || {}, data.copyVerdict || []);
+      renderAudience(data.audience || {});
 
       renderRanking(el('style-control-ranking'), (data.byStyleControl || []).map((row) => ({ ...row })), {
         label: (item) => CONTROL_LABELS[item.control] || item.control || '未知',

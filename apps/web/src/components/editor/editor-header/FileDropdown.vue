@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Archive, Download, FileCode, FileText, FolderInput, FolderKanban, FolderOpen, FolderPlus, Trash2, Upload } from 'lucide-vue-next'
+import type { CopyMode } from '@/utils/copy-formats'
+import { Archive, ClipboardCopy, Download, FileCode, FileText, FolderInput, FolderKanban, FolderOpen, FolderPlus, Trash2, Upload } from 'lucide-vue-next'
 import { useBrowserDraftExportReminder } from '@/composables/useBrowserDraftExportReminder'
 import { draftFileSyncKey } from '@/composables/useDraftFileSync'
 import { getDesktopBridge } from '@/services/desktop/bridge'
@@ -7,6 +8,7 @@ import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
 import { useFolderSourceStore } from '@/stores/folderSource'
 import { useUIStore } from '@/stores/ui'
+import { SECONDARY_COPY_FORMATS } from '@/utils/copy-formats'
 import { canDeleteDraftDirectory, describeFolderActionDisabledReason, describeFolderPickerBlocker } from '@/utils/draft-folder'
 
 const props = withDefaults(defineProps<{
@@ -14,6 +16,11 @@ const props = withDefaults(defineProps<{
 }>(), {
   asSub: false,
 })
+
+// 复制本身由顶栏统一执行（要带复制中的遮罩），菜单只负责说「用哪种格式」
+const emit = defineEmits<{
+  copyFormat: [mode: CopyMode]
+}>()
 
 const { asSub } = toRefs(props)
 
@@ -164,6 +171,20 @@ async function moveSelected() {
         导入 Markdown
       </MenubarItem>
 
+      <!-- 其余复制格式：主按钮只管公众号，四种源码格式收在这里 -->
+      <MenubarSub>
+        <MenubarSubTrigger>
+          <ClipboardCopy class="mr-2 size-4" />
+          复制为…
+        </MenubarSubTrigger>
+        <MenubarSubContent class="w-56">
+          <MenubarItem v-for="item in SECONDARY_COPY_FORMATS" :key="item.mode" @click="emit('copyFormat', item.mode)">
+            <FileCode class="mr-2 size-4" />
+            {{ item.label }}
+          </MenubarItem>
+        </MenubarSubContent>
+      </MenubarSub>
+
       <!-- 导出子菜单 -->
       <MenubarSub>
         <MenubarSubTrigger>
@@ -246,6 +267,20 @@ async function moveSelected() {
         <Upload class="mr-2 size-4" />
         导入 Markdown
       </MenubarItem>
+
+      <!-- 其余复制格式：主按钮只管公众号，四种源码格式收在这里 -->
+      <MenubarSub>
+        <MenubarSubTrigger>
+          <ClipboardCopy class="mr-2 size-4" />
+          复制为…
+        </MenubarSubTrigger>
+        <MenubarSubContent class="w-56">
+          <MenubarItem v-for="item in SECONDARY_COPY_FORMATS" :key="item.mode" @click="emit('copyFormat', item.mode)">
+            <FileCode class="mr-2 size-4" />
+            {{ item.label }}
+          </MenubarItem>
+        </MenubarSubContent>
+      </MenubarSub>
 
       <!-- 导出子菜单 -->
       <MenubarSub>

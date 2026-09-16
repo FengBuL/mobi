@@ -1,15 +1,7 @@
 <script setup lang="ts">
 import type { WorkspaceMode } from '@/stores/ui'
 import type { FeedbackSource } from '@/utils/feedback'
-import { ChevronDown, Copy, Menu, MessageSquareText, MonitorDown, Palette } from 'lucide-vue-next'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Copy, Menu, MessageSquareText, MonitorDown, Palette } from 'lucide-vue-next'
 import { useCopyNudge } from '@/composables/useCopyNudge'
 import { useEditorCopyActions } from '@/composables/useEditorCopyActions'
 import { isDesktopRuntime } from '@/services/desktop/bridge'
@@ -36,13 +28,6 @@ const workspaceModes: Array<{ value: WorkspaceMode, label: string, hint: string 
   { value: `simple`, label: `简洁`, hint: `只留编辑器和预览` },
   { value: `professional`, label: `专业`, hint: `解锁全部面板` },
 ]
-
-const copyFormats = [
-  { mode: `html`, label: `HTML 源码` },
-  { mode: `html-without-style`, label: `纯 HTML` },
-  { mode: `html-and-style`, label: `带样式 HTML` },
-  { mode: `md`, label: `Markdown 源码` },
-] as const
 
 // 对话框状态
 const aboutDialogVisible = ref(false)
@@ -115,7 +100,7 @@ const lostImageHint = computed(() => resolveLostImageHint({
     <!-- 桌面端左侧菜单 -->
     <div class="hidden items-center md:flex">
       <Menubar class="menubar border-0">
-        <FileDropdown />
+        <FileDropdown @copy-format="handleCopy" />
         <EditDropdown />
         <SettingsDropdown />
         <HelpDropdown @open-about="handleOpenAbout" @open-markdown-guide="handleOpenMarkdownGuide" />
@@ -152,7 +137,7 @@ const lostImageHint = computed(() => resolveLostImageHint({
             </Button>
           </MenubarTrigger>
           <MenubarContent align="start">
-            <FileDropdown :as-sub="true" />
+            <FileDropdown :as-sub="true" @copy-format="handleCopy" />
             <EditDropdown :as-sub="true" />
             <SettingsDropdown :as-sub="true" />
             <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-markdown-guide="handleOpenMarkdownGuide" />
@@ -195,29 +180,11 @@ const lostImageHint = computed(() => resolveLostImageHint({
         </button>
       </div>
 
-      <!-- 复制：主按钮走公众号，其余格式收在下拉里 -->
-      <div class="flex items-center gap-2">
-        <div class="flex overflow-hidden rounded-md">
-          <Button class="h-9 rounded-r-none pl-3 pr-3.5" @click="copyToWeChat">
-            <Copy class="mr-2 h-4 w-4" />
-            <span>复制到公众号</span>
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger as-child>
-              <Button class="h-9 rounded-l-none border-l border-primary-foreground/25 px-2" aria-label="其他复制格式">
-                <ChevronDown class="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" class="w-48">
-              <DropdownMenuLabel>其他格式</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem v-for="item in copyFormats" :key="item.mode" @click="handleCopy(item.mode)">
-                {{ item.label }}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+      <!-- 复制：顶栏只留公众号这一个动作；其余四种格式在「文件 → 复制为…」（33 天里合计只用了 9 次） -->
+      <Button class="h-9 pl-3 pr-3.5" @click="copyToWeChat">
+        <Copy class="mr-2 h-4 w-4" />
+        <span>复制到公众号</span>
+      </Button>
 
       <!-- 简洁模式只留预览主题条上的「全局样式」，避免顶栏再开一扇门 -->
       <Button

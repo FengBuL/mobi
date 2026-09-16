@@ -3,7 +3,6 @@ import { useAccountProfileStore } from '@/stores/accountProfile'
 import { useEditorStore } from '@/stores/editor'
 import { useFolderSourceStore } from '@/stores/folderSource'
 import { usePostStore } from '@/stores/post'
-import { titleFromImportedMarkdown } from '@/utils/imported-markdown'
 import { allocateMarkdownFileName } from '@/utils/draft-file'
 import {
   ARCHIVE_FOLDER_NAME,
@@ -19,6 +18,8 @@ import {
   rewritePathPrefix,
   unarchiveDraftPath,
 } from '@/utils/draft-folder'
+import { titleFromImportedMarkdown } from '@/utils/imported-markdown'
+import { trackContentEdit } from '@/utils/telemetry'
 
 export const draftFileSyncKey: InjectionKey<ReturnType<typeof useDraftFileSync>> = Symbol(`draftFileSync`)
 
@@ -100,6 +101,8 @@ export function useDraftFileSync() {
     const fallback = node.name.replace(/\.(md|markdown|txt)$/i, ``) || `未命名`
     const title = titleFromImportedMarkdown(content, fallback)
     const existing = postStore.posts.find(post => post.importedFrom === node.path || post.filePath === node.path)
+    // 打开自己的文件就是「贴了自己的稿」，只记字数分桶，不记文件名
+    trackContentEdit(`file`, content.length)
     if (existing) {
       postStore.currentPostId = existing.id
       postStore.updatePostContent(existing.id, content)

@@ -44,8 +44,13 @@ npx wrangler deploy
 
 ```bash
 # GitHub：建一个 fine-grained token，只给 FengBuL/mobi 的 Issues: Read and write
-npx wrangler secret put GITHUB_TOKEN
-npx wrangler secret put GITHUB_REPO        # 填 FengBuL/mobi
+# 交互输入不回显，容易粘空；用管道更稳
+printf '%s' 'github_pat_…' | npx wrangler secret put GITHUB_TOKEN
+# GITHUB_REPO 已写在 wrangler.toml 的 [vars]，不用再 put
+#
+# 已知限制：POST /issues 的 labels 只对有 push 权限的调用者生效，否则 GitHub 静默丢弃。
+# 只给 Issues 权限的 token 建出来的 Issue 不带 label，分类只在标题里（形如「[图丢了 · 贴进去不一样] …」）。
+# 仓库里要先有 feedback 与八个分类 label（2026-09-15 已建）。
 
 # 飞书：群设置 → 群机器人 → 自定义机器人，复制 webhook 地址
 npx wrangler secret put FEISHU_WEBHOOK
@@ -95,14 +100,16 @@ curl -H "Authorization: Bearer <ADMIN_KEY>" \
 
 旧的 `?key=` 查询参数暂时保留兼容。
 
-`/stats` 返回字段：`activeUsers`、`newUsers`、`returningUsers`、`byPlatform`、`byEvent`、`topDetails`、`byDay`、`byVersion`、`funnel`、`byViewport`、`byTheme`、`byBlock`、`byStyleControl`、`byStyleTab`、`byTokenGroup`、`byPanel`、`byError`、`copyContext`、`feedback`。
+`/stats` 返回字段：`activeUsers`、`newUsers`、`returningUsers`、`byPlatform`、`byEvent`、`topDetails`、`byDay`、`byVersion`、`funnel`、`byViewport`、`byTheme`、`byBlock`、`byStyleControl`、`byStyleTab`、`byTokenGroup`、`byPanel`、`byError`、`copyContext`、`feedback`、`audience`（看客 / 写手：`opened` / `edited` / `copied` 三个设备数、`editKinds`、`sessionSeconds` 五档分布）。
 
 ## 客户端埋点一览
 
 | 事件 | 触发点 | 维度 |
 | --- | --- | --- |
 | `app_open` | 每次打开 | first（是否新设备）, viewport（宽度桶）, width, height, dpr, mode, dark |
-| `copy` | 复制到公众号 / 其他格式 | mode, theme, blocks, images, unsafeImages, chars（字数桶）, mpConfigured |
+| `content_edit` | 一次会话里正文第一次被用户亲手改动（2.3.5+）。默认稿加载、切主题、插板块不算 | kind（type / paste ≥200 字 / file 打开本地文件）, chars（改动后字数桶） |
+| `session_end` | 页面切走或关闭时，每次打开只报一次（2.3.5+，sendBeacon） | seconds（<30 / 30-120 / 120-600 / 600-1800 / 1800+）, edited, copied |
+| `copy` | 复制到公众号 / 文件 → 复制为… | mode, theme, blocks, images, unsafeImages, chars（字数桶）, mpConfigured |
 | `theme_change` | 切换主题 | theme |
 | `block_select` | 预览里点中一块 | category, styled |
 | `block_apply` | 板块库写入正文 | category, preset |

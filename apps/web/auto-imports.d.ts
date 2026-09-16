@@ -353,6 +353,9 @@ declare global {
   export type { WorkspaceMode, AuxPanel } from './src/stores/ui'
   import('./src/stores/ui')
   // @ts-ignore
+  export type { CopyMode } from './src/composables/useEditorCopyActions'
+  import('./src/composables/useEditorCopyActions')
+  // @ts-ignore
   export type { ImageQuickInsertTab } from './src/composables/useImageQuickInsert'
   import('./src/composables/useImageQuickInsert')
 }

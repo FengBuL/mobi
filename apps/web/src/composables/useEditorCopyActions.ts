@@ -1,3 +1,4 @@
+import type { CopyMode } from '@/utils/copy-formats'
 import { armCopyNudge } from '@/composables/useCopyNudge'
 import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
@@ -11,7 +12,7 @@ import { store } from '@/utils/storage'
 import { bucketCount, trackError, trackEvent } from '@/utils/telemetry'
 import { createWeChatClipboardBlobs } from '@/utils/wechat-compat'
 
-type CopyMode = 'txt' | 'html' | 'html-without-style' | 'html-and-style' | 'md'
+export type { CopyMode } from '@/utils/copy-formats'
 
 interface UseEditorCopyActionsOptions {
   onStart?: () => void

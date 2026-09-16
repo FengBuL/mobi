@@ -30,6 +30,8 @@ const MAX_PROPS_LENGTH = 500
 /** 看板上按固定顺序补零展示的事件 */
 export const TRACKED_EVENTS = [
   `app_open`,
+  `content_edit`,
+  `session_end`,
   `copy`,
   `theme_change`,
   `block_select`,
@@ -48,8 +50,11 @@ export const TRACKED_EVENTS = [
   `error`,
 ]
 
-/** 漏斗：打开 → 换主题 → 点选 → 复制 */
-const FUNNEL_STEPS = [`app_open`, `theme_change`, `block_select`, `copy`]
+/** 漏斗：打开 → 改过正文 → 换主题 → 点选 → 复制。「改过正文」把只看示例稿的看客和贴了自己稿子的写手分开 */
+export const FUNNEL_STEPS = [`app_open`, `content_edit`, `theme_change`, `block_select`, `copy`]
+
+/** 会话时长分桶，与客户端 bucketSeconds 同步，看板按此顺序补零 */
+export const SESSION_SECONDS_BUCKETS = [`<30`, `30-120`, `120-600`, `600-1800`, `1800+`]
 
 /** 反馈类型 → GitHub 标签 */
 /** 「哪里不对」标签；与客户端 FEEDBACK_TYPES 同步 */
@@ -342,7 +347,7 @@ function isAuthorized(request, env) {
 const DAY_MS = 24 * 60 * 60 * 1000
 
 /** 趋势图可勾选的系列 */
-const TREND_EVENTS = [`app_open`, `copy`, `theme_change`, `block_select`, `style_adjust`, `feedback_submit`, `error`]
+const TREND_EVENTS = [`app_open`, `content_edit`, `copy`, `theme_change`, `block_select`, `style_adjust`, `feedback_submit`, `error`]
 
 /** 反馈处理状态 */
 export const FEEDBACK_STATUSES = [`open`, `done`, `ignored`]
@@ -521,6 +526,9 @@ async function handleStats(request, env) {
     filterVersions,
     filterViewports,
     filterModes,
+    audienceRows,
+    editKinds,
+    sessionSeconds,
   ] = await Promise.all([
     queryCore(q, scope),
     queryCore(q, previousScope),
@@ -570,7 +578,14 @@ async function handleStats(request, env) {
     q(`SELECT version, COUNT(DISTINCT anon_id) AS users FROM events WHERE {scope} GROUP BY version ORDER BY users DESC LIMIT 20`, rangeOnly),
     q(`SELECT json_extract(props, '$.viewport') AS viewport, COUNT(DISTINCT anon_id) AS users FROM events WHERE {scope} AND event = 'app_open' GROUP BY viewport ORDER BY users DESC`, rangeOnly),
     q(`SELECT json_extract(props, '$.mode') AS mode, COUNT(DISTINCT anon_id) AS users FROM events WHERE {scope} AND event = 'app_open' GROUP BY mode ORDER BY users DESC`, rangeOnly),
+    // 看客 / 写手：打开过、改过正文、复制过的设备数
+    q(`SELECT event, COUNT(DISTINCT anon_id) AS users FROM events WHERE {scope} AND event IN ('app_open', 'content_edit', 'copy') GROUP BY event`, scope),
+    q(`SELECT json_extract(props, '$.kind') AS kind, json_extract(props, '$.chars') AS chars, COUNT(DISTINCT anon_id) AS users, COUNT(*) AS count FROM events WHERE {scope} AND event = 'content_edit' GROUP BY kind, chars ORDER BY users DESC`, scope),
+    q(`SELECT json_extract(props, '$.seconds') AS seconds, COUNT(*) AS count, COUNT(DISTINCT anon_id) AS users, SUM(CASE WHEN json_extract(props, '$.edited') = 1 THEN 1 ELSE 0 END) AS edited, SUM(CASE WHEN json_extract(props, '$.copied') = 1 THEN 1 ELSE 0 END) AS copied FROM events WHERE {scope} AND event = 'session_end' GROUP BY seconds`, scope),
   ])
+
+  const audienceMap = new Map(audienceRows.map(row => [row.event, Number(row.users) || 0]))
+  const secondsMap = new Map(sessionSeconds.map(row => [String(row.seconds), row]))
 
   return json({
     days: params.days,
@@ -605,6 +620,22 @@ async function handleStats(request, env) {
     retention,
     feedback: feedbackRecent,
     feedbackByStatus,
+    audience: {
+      opened: audienceMap.get(`app_open`) ?? 0,
+      edited: audienceMap.get(`content_edit`) ?? 0,
+      copied: audienceMap.get(`copy`) ?? 0,
+      editKinds,
+      sessionSeconds: SESSION_SECONDS_BUCKETS.map((bucket) => {
+        const row = secondsMap.get(bucket) ?? {}
+        return {
+          seconds: bucket,
+          count: Number(row.count) || 0,
+          users: Number(row.users) || 0,
+          edited: Number(row.edited) || 0,
+          copied: Number(row.copied) || 0,
+        }
+      }),
+    },
   })
 }
 

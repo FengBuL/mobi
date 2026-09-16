@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { afterEach, it, vi } from 'vitest'
 
-import worker, { buildGithubIssue, buildScope, compileScoped, FEEDBACK_STATUSES, FEEDBACK_TYPES, parseStatsParams, TRACKED_EVENTS, validateFeedback } from '../infra/telemetry-worker/worker.js'
+import worker, { buildGithubIssue, buildScope, compileScoped, FEEDBACK_STATUSES, FEEDBACK_TYPES, FUNNEL_STEPS, parseStatsParams, SESSION_SECONDS_BUCKETS, TRACKED_EVENTS, validateFeedback } from '../infra/telemetry-worker/worker.js'
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -133,6 +133,7 @@ it(`exposes daily trend, version distribution, funnel and style controls`, async
   assert.deepEqual(payload.byVersion, [{ version: `2.1.7`, users: 1, events: 3 }])
   assert.deepEqual(payload.funnel, [
     { event: `app_open`, users: 4 },
+    { event: `content_edit`, users: 0 },
     { event: `theme_change`, users: 0 },
     { event: `block_select`, users: 0 },
     { event: `copy`, users: 2 },
@@ -151,9 +152,32 @@ it(`always exposes every tracked event with zero-filled counts`, async () => {
     const row = payload.byEvent.find((item: { event: string }) => item.event === event)
     assert.ok(row, `缺少 ${event}`)
   }
-  for (const event of [`app_open`, `style_adjust`, `style_token_adjust`, `block_select`, `error`, `feedback_submit`]) {
+  for (const event of [`app_open`, `content_edit`, `session_end`, `style_adjust`, `style_token_adjust`, `block_select`, `error`, `feedback_submit`]) {
     assert.ok(TRACKED_EVENTS.includes(event), `TRACKED_EVENTS 缺少 ${event}`)
   }
+})
+
+it(`separates readers from writers: opened / edited / copied devices plus session length buckets`, async () => {
+  const db = createDb()
+  const response = await worker.fetch(statsRequest(), { ADMIN_KEY_SECRET: ADMIN_KEY, DB: db })
+  const payload = await response.json()
+
+  assert.deepEqual(FUNNEL_STEPS, [`app_open`, `content_edit`, `theme_change`, `block_select`, `copy`], `「改过正文」在打开和复制之间`)
+  assert.equal(payload.audience.opened, 4)
+  assert.equal(payload.audience.edited, 0)
+  assert.equal(payload.audience.copied, 2)
+  assert.ok(Array.isArray(payload.audience.editKinds))
+  assert.deepEqual(payload.audience.sessionSeconds.map((row: { seconds: string }) => row.seconds), SESSION_SECONDS_BUCKETS)
+  assert.deepEqual(payload.audience.sessionSeconds[0], { seconds: `<30`, count: 0, users: 0, edited: 0, copied: 0 })
+
+  const audienceQuery = db.queried.find(item => item.sql.includes(`event IN ('app_open', 'content_edit', 'copy')`))
+  assert.ok(audienceQuery, `看客 / 写手三数要一条查询取齐`)
+  assert.ok(db.queried.some(item => item.sql.includes(`event = 'session_end'`) && item.sql.includes(`'$.seconds'`)))
+
+  const dashboard = await (await worker.fetch(new Request(`https://example.com/dashboard`), { ADMIN_KEY })).text()
+  assert.match(dashboard, /content_edit: '改过正文'/)
+  assert.match(dashboard, /id="audience-facts"/)
+  assert.match(dashboard, /id="session-seconds-ranking"/)
 })
 
 it(`parses period and filters from stats query params`, () => {
