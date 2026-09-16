@@ -14,7 +14,7 @@ on:
         description: 把安装包挂到这个 Release tag
         required: true
         type: string
-        default: v2.3.4
+        default: v2.3.5
 
 permissions:
   contents: read
